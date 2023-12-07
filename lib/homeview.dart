@@ -2,6 +2,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import 'components/user_provider.dart';
@@ -25,6 +26,14 @@ class _HomeViewState extends State<HomeView> {
             label: Text("Logout"),
             onPressed: () async {
               await userProvider.signOut();
+              Fluttertoast.showToast(
+                  msg: 'logout 성공!',
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.TOP,
+                  timeInSecForIosWeb: 5,
+                  backgroundColor: Colors.grey,
+                  textColor: Colors.white,
+                  fontSize: 16.0);
               Navigator.pushReplacementNamed(
                 context,
                 '/login',
