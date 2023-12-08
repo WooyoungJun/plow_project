@@ -102,7 +102,7 @@ class _CustomFormState extends State<CustomForm> {
           },
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text('Login',
+            child: Text(buttonText,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
