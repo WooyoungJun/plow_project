@@ -1,22 +1,26 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class Logo extends StatelessWidget {
-  const Logo({super.key});
+  final double height = 100.0;
+  final double width = 100.0;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 100,
-          width: 100,
+    return SizedBox(
+      height: height,
+      width: width,
+      child: IconButton(
+        onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+        icon: SizedBox(
+          height: height,
+          width: width,
           child: SvgPicture.asset(
             'assets/images/wave.svg',
             fit: BoxFit.contain,
           ),
         ), // 로고 이미지
-      ],
+      ),
     );
   }
 }

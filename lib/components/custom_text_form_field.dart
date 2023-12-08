@@ -2,16 +2,15 @@
 
 import 'package:flutter/material.dart';
 
-import '../size.dart';
+import 'size.dart';
 
 // 입력 form 위젯
 class CustomTextFormField extends StatefulWidget {
-  final TextEditingController controller;
-  final String labelText;
-  final Icon icon;
+  final TextEditingController controller; // 부모 위젯에서 활용할 텍스트 컨트롤러
+  final String labelText; // 텍스트 폼에 표현할 텍스트(login/password)
+  final Icon icon; // 텍스트 폼에 적용할 아이콘
 
-  const CustomTextFormField(
-      {super.key, required this.controller, required this.labelText, required this.icon});
+  const CustomTextFormField({required this.controller, required this.labelText, required this.icon});
 
   @override
   State<CustomTextFormField> createState() =>
@@ -19,11 +18,11 @@ class CustomTextFormField extends StatefulWidget {
 }
 
 class _CustomTextFormFieldState extends State<CustomTextFormField> {
-  final String labelText;
-  final Icon icon;
-  final TextEditingController _controller;
+  final TextEditingController _controller; // 부모 위젯에서 활용할 텍스트 컨트롤러
+  final String _labelText; // 텍스트 폼에 표현할 텍스트(login/password)
+  final Icon _icon; // 텍스트 폼에 적용할 아이콘
 
-  _CustomTextFormFieldState(this._controller, this.labelText, this.icon);
+  _CustomTextFormFieldState(this._controller, this._labelText, this._icon);
 
   @override
   Widget build(BuildContext context) {
@@ -36,18 +35,17 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
         TextField(
           controller: _controller,
           // 비밀번호면 *로 표시
-          obscureText: labelText == "Password" ? true : false,
+          obscureText: _labelText == "Password" ? true : false,
           decoration: InputDecoration(
-            prefixIcon: icon,
+            prefixIcon: _icon,
             // form icon
-            labelText: labelText,
+            labelText: _labelText,
             // form text
             fillColor: Colors.white,
             filled: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
-            // hintText: "$labelText을 입력하세요",
             // 기본 디자인
             enabledBorder: defaultDesign,
             // 클릭 시 디자인

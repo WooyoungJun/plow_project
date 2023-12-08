@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
@@ -36,27 +37,30 @@ class UserProvider extends ChangeNotifier {
     // -> Consumer 코드 다시 실행 되면서 화면 다시 build
   }
 
-  Future<String> signUp(String email, String password) async {
+  Future<String> signUp(String email, String password, String buttonText) async {
     try {
-      // _status = Status.authenticating;
-      // notifyListeners();
+      // 생성 완료시 currentUser 현재 정보 저장
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
+      print('$buttonText 성공');
+      showToast('$buttonText 성공');
       return '성공';
     } on FirebaseAuthException catch (e) {
       _status = Status.unauthenticated;
-      notifyListeners();
+      // notifyListeners();
       return e.message!;
     } catch (e) {
       return e.toString();
     }
   }
 
-  Future<String> signIn(String email, String password) async {
+  Future<String> signIn(String email, String password, String buttonText) async {
     try {
       // _status = Status.authenticating;
       // notifyListeners();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      print('$buttonText 성공');
+      showToast('$buttonText 성공');
       return '성공';
     } on FirebaseAuthException catch (e) {
       _status = Status.unauthenticated;
@@ -67,9 +71,22 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut(String buttonText) async {
     await _auth.signOut();
-    _status = Status.unauthenticated;
-    notifyListeners();
+    print('$buttonText 성공');
+    showToast('$buttonText 성공');
   }
+}
+
+void showToast(String msg){
+  Fluttertoast.showToast(
+      msg: msg,
+      webPosition: 'center', // 토스트 위치 = 중앙
+      toastLength: Toast.LENGTH_SHORT, // 토스트 길이 짧게
+      gravity: ToastGravity.TOP, // 위로 중력 설정
+      timeInSecForIosWeb: 3, // 3초 유지
+      webShowClose: true,
+      backgroundColor: Colors.grey,
+      textColor: Colors.white,
+      fontSize: 16.0);
 }

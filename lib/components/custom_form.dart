@@ -1,18 +1,15 @@
-// ignore_for_file: no_logic_in_create_state
-
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:plow_project/components/user_provider.dart';
 
-import '../size.dart';
 import 'custom_text_form_field.dart';
+import 'size.dart';
 
 class CustomForm extends StatefulWidget {
-  final UserProvider userProvider;
-  final TextEditingController emailController;
-  final TextEditingController passwordController;
-  final String buttonText;
-  final String route;
+  final UserProvider userProvider; // user 정보 담은 객체
+  final TextEditingController emailController; // email 텍스트 컨트롤러
+  final TextEditingController passwordController; // password 텍스트 컨트롤러
+  final String buttonText; // 버튼 텍스트
+  final String route; // 버튼 클릭시 이동할 페이지
 
   CustomForm({
     super.key,
@@ -25,45 +22,45 @@ class CustomForm extends StatefulWidget {
 
   @override
   State<CustomForm> createState() => _CustomFormState(
-        userProvider: userProvider,
-        emailController: emailController,
-        passwordController: passwordController,
-        buttonText: buttonText,
-        route: route,
+        userProvider,
+        emailController,
+        passwordController,
+        buttonText,
+        route,
       );
 }
 
 class _CustomFormState extends State<CustomForm> {
-  final UserProvider userProvider;
-  final TextEditingController emailController;
-  final TextEditingController passwordController;
-  final String buttonText;
-  final String route;
-  String msg = '';
+  final UserProvider _userProvider; // user 정보 담은 객체
+  final TextEditingController _emailController; // email 텍스트 컨트롤러
+  final TextEditingController _passwordController; // password 텍스트 컨트롤러
+  final String _buttonText; // 버튼 텍스트
+  final String _route; // 버튼 클릭시 이동할 페이지
+  String _msg = '';
 
-  _CustomFormState({
-    required this.userProvider,
-    required this.emailController,
-    required this.passwordController,
-    required this.buttonText,
-    required this.route,
-  });
+  _CustomFormState(
+    this._userProvider,
+    this._emailController,
+    this._passwordController,
+    this._buttonText,
+    this._route,
+  );
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         CustomTextFormField(
-          controller: emailController,
+          controller: _emailController,
           labelText: 'Email',
           icon: Icon(Icons.email),
-        ),
+        ), // 컨트롤러 포함 텍스트 폼 위젯
         const SizedBox(height: mediumGap),
         CustomTextFormField(
-          controller: passwordController,
+          controller: _passwordController,
           labelText: 'Password',
           icon: Icon(Icons.lock),
-        ),
+        ), // 컨트롤러 포함 텍스트 폼 위젯
         const SizedBox(height: largeGap),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -72,48 +69,37 @@ class _CustomFormState extends State<CustomForm> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               )),
-          onPressed: () async {
-            late String result;
-            if (buttonText == 'login') {
-              result = await userProvider.signIn(
-                  emailController.text, passwordController.text);
-            } else if (buttonText == 'signUp') {
-              result = await userProvider.signUp(
-                  emailController.text, passwordController.text);
-            }
-
-            // 위젯이 마운트되지 않으면 context에 아무것도 없을 수 있음
-            if (!mounted) return;
-
-            if (result == '성공') {
-              print('$buttonText 성공');
-              Fluttertoast.showToast(
-                  msg: '$buttonText 성공!',
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.TOP,
-                  timeInSecForIosWeb: 5,
-                  backgroundColor: Colors.grey,
-                  textColor: Colors.white,
-                  fontSize: 16.0);
-              Navigator.pushReplacementNamed(context, route);
-            } else {
-              setState(() => msg = result);
-            }
-          },
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text(buttonText,
+            child: Text(_buttonText,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
                 )),
-          ),
+          ), // 버튼 텍스트
+          onPressed: () async {
+            late String result;
+            if (_buttonText == 'login') {
+              result = await _userProvider.signIn(
+                  _emailController.text, _passwordController.text, _buttonText);
+            } else if (_buttonText == 'signUp') {
+              result = await _userProvider.signUp(
+                  _emailController.text, _passwordController.text, _buttonText);
+            }
+
+            if (result == '성공') {
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, _route);
+            } else {
+              setState(() => _msg = result);
+            }
+          },
         ),
         SizedBox(
           width: 400,
           child: Text(
-            msg,
+            _msg,
             style: TextStyle(
               fontSize: 14,
               color: Colors.redAccent,

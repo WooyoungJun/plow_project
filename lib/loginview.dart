@@ -20,70 +20,79 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider = Provider.of<UserProvider>(context);
+    final UserProvider userProvider =
+        Provider.of<UserProvider>(context, listen: false);
     print('로그인 로그아웃');
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Theme.of(context).colorScheme.primary,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // 모든 공간 채우기
-            children: [
-              SizedBox(height: 60),
-              Logo(),
-              SizedBox(height: 30),
-              Text(
-                'SWeetMe Project 로그인',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ), // 페이지 설명
-              SizedBox(height: 30),
-              CustomForm(
-                  userProvider: userProvider,
-                  emailController: _emailController,
-                  passwordController: _passwordController,
-                  buttonText: 'login',
-                  route: '/home'), // email, password form, 버튼까지(로그인)
-              SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/reset_password'),
-                child: Text(
-                  'Forgot Password?',
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center, // 모든 공간 채우기
+              children: [
+                SizedBox(height: 60),
+                Logo(),
+                SizedBox(height: 30),
+                Text(
+                  'SWeetMe Project 로그인',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                ),
-              ), // password 재 설정(미구현)
-              SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Don\'t have an account?',
+                ), // 페이지 설명
+                SizedBox(height: 30),
+                CustomForm(
+                    userProvider: userProvider,
+                    emailController: _emailController,
+                    passwordController: _passwordController,
+                    buttonText: 'login',
+                    route: '/home'), // email, password form, 버튼까지(로그인)
+                SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.pushReplacementNamed(
+                      context, '/reset_password'),
+                  child: Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ), // password 재 설정(미구현)
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Don\'t have an account?',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                      )),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/signUp');
-                    },
-                    child: Text('Sign Up',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/signUp'),
+                      child: Text(
+                        'Sign Up',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                        )),
-                  ),
-                ],
-              ), // 회원 가입 버튼(signUp 페이지)
-            ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ), // 회원 가입 버튼(signUp 페이지)
+              ],
+            ),
           ),
         ),
       ),

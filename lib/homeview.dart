@@ -3,9 +3,12 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:plow_project/components/custom_drawer.dart';
+import 'package:plow_project/components/custom_text_form_field.dart';
 import 'package:provider/provider.dart';
 
+import 'components/custom_appbar.dart';
+import 'components/data_handler.dart';
 import 'components/user_provider.dart';
 
 class HomeView extends StatefulWidget {
@@ -14,86 +17,174 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  // user가 작성한 문서 읽어오기
-  Future<void> readData(UserProvider user) async {
-    // 쿼리 실행
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection("BoardList") // collection 이름
-        .where('member_id', isEqualTo: user.user!.uid)
-        .get(); // member_id로 검색
-    // 쿼리 결과 처리
-    for (var doc in querySnapshot.docs) {
-      print('post id : ${doc.id}');
-      print('title : ${doc['title']}');
-      print('content : ${doc['content']}');
-      print('created date : ${doc['created_date']}');
-      print('member id : ${doc['member_id']}');
-    }
+  String? uid;
+  List<Todo> todos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // build 이후에 실행시킬 부분
+    // (build에서 async 직접 사용하긴 힘듦)
+    WidgetsBinding.instance.addPostFrameCallback((_) => getData());
   }
 
-  // post 데이터베이스에 추가
-  Future<void> addPost(String title, String content, UserProvider user) async {
-    // 유효성 검사 확인 필요
-    
-    CollectionReference posts =
-        FirebaseFirestore.instance.collection('BoardList');
-    await posts.add({
-      'title': title,
-      'content': content,
-      'created_date': FieldValue.serverTimestamp(),
-      'member_id': user.user!.uid,
-    });
+  Future<void> getData() async {
+    todos = await DataInFireStore.readPost(uid!);
+    setState(() {});
+  }
+
+  Future<void> onAddOrUpdateTab(
+      {Todo? todo, int? index, required bool isAdd}) async {
+    TextEditingController titleController = TextEditingController();
+    TextEditingController contentController = TextEditingController();
+
+    // 수정 하기
+    if (!isAdd) {
+      titleController.text = todo!.title;
+      contentController.text = todo.content;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(isAdd ? '추가하기' : '수정하기'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomTextFormField(
+                controller: titleController,
+                labelText: 'Title',
+                icon: Icon(Icons.title),
+              ),
+              CustomTextFormField(
+                controller: contentController,
+                labelText: 'content',
+                icon: Icon(Icons.description),
+              ),
+            ],
+          ), // title, content 수정
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('취소하기'),
+            ), // 취소하기 버튼
+            TextButton(
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty) {
+                  return showToast('title cannot be empty');
+                }
+                if (isAdd) {
+                  Todo newTodo = Todo(
+                      postId: '',
+                      memberId: uid!,
+                      title: titleController.text,
+                      content: contentController.text,
+                      createdDate: Timestamp.now());
+                  newTodo =
+                      await DataInFireStore.addPost('BoardList', newTodo, uid!);
+                  setState(() => todos.add(newTodo));
+                } else {
+                  Todo updatedTodo = Todo(
+                    postId: todo!.postId,
+                    memberId: uid!,
+                    title: titleController.text,
+                    content: contentController.text,
+                    createdDate: todo.createdDate,
+                  );
+                  await DataInFireStore.updatePost('BoardList', updatedTodo);
+                  setState(() => todos[index!] = updatedTodo);
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text(isAdd ? '추가하기' : "수정하기"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider = Provider.of<UserProvider>(context);
-    print('Home ${userProvider.user?.email}'); // user email 출력
+    final UserProvider userProvider =
+        Provider.of<UserProvider>(context, listen: false);
+    uid = userProvider.user?.uid;
+    print('build 호출, $uid');
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Home Screen"),
-        actions: [
-          ElevatedButton.icon(
-            icon: Icon(Icons.logout),
-            label: Text("Logout"),
-            onPressed: () async {
-              await userProvider.signOut();
-              Fluttertoast.showToast(
-                  msg: 'logout 성공!',
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.TOP,
-                  timeInSecForIosWeb: 5,
-                  backgroundColor: Colors.grey,
-                  textColor: Colors.white,
-                  fontSize: 16.0);
-              Navigator.pushReplacementNamed(
-                context,
-                '/login',
-              );
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: '자유 게시판',
+        userProvider: userProvider,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "Welcome, ${userProvider.user?.email ?? 'Anonymous'}",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      // app바 title, leading, action 위젯
+      endDrawer: CustomDrawer(userProvider: userProvider),
+      // 오른쪽에서 열림
+      // resizeToAvoidBottomInset: false,
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () => onAddOrUpdateTab(isAdd: true),
+      ),
+      body: ListView.builder(
+        shrinkWrap: true, // 길이 맞게 위젯 축소 허용
+        itemCount: todos.length,
+        itemBuilder: (context, index) {
+          final todo = todos[index];
+          return Container(
+            margin: EdgeInsets.only(left: 8, right: 8, top: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey, width: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 1,
+                    blurRadius: 2,
+                    offset: Offset(0, 2)),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.blueAccent,
+                  child: Text(
+                    '${index + 1}',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                title: Text(todo.title),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () async => onAddOrUpdateTab(
+                        isAdd: false,
+                        todo: todo,
+                        index: index,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.edit, color: Colors.blue),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        await DataInFireStore.deletePost(
+                            'BoardList', todo.postId);
+                        setState(() => todos.removeAt(index));
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(Icons.delete, color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            Text(
-              "your ID is ${userProvider.user?.uid ?? 'Anonymous'}",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
