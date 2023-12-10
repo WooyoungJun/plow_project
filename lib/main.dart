@@ -1,12 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/user_provider.dart';
-import 'package:plow_project/homeview.dart';
-import 'package:plow_project/loginview.dart';
-import 'package:plow_project/password_reset.dart';
-import 'package:plow_project/signupview.dart';
+import 'package:plow_project/components/UserProvider.dart';
+import 'package:plow_project/HomeView.dart';
+import 'package:plow_project/LoginView.dart';
+import 'package:plow_project/PasswordResetView.dart';
+import 'package:plow_project/SignUpView.dart';
 import 'package:provider/provider.dart';
 
+import 'MyInfoView.dart';
 import 'firebase_options.dart';
 
 // firebase 초기화 기본 코드
@@ -35,10 +36,11 @@ class MyApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           "/": (context) => AuthenticationWrapper(),
-          "/login": (context) => LoginView(),
-          "/home": (context) => HomeView(),
-          "/signUp": (context) => SignUpView(),
-          "/reset_password": (context) => PasswordResetView(),
+          "/LoginView": (context) => LoginView(),
+          "/HomeView": (context) => HomeView(),
+          "/SignUpView": (context) => SignUpView(),
+          "/PasswordResetView": (context) => PasswordResetView(),
+          "/MyInfoView" : (context) => MyInfoView(),
         },
       ),
     );
@@ -51,10 +53,10 @@ class AuthenticationWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
     // userProvider의 상태에 따라 다른 경로로 라우팅
-    if (userProvider.status == Status.authenticated) {
-      return HomeView(); // 사용자가 로그인한 경우 홈으로 이동
-    } else {
+    if (userProvider.user == null) {
       return LoginView(); // 사용자가 로그인하지 않은 경우 로그인 화면으로 이동
+    } else {
+      return HomeView(); // 사용자가 로그인한 경우 홈으로 이동
     }
   }
 }

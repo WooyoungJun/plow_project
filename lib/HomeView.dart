@@ -3,13 +3,13 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/custom_drawer.dart';
-import 'package:plow_project/components/custom_text_form_field.dart';
+import 'package:plow_project/components/CustomDrawer.dart';
+import 'package:plow_project/components/CustomTextFormField.dart';
 import 'package:provider/provider.dart';
 
-import 'components/custom_appbar.dart';
-import 'components/data_handler.dart';
-import 'components/user_provider.dart';
+import 'components/CustomAppbar.dart';
+import 'components/DataHandler.dart';
+import 'components/UserProvider.dart';
 
 class HomeView extends StatefulWidget {
   @override
@@ -28,11 +28,13 @@ class _HomeViewState extends State<HomeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) => getData());
   }
 
+  // 사용자 uid로 POST 가져오기
   Future<void> getData() async {
-    todos = await DataInFireStore.readPost(uid!);
+    todos = await DataInFireStore.readPost('BoardList', uid!);
     setState(() {});
   }
 
+  // 추가 or 수정하기 tab
   Future<void> onAddOrUpdateTab(
       {Todo? todo, int? index, required bool isAdd}) async {
     TextEditingController titleController = TextEditingController();
@@ -77,7 +79,7 @@ class _HomeViewState extends State<HomeView> {
                 if (isAdd) {
                   Todo newTodo = Todo(
                       postId: '',
-                      memberId: uid!,
+                      uid: uid!,
                       title: titleController.text,
                       content: contentController.text,
                       createdDate: Timestamp.now());
@@ -87,7 +89,7 @@ class _HomeViewState extends State<HomeView> {
                 } else {
                   Todo updatedTodo = Todo(
                     postId: todo!.postId,
-                    memberId: uid!,
+                    uid: uid!,
                     title: titleController.text,
                     content: contentController.text,
                     createdDate: todo.createdDate,
@@ -116,10 +118,8 @@ class _HomeViewState extends State<HomeView> {
         title: '자유 게시판',
         userProvider: userProvider,
       ),
-      // app바 title, leading, action 위젯
       endDrawer: CustomDrawer(userProvider: userProvider),
-      // 오른쪽에서 열림
-      // resizeToAvoidBottomInset: false,
+      // app바 title, leading, action 위젯, 오른쪽에서 열림
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: () => onAddOrUpdateTab(isAdd: true),

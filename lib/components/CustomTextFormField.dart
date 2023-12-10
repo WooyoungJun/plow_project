@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 
-import 'size.dart';
+import 'Size.dart';
 
 // 입력 form 위젯
 class CustomTextFormField extends StatefulWidget {

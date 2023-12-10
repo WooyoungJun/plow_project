@@ -1,4 +1,4 @@
-// size.dart
+// Size.dart
 
 const double smallGap = 5.0;
 const double mediumGap = 10.0;

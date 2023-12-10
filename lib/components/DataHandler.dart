@@ -2,20 +2,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DataInFireStore {
   // uid에 해당하는 유저의 게시글 가져오기
-  static Future<List<Todo>> readPost(String uid) async {
-    var posts = FirebaseFirestore.instance.collection('BoardList');
+  static Future<List<Todo>> readPost(String collection, String uid) async {
+    var posts = FirebaseFirestore.instance.collection(collection);
     var querySnapshot = await posts
-        .where('member_id', isEqualTo: uid)
-        .orderBy('created_date') // 시간 순(오름차 순)
+        .where('uid', isEqualTo: uid)
+        .orderBy('createdDate') // 시간 순(오름차 순) -> FireStore Index 설정 필요
+        .limit(10)
         .get();
     print('readPost 호출');
     List<Todo> todos = querySnapshot.docs.map((doc) {
       return Todo(
           postId: doc.id,
-          memberId: doc.data()['member_id'],
+          uid: doc.data()['uid'],
           title: doc.data()['title'],
           content: doc.data()['content'],
-          createdDate: doc.data()['created_date']);
+          createdDate: doc.data()['createdDate']);
     }).toList();
     return todos;
   }
@@ -27,7 +28,7 @@ class DataInFireStore {
     var docRef = await posts.add(todo.toMap());
     Todo newTodo = Todo(
       postId: docRef.id,
-      memberId: todo.memberId,
+      uid: todo.uid,
       title: todo.title,
       content: todo.content,
       createdDate: todo.createdDate,
@@ -52,22 +53,22 @@ class DataInFireStore {
 class Todo {
   Todo(
       {required this.postId,
-      required this.memberId,
+      required this.uid,
       required this.title,
       required this.content,
       required this.createdDate});
 
   final String postId;
-  final String memberId;
+  final String uid;
   final String title;
   final String content;
   final Timestamp createdDate;
 
   Map<String, dynamic> toMap() => {
         'id': postId,
-        'member_id': memberId,
+        'uid': uid,
         'title': title,
         'content': content,
-        'created_date': createdDate
+        'createdDate': createdDate
       };
 }

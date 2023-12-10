@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'components/custom_form.dart';
-import 'components/logo.dart';
-import 'components/user_provider.dart';
+import 'components/CustomForm.dart';
+import 'components/Logo.dart';
+import 'components/UserProvider.dart';
 
 class SignUpView extends StatefulWidget {
   @override

@@ -3,9 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'components/custom_form.dart';
-import 'components/logo.dart';
-import 'components/user_provider.dart';
+import 'components/CustomForm.dart';
+import 'components/Logo.dart';
+import 'components/UserProvider.dart';
 
 class LoginView extends StatefulWidget {
   @override
@@ -52,11 +52,11 @@ class _LoginViewState extends State<LoginView> {
                     emailController: _emailController,
                     passwordController: _passwordController,
                     buttonText: 'login',
-                    route: '/home'), // email, password form, 버튼까지(로그인)
+                    route: '/HomeView'), // email, password form, 버튼까지(로그인)
                 SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(
-                      context, '/reset_password'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/PasswordResetView'),
                   child: Text(
                     'Forgot Password?',
                     style: TextStyle(
@@ -79,7 +79,7 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     TextButton(
                       onPressed: () =>
-                          Navigator.pushReplacementNamed(context, '/signUp'),
+                          Navigator.pushNamed(context, '/SignUpView'),
                       child: Text(
                         'Sign Up',
                         style: TextStyle(

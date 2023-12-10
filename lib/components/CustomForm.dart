@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/user_provider.dart';
+import 'package:plow_project/components/UserProvider.dart';
 
-import 'custom_text_form_field.dart';
-import 'size.dart';
+import 'CustomTextFormField.dart';
+import 'Size.dart';
 
 class CustomForm extends StatefulWidget {
   final UserProvider userProvider; // user 정보 담은 객체

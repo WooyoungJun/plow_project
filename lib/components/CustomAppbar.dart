@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/user_provider.dart';
+import 'package:plow_project/components/UserProvider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final UserProvider userProvider;
+  final List<Widget>? actions;
 
-  CustomAppBar({required this.title, required this.userProvider});
+  CustomAppBar({required this.title, required this.userProvider, this.actions});
 
   // AppBar return하기 위해서는 위젯 높이 필요함
   @override
@@ -23,14 +24,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       centerTitle: true,
       backgroundColor: Theme.of(context).colorScheme.primary,
-      // automaticallyImplyLeading: true, // 좌축 상단 뒤로가기 아이콘
-      actions: [
-        IconButton(
-          icon: Icon(Icons.menu),
-          // 가장 가까운 부모 Scaffold 위젯
-          onPressed: () => Scaffold.of(context).openEndDrawer(),
-        ), // 우측 상단 아이콘
-      ],
+      actions: actions ??
+          [
+            IconButton(
+              icon: Icon(Icons.menu),
+              // 가장 가까운 부모 Scaffold 위젯
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ],
     );
   }
 }

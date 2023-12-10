@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/size.dart';
+import 'package:plow_project/components/Size.dart';
 
-import 'components/custom_text_form_field.dart';
-import 'components/logo.dart';
+import 'components/CustomTextFormField.dart';
+import 'components/Logo.dart';
 
 class PasswordResetView extends StatefulWidget {
   @override
