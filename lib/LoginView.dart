@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'components/CustomForm.dart';
+import 'components/CustomTextField.dart';
 import 'components/Logo.dart';
+import 'components/Size.dart';
 import 'components/UserProvider.dart';
 
 class LoginView extends StatefulWidget {
@@ -34,9 +34,9 @@ class _LoginViewState extends State<LoginView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center, // 모든 공간 채우기
               children: [
-                SizedBox(height: 60),
+                SizedBox(height: xlargeGap),
                 Logo(),
-                SizedBox(height: 30),
+                SizedBox(height: largeGap),
                 Text(
                   'SWeetMe Project 로그인',
                   textAlign: TextAlign.center,
@@ -46,13 +46,59 @@ class _LoginViewState extends State<LoginView> {
                     color: Colors.white,
                   ),
                 ), // 페이지 설명
-                SizedBox(height: 30),
-                CustomForm(
-                    userProvider: userProvider,
-                    emailController: _emailController,
-                    passwordController: _passwordController,
-                    buttonText: 'login',
-                    route: '/HomeView'), // email, password form, 버튼까지(로그인)
+                SizedBox(height: largeGap),
+                CustomTextField(
+                  controller: _emailController,
+                  labelText: 'Email',
+                  icon: Icon(Icons.email),
+                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                SizedBox(height: largeGap),
+                CustomTextField(
+                  controller: _passwordController,
+                  labelText: 'Password',
+                  icon: Icon(Icons.lock),
+                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                SizedBox(height: largeGap),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      textStyle: TextStyle(fontSize: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      )),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Text('Login',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        )),
+                  ), // 버튼 텍스트
+                  onPressed: () async {
+                    var result = await userProvider.signIn(
+                      _emailController.text,
+                      _passwordController.text,
+                      'Login',
+                    );
+                    if (result == '성공') {
+                      Navigator.pushReplacementNamed(context, '/HomeView');
+                    } else {
+                      setState(() => msg = result);
+                    }
+                  },
+                ),
+                SizedBox(
+                  width: 400,
+                  child: Text(
+                    msg,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ), // email, password form, 버튼까지(로그인)
                 SizedBox(height: 16),
                 TextButton(
                   onPressed: () =>

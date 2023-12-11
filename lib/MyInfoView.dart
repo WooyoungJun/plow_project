@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'components/CustomAppbar.dart';
 import 'components/CustomDrawer.dart';
+import 'components/CustomTextField.dart';
+import 'components/Size.dart';
 import 'components/UserProvider.dart';
 
 class MyInfoView extends StatefulWidget {
@@ -19,20 +20,23 @@ class _MyInfoViewState extends State<MyInfoView> {
         Provider.of<UserProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'My Info',
-        userProvider: userProvider,
-        // 수정중 true이면 null
-        actions: isEditing == true ? null : [
-          IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              setState(() {
-                isEditing = true;
-                nameController.text = userProvider.userName ?? '';
-              });
-            },
+      appBar: AppBar(
+        title: Text(
+          '나의 정보',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
           ),
+        ),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          )
         ],
       ),
       endDrawer: CustomDrawer(userProvider: userProvider),
@@ -49,32 +53,88 @@ class _MyInfoViewState extends State<MyInfoView> {
             ),
             Divider(
               color: Colors.grey,
-              thickness: 2,
+              thickness: 4,
               indent: 20,
               endIndent: 20,
+              height: 40,
             ),
-            Text(
-              'User Name:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            TextFormField(
-              controller: nameController,
-              enabled: isEditing, // 수정 모드에서만 활성화
-              decoration: InputDecoration(
-                hintText: userProvider.userName!.isNotEmpty
-                    ? userProvider.userName
-                    : 'Enter your username',
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey, width: 1.0), // 테두리 속성 설정
+                borderRadius: BorderRadius.circular(8.0), // 테두리 둥글게 처리
+              ),
+              padding: EdgeInsets.all(8.0), // 내부 여백 추가
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'User Name:',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                Divider(
+                  color: Colors.grey,
+                  thickness: 1,
+                  height: 10,
+                ), // 간격 조절
+                  isEditing
+                      ? CustomTextField(controller: nameController).widget
+                      : Text(userProvider.userName!,
+                          style: TextStyle(fontSize: 16)),
+                ],
               ),
             ),
-            SizedBox(height: 16),
-            Text(
-              'User Email:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey, width: 1.0), // 테두리 속성 설정
+                borderRadius: BorderRadius.circular(8.0), // 테두리 둥글게 처리
+              ),
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'User Email:',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Divider(
+                    color: Colors.grey,
+                    thickness: 1,
+                    height: 10,
+                  ),
+                  Text(
+                    userProvider.userEmail ?? 'Not available',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
             ),
-            Text(
-              userProvider.userEmail ?? 'Not available',
-              style: TextStyle(fontSize: 16),
-            ),
+            SizedBox(height: mediumGap),
+            Visibility(
+              visible: !isEditing,
+              child: Center(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isEditing = true;
+                      nameController.text = userProvider.userName ?? '';
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text(
+                        '수정하기',
+                        style: TextStyle(
+                            // 텍스트 스타일 설정 (예: 폰트 크기, 색상 등)
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ), // 수정하기 버튼
           ],
         ),
       ),

@@ -32,6 +32,17 @@ class UserProvider extends ChangeNotifier {
     _auth.authStateChanges().listen(_onStateChanged);
   }
 
+  Future<void> getUser() async {
+    if (_user != null && _userEmail == null) {
+      var docRef = await FirebaseFirestore.instance
+          .collection('UserInfo')
+          .doc(_user!.uid)
+          .get();
+      _userEmail = docRef['userEmail'];
+      _userName = docRef['userName'];
+    }
+  }
+
   // 상태 변경 시 user 객체가 스트림으로 들어옴
   // 해당 객체 저장
   Future<void> _onStateChanged(User? user) async {
@@ -49,10 +60,15 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> setName(String name) async {
-    _userName = name;
-    var docRef =
-        FirebaseFirestore.instance.collection('UserInfo').doc(_user!.uid);
-    await docRef.update({'userName': name}); // userName 필드만 변경
+    if (_userName != name) {
+      _userName = name;
+      var docRef =
+          FirebaseFirestore.instance.collection('UserInfo').doc(_user!.uid);
+      await docRef.update({'userName': name}); // userName 필드만 변경
+      showToast('이름 변경 완료!');
+    } else{
+      showToast('변경 사항이 없습니다!');
+    }
   }
 
   Future<String> signUpOrIn(
@@ -70,7 +86,7 @@ class UserProvider extends ChangeNotifier {
             .collection('UserInfo')
             .doc(userCredential.user!.uid)
             .set({
-          'email': email,
+          'userEmail': email,
           'userName': '',
           // 다른 필드들도 추가 가능
         });
@@ -85,7 +101,7 @@ class UserProvider extends ChangeNotifier {
           .collection('UserInfo')
           .doc(_user!.uid)
           .get();
-      _userEmail = userInfo['email'];
+      _userEmail = userInfo['userEmail'];
       _userName = userInfo['userName'];
       return '성공';
     } on FirebaseAuthException catch (e) {

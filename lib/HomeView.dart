@@ -1,13 +1,8 @@
-// 로그인 시 나오는 화면
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomDrawer.dart';
-import 'package:plow_project/components/CustomTextFormField.dart';
+import 'package:plow_project/components/CustomTextField.dart';
 import 'package:provider/provider.dart';
-
-import 'components/CustomAppbar.dart';
 import 'components/DataHandler.dart';
 import 'components/UserProvider.dart';
 
@@ -34,6 +29,14 @@ class _HomeViewState extends State<HomeView> {
     setState(() {});
   }
 
+  bool checkUpdate(String a, String b) {
+    if (a == b) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   // 추가 or 수정하기 tab
   Future<void> onAddOrUpdateTab(
       {Todo? todo, int? index, required bool isAdd}) async {
@@ -54,16 +57,16 @@ class _HomeViewState extends State<HomeView> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CustomTextFormField(
+              CustomTextField(
                 controller: titleController,
                 labelText: 'Title',
                 icon: Icon(Icons.title),
-              ),
-              CustomTextFormField(
+              ).widget,
+              CustomTextField(
                 controller: contentController,
                 labelText: 'content',
                 icon: Icon(Icons.description),
-              ),
+              ).widget,
             ],
           ), // title, content 수정
           actions: [
@@ -74,9 +77,10 @@ class _HomeViewState extends State<HomeView> {
             TextButton(
               onPressed: () async {
                 if (titleController.text.trim().isEmpty) {
-                  return showToast('title cannot be empty');
+                  return showToast('제목은 비어질 수 없습니다');
                 }
                 if (isAdd) {
+                  // 둘 중 하나라도 다르면 true
                   Todo newTodo = Todo(
                       postId: '',
                       uid: uid!,
@@ -86,18 +90,24 @@ class _HomeViewState extends State<HomeView> {
                   newTodo =
                       await DataInFireStore.addPost('BoardList', newTodo, uid!);
                   setState(() => todos.add(newTodo));
+                  Navigator.of(context).pop();
                 } else {
-                  Todo updatedTodo = Todo(
-                    postId: todo!.postId,
-                    uid: uid!,
-                    title: titleController.text,
-                    content: contentController.text,
-                    createdDate: todo.createdDate,
-                  );
-                  await DataInFireStore.updatePost('BoardList', updatedTodo);
-                  setState(() => todos[index!] = updatedTodo);
+                  if (!(checkUpdate(todo!.title, titleController.text) &&
+                      checkUpdate(todo.content, contentController.text))) {
+                    Todo updatedTodo = Todo(
+                      postId: todo.postId,
+                      uid: uid!,
+                      title: titleController.text,
+                      content: contentController.text,
+                      createdDate: todo.createdDate,
+                    );
+                    await DataInFireStore.updatePost('BoardList', updatedTodo);
+                    setState(() => todos[index!] = updatedTodo);
+                    Navigator.of(context).pop();
+                  } else {
+                    return showToast('변경 사항이 없습니다!');
+                  }
                 }
-                Navigator.of(context).pop();
               },
               child: Text(isAdd ? '추가하기' : "수정하기"),
             ),
@@ -111,12 +121,28 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     final UserProvider userProvider =
         Provider.of<UserProvider>(context, listen: false);
+    userProvider.getUser(); // user email, name 가져오기
     uid = userProvider.user?.uid;
     print('build 호출, $uid');
     return Scaffold(
-      appBar: CustomAppBar(
-        title: '자유 게시판',
-        userProvider: userProvider,
+      appBar: AppBar(
+        title: Text(
+          '자유 게시판',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ),
+        ],
       ),
       endDrawer: CustomDrawer(userProvider: userProvider),
       // app바 title, leading, action 위젯, 오른쪽에서 열림

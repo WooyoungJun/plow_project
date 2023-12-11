@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/Size.dart';
 
-import 'components/CustomTextFormField.dart';
+import 'components/CustomTextField.dart';
 import 'components/Logo.dart';
 
 class PasswordResetView extends StatefulWidget {
@@ -28,9 +28,9 @@ class _PasswordResetViewState extends State<PasswordResetView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 60),
+                  SizedBox(height: xlargeGap),
                   Logo(),
-                  SizedBox(height: 30),
+                  SizedBox(height: largeGap),
                   Text(
                     'SWeetMe Project 비밀번호 재설정',
                     textAlign: TextAlign.center,
@@ -40,13 +40,13 @@ class _PasswordResetViewState extends State<PasswordResetView> {
                       color: Colors.white,
                     ),
                   ), // 비밀번호 재설정 페이지 설명
-                  SizedBox(height: 30),
-                  CustomTextFormField(
+                  SizedBox(height: largeGap),
+                  CustomTextField(
                     controller: _emailController,
                     labelText: 'Email',
                     icon: Icon(Icons.email),
-                  ),
-                  const SizedBox(height: largeGap),
+                  ).widget,
+                  SizedBox(height: largeGap),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,

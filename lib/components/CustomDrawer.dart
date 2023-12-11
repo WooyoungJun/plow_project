@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/Size.dart';
 import 'package:plow_project/components/UserProvider.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -60,22 +61,27 @@ class CustomDrawer extends StatelessWidget {
                   padding: EdgeInsets.only(left: 16.0), // 원하는 indent 값 설정
                   child: Icon(Icons.person, color: Colors.blue), // userInfo 아이콘
                 ),
-                SizedBox(width: 8.0), // 아이콘과 텍스트 간격 조절
-                Text('My Info', style: TextStyle(color: Colors.blue)), // 텍스트 변경
+                SizedBox(width: largeGap), // 아이콘과 텍스트 간격 조절
+                Text('나의 정보', style: TextStyle(color: Colors.blue)),
               ],
             ),
-            contentPadding: EdgeInsets.only(bottom: 16.0),
+            contentPadding: EdgeInsets.only(bottom: 4.0),
             onTap: () => Navigator.pushNamed(context, '/MyInfoView'),
           ), // 사용자 정보(My Info View)
+          Divider(
+            color: Colors.grey,
+            thickness: 1,
+            height: 10,
+          ),
           ListTile(
             title: Row(
               children: [
                 Padding(
                   padding: EdgeInsets.only(left: 16.0), // 원하는 indent 값 설정
-                  child: Icon(Icons.exit_to_app, color: Colors.red), // 로그아웃 아이콘
+                  child: Icon(Icons.exit_to_app, color: Colors.red), // userInfo 아이콘
                 ),
-                SizedBox(width: 8.0), // 아이콘과 텍스트 간격 조절
-                Text('Logout', style: TextStyle(color: Colors.red)), // 로그아웃 텍스트
+                SizedBox(width: largeGap),
+                Text('Logout', style: TextStyle(color: Colors.red)),
               ],
             ),
             contentPadding: EdgeInsets.only(bottom: 16.0),

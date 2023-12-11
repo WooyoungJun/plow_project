@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'UserProvider.dart';
+
 class DataInFireStore {
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Todo>> readPost(String collection, String uid) async {
@@ -25,7 +27,7 @@ class DataInFireStore {
   static Future<Todo> addPost(String collection, Todo todo, String uid) async {
     // 유효성 검사 확인 필요
     var posts = FirebaseFirestore.instance.collection(collection);
-    var docRef = await posts.add(todo.toMap());
+    var docRef = await posts.add(todo.toMap()); // set -> 아래는 필요 없음
     Todo newTodo = Todo(
       postId: docRef.id,
       uid: todo.uid,
@@ -33,6 +35,7 @@ class DataInFireStore {
       content: todo.content,
       createdDate: todo.createdDate,
     );
+    showToast('Post add 완료');
     return newTodo;
   }
 
@@ -41,12 +44,14 @@ class DataInFireStore {
     var docRef =
         FirebaseFirestore.instance.collection(collection).doc(todo.postId);
     await docRef.update(todo.toMap());
+    showToast('Post update 완료');
   }
 
   // post 삭제
   static Future<void> deletePost(String collection, String postId) async {
     var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
     await docRef.delete();
+    showToast('Post delete 완료');
   }
 }
 
