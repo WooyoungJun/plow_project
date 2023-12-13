@@ -29,23 +29,23 @@ class _MyInfoViewState extends State<MyInfoView> {
 
     return Scaffold(
       appBar: AppBar(
-        // leading: IconButton(
-        //   icon: Icon(Icons.arrow_back),
-        //   onPressed: () => Navigator.pushReplacementNamed(context, '/HomeView'),
-        // ),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: AppBarTitle(title: '나의 정보').widget,
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
+          IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
           )
         ],
       ),
-      endDrawer: CustomDrawer(
+      drawer: CustomDrawer(
         userProvider: userProvider,
         drawerItems: [
           DrawerItem(

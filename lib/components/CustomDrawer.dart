@@ -33,23 +33,33 @@ class CustomDrawer extends StatelessWidget {
         itemCount: drawerItems.length + 1, // +1 for the header
         itemBuilder: (context, index) {
           if (index == 0) {
-            return UserAccountsDrawerHeader(
-              currentAccountPicture: Icon(Icons.account_circle),
-              accountName: Text(
-                userProvider.userName!,
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              accountEmail: Text(
-                userProvider.userEmail!,
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-              onDetailsPressed: () {},
-              decoration: BoxDecoration(
+            return Center(
+              child: UserAccountsDrawerHeader(
+                currentAccountPicture: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    child: Icon(userProvider.icon, size: 60.0),
+                  ),
+                ),
+                accountName: Text(
+                  userProvider.userName!,
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                accountEmail: Text(
+                  userProvider.userEmail!,
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+                onDetailsPressed: () {},
+                decoration: BoxDecoration(
                   color: Colors.red[200],
                   borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(40.0),
-                      bottomRight: Radius.circular(40.0)
-                  )
+                    bottomLeft: Radius.circular(40.0),
+                    bottomRight: Radius.circular(40.0),
+                  ),
+                ),
               ),
             ); // User 이미지, 이름, email 표시
           } else {
@@ -68,6 +78,7 @@ class CustomDrawer extends StatelessWidget {
               contentPadding: EdgeInsets.only(bottom: 4.0),
               onTap: () {
                 if (item.route == '/LoginView') {
+                  userProvider.signOut('signOut');
                   Navigator.pushNamedAndRemoveUntil(
                     context, '/LoginView',
                     (route) => false, // 모든 스택을 제거하고 '/LoginView'로 이동

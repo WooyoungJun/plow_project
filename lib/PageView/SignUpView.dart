@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:provider/provider.dart';
+
 import '../components/CustomTextField.dart';
 import '../components/Logo.dart';
 import '../components/Size.dart';
@@ -28,14 +29,14 @@ class _SignUpViewState extends State<SignUpView> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
+    final UserProvider userProvider = Provider.of<UserProvider>(context);
     print('회원가입');
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacementNamed(context, '/LoginView'),
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, '/LoginView'),
         ),
         title: AppBarTitle(title: '회원 가입').widget,
         centerTitle: true,
@@ -101,7 +102,7 @@ class _SignUpViewState extends State<SignUpView> {
                     if (result == '성공') {
                       Navigator.pushNamedAndRemoveUntil(
                         context, '/HomeView',
-                            (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
+                        (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
                       );
                     } else {
                       setState(() => msg = result);

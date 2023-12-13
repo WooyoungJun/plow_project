@@ -7,21 +7,9 @@ enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
 // FirebaseAuth, status(로그인 상태), User객체 가지고 있음
 class UserProvider extends ChangeNotifier {
-  final FirebaseAuth _auth;
-  Status _status;
-  User? _user;
-  String? _userEmail;
-  String? _userName;
-
-  Status get status => _status;
-
-  User? get user => _user;
-
-  String? get userEmail => _userEmail ?? '알수없음';
-
-  String? get userName => _userName ?? '이름을 설정하세요';
-
-  // user 생성자
+  final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
+  Status _status; // 유저의 현재 상태
+  User? _user; //
   UserProvider()
       : _auth = FirebaseAuth.instance,
         _user = FirebaseAuth.instance.currentUser,
@@ -32,24 +20,28 @@ class UserProvider extends ChangeNotifier {
     _auth.authStateChanges().listen(_onStateChanged);
   }
 
-  Future<void> getUser() async {
-    if (_user != null && _userEmail == null) {
-      var docRef = await FirebaseFirestore.instance
-          .collection('UserInfo')
-          .doc(_user!.uid)
-          .get();
-      _userEmail = docRef['userEmail'];
-      _userName = docRef['userName'];
-    }
-  }
+  IconData? _icon;
+
+  User? get user => _user;
+
+  // 유저의 현재 상태 (uninitialized, authenticated, authenticating, unauthenticated)
+  Status get status => _status;
+
+  // 유저의 이메일, 이름, 번호 저장
+  String? get uid => _user?.uid;
+
+  String? get userEmail => _user?.email ?? '알수없음';
+
+  String? get userName => _user?.displayName ?? '이름을 설정하세요';
+
+  IconData? get icon => _icon ?? Icons.account_circle;
+
 
   // 상태 변경 시 user 객체가 스트림으로 들어옴
   // 해당 객체 저장
   Future<void> _onStateChanged(User? user) async {
     if (user == null) {
       _status = Status.unauthenticated;
-      _userEmail = null;
-      _userName = null;
     } else {
       _status = Status.authenticated;
       _user = user;
@@ -60,13 +52,22 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> setName(String name) async {
-    if (_userName != name) {
-      _userName = name;
-      var docRef =
-          FirebaseFirestore.instance.collection('UserInfo').doc(_user!.uid);
-      await docRef.update({'userName': name}); // userName 필드만 변경
-      showToast('이름 변경 완료!');
-    } else{
+    if (_user != null) {
+      var curName = _user!.displayName;
+      if (curName != name) {
+        await _user!.updateDisplayName(name);
+        await _user!.reload();
+        _user = FirebaseAuth.instance.currentUser;
+        if (_user!.displayName == name) {
+          showToast('이름 변경 완료!');
+        } else {
+          showToast('이름 변경 실패!');
+          print('ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ: ${_user!.displayName}');
+        }
+      } else {
+        showToast('수정된 사항이 없습니다!');
+      }
+    } else {
       showToast('변경 사항이 없습니다!');
     }
   }
@@ -85,11 +86,7 @@ class UserProvider extends ChangeNotifier {
         await FirebaseFirestore.instance
             .collection('UserInfo')
             .doc(userCredential.user!.uid)
-            .set({
-          'userEmail': email,
-          'userName': '',
-          // 다른 필드들도 추가 가능
-        });
+            .set({'credit': 0});
       } else {
         // signIn
         await _auth.signInWithEmailAndPassword(
@@ -97,16 +94,9 @@ class UserProvider extends ChangeNotifier {
       }
       print('$buttonText 성공');
       showToast('$buttonText 성공');
-      var userInfo = await FirebaseFirestore.instance
-          .collection('UserInfo')
-          .doc(_user!.uid)
-          .get();
-      _userEmail = userInfo['userEmail'];
-      _userName = userInfo['userName'];
       return '성공';
     } on FirebaseAuthException catch (e) {
       _status = Status.unauthenticated;
-      // notifyListeners();
       return e.message!;
     } catch (e) {
       return e.toString();
@@ -123,6 +113,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> signOut(String buttonText) async {
     await _auth.signOut();
+    notifyListeners();
     print('$buttonText 성공');
     showToast('$buttonText 성공');
   }

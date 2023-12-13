@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomDrawer.dart';
 import 'package:plow_project/components/CustomTextField.dart';
 import 'package:provider/provider.dart';
+
 import '../components/AppBarTitle.dart';
 import '../components/DataHandler.dart';
 import '../components/UserProvider.dart';
@@ -13,12 +14,13 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  String? uid;
+  late UserProvider _userProvider;
   List<Todo> todos = [];
 
   @override
   void initState() {
     super.initState();
+
     // build 이후에 실행시킬 부분
     // (build에서 async 직접 사용하긴 힘듦)
     WidgetsBinding.instance.addPostFrameCallback((_) => getData());
@@ -26,21 +28,13 @@ class _HomeViewState extends State<HomeView> {
 
   // 사용자 uid로 POST 가져오기
   Future<void> getData() async {
-    todos = await DataInFireStore.readPost('BoardList', uid!);
+    todos = await DataInFireStore.readPost('BoardList', _userProvider.uid!);
     setState(() {});
-  }
-
-  bool checkUpdate(String a, String b) {
-    if (a == b) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   // 추가 or 수정하기 tab
   Future<void> onAddOrUpdateTab(
-      {Todo? todo, int? index, required bool isAdd}) async {
+      {Todo? todo, int? index, required bool isAdd, required String uid}) async {
     TextEditingController titleController = TextEditingController();
     TextEditingController contentController = TextEditingController();
 
@@ -84,20 +78,20 @@ class _HomeViewState extends State<HomeView> {
                   // 둘 중 하나라도 다르면 true
                   Todo newTodo = Todo(
                       postId: '',
-                      uid: uid!,
+                      uid: _userProvider.uid!,
                       title: titleController.text,
                       content: contentController.text,
                       createdDate: Timestamp.now());
                   newTodo =
-                      await DataInFireStore.addPost('BoardList', newTodo, uid!);
+                      await DataInFireStore.addPost('BoardList', newTodo, _userProvider.uid!);
                   setState(() => todos.add(newTodo));
                   Navigator.of(context).pop();
                 } else {
-                  if (!(checkUpdate(todo!.title, titleController.text) &&
-                      checkUpdate(todo.content, contentController.text))) {
+                  if (!(todo!.title == titleController.text &&
+                      todo.content == contentController.text)) {
                     Todo updatedTodo = Todo(
                       postId: todo.postId,
-                      uid: uid!,
+                      uid: _userProvider.uid!,
                       title: titleController.text,
                       content: contentController.text,
                       createdDate: todo.createdDate,
@@ -139,7 +133,7 @@ class _HomeViewState extends State<HomeView> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  onAddOrUpdateTab(isAdd: true);
+                  onAddOrUpdateTab(isAdd: true, uid: _userProvider.uid!);
                 },
                 child: Text('게시글 작성하기'),
               ),
@@ -152,10 +146,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
-    userProvider.getUser(); // user email, name 가져오기
-    uid = userProvider.user?.uid;
+    _userProvider = Provider.of<UserProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
@@ -169,7 +160,7 @@ class _HomeViewState extends State<HomeView> {
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       drawer: CustomDrawer(
-        userProvider: userProvider,
+        userProvider: _userProvider,
         drawerItems: [
           DrawerItem(
               icon: Icons.person,
@@ -183,7 +174,6 @@ class _HomeViewState extends State<HomeView> {
               route: '/LoginView'),
         ],
       ),
-      // app바 title, leading, action 위젯, 오른쪽에서 열림
       body: ListView.builder(
         shrinkWrap: true, // 길이 맞게 위젯 축소 허용
         itemCount: todos.length,
@@ -219,6 +209,7 @@ class _HomeViewState extends State<HomeView> {
                   children: [
                     InkWell(
                       onTap: () async => onAddOrUpdateTab(
+                        uid: _userProvider.uid!,
                         isAdd: false,
                         todo: todo,
                         index: index,
@@ -249,8 +240,6 @@ class _HomeViewState extends State<HomeView> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showBottomSheet,
         child: Icon(Icons.add),
-        // onPressed: () => Navigator.pushNamed(context, '/PostView'),
-        // onPressed: () => onAddOrUpdateTab(isAdd: true),
       ),
     );
   }

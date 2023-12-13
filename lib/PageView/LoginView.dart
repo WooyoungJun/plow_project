@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../components/AppBarTitle.dart';
 import '../components/CustomTextField.dart';
 import '../components/Logo.dart';
@@ -27,8 +28,7 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
+    final UserProvider userProvider = Provider.of<UserProvider>(context);
     print('로그인 로그아웃');
     return Scaffold(
       appBar: AppBar(
@@ -96,7 +96,7 @@ class _LoginViewState extends State<LoginView> {
                     if (result == '성공') {
                       Navigator.pushNamedAndRemoveUntil(
                         context, '/HomeView',
-                            (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
+                        (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
                       );
                     } else {
                       setState(() => msg = result);

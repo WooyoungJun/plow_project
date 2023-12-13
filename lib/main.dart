@@ -1,11 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/PageView/HomeView.dart';
 import 'package:plow_project/PageView/LoginView.dart';
 import 'package:plow_project/PageView/PasswordResetView.dart';
 import 'package:plow_project/PageView/SignUpView.dart';
+import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
+
 import 'PageView/MyInfoView.dart';
 import 'PageView/PostView.dart';
 import 'firebase_options.dart';
@@ -37,7 +38,8 @@ class MyApp extends StatelessWidget {
           "/LoginView": (context) => SafeArea(child: LoginView()),
           "/HomeView": (context) => SafeArea(child: HomeView()),
           "/SignUpView": (context) => SafeArea(child: SignUpView()),
-          "/PasswordResetView": (context) => SafeArea(child: PasswordResetView()),
+          "/PasswordResetView": (context) =>
+              SafeArea(child: PasswordResetView()),
           "/MyInfoView": (context) => SafeArea(child: MyInfoView()),
           "/PostView": (context) => SafeArea(child: PostView()),
         },
@@ -50,12 +52,11 @@ class MyApp extends StatelessWidget {
 class AuthenticationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
-    // userProvider의 상태에 따라 다른 경로로 라우팅
+    final UserProvider userProvider = Provider.of<UserProvider>(context);
     if (userProvider.user == null) {
       return LoginView(); // 사용자가 로그인하지 않은 경우 로그인 화면으로 이동
     } else {
+      print("user 객체: ${userProvider.user}");
       return HomeView(); // 사용자가 로그인한 경우 홈으로 이동
     }
   }
