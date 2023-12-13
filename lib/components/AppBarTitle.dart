@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
-class AppBarTitle {
+class AppBarTitle extends StatelessWidget{
   final String title;
   AppBarTitle({required this.title});
-  Widget get widget => Text(
-    title,
-    style: TextStyle(
-      color: Colors.white,
-      fontSize: 20,
-    ),
-  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+      ),
+    );
+  }
 }

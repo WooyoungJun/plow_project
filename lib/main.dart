@@ -6,9 +6,9 @@ import 'package:plow_project/PageView/PasswordResetView.dart';
 import 'package:plow_project/PageView/SignUpView.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
-
 import 'PageView/MyInfoView.dart';
-import 'PageView/PostView.dart';
+import 'PageView/PostScreenView.dart';
+import 'PageView/PhotoUploadView.dart';
 import 'firebase_options.dart';
 
 // firebase 초기화 기본 코드
@@ -41,7 +41,8 @@ class MyApp extends StatelessWidget {
           "/PasswordResetView": (context) =>
               SafeArea(child: PasswordResetView()),
           "/MyInfoView": (context) => SafeArea(child: MyInfoView()),
-          "/PostView": (context) => SafeArea(child: PostView()),
+          "/PhotoUploadView": (context) => SafeArea(child: PhotoUploadView()),
+          "/PostScreenView": (context) => SafeArea(child: PostScreenView()),
         },
       ),
     );

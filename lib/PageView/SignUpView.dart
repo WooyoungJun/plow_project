@@ -38,7 +38,7 @@ class _SignUpViewState extends State<SignUpView> {
           onPressed: () =>
               Navigator.pushReplacementNamed(context, '/LoginView'),
         ),
-        title: AppBarTitle(title: '회원 가입').widget,
+        title: AppBarTitle(title: '회원 가입'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
@@ -69,13 +69,13 @@ class _SignUpViewState extends State<SignUpView> {
                   controller: emailController,
                   labelText: 'Email',
                   icon: Icon(Icons.email),
-                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                ), // 컨트롤러 포함 텍스트 폼 위젯
                 SizedBox(height: largeGap),
                 CustomTextField(
                   controller: passwordController,
                   labelText: 'Password',
                   icon: Icon(Icons.lock),
-                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                ), // 컨트롤러 포함 텍스트 폼 위젯
                 SizedBox(height: largeGap),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(

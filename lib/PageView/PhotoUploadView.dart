@@ -7,12 +7,12 @@ import 'package:intl/intl.dart';
 import '../components/AppBarTitle.dart';
 import '../components/UserProvider.dart';
 
-class PostView extends StatefulWidget {
+class PhotoUploadView extends StatefulWidget {
   @override
-  State<PostView> createState() => _HomeViewState();
+  State<PhotoUploadView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<PostView> {
+class _HomeViewState extends State<PhotoUploadView> {
   final _picker = ImagePicker();
   List<String> imageExtensions = ['jpg', 'jpeg', 'png'];
   File? _pickedFile;
@@ -90,7 +90,7 @@ class _HomeViewState extends State<PostView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: AppBarTitle(title: '자유 게시판').widget,
+        title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),

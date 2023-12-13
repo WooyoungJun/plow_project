@@ -32,7 +32,7 @@ class _LoginViewState extends State<LoginView> {
     print('로그인 로그아웃');
     return Scaffold(
       appBar: AppBar(
-        title: AppBarTitle(title: '로그인').widget,
+        title: AppBarTitle(title: '로그인'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
@@ -63,13 +63,13 @@ class _LoginViewState extends State<LoginView> {
                   controller: emailController,
                   labelText: 'Email',
                   icon: Icon(Icons.email),
-                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                ), // 컨트롤러 포함 텍스트 폼 위젯
                 SizedBox(height: largeGap),
                 CustomTextField(
                   controller: passwordController,
                   labelText: 'Password',
                   icon: Icon(Icons.lock),
-                ).widget, // 컨트롤러 포함 텍스트 폼 위젯
+                ), // 컨트롤러 포함 텍스트 폼 위젯
                 SizedBox(height: largeGap),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(

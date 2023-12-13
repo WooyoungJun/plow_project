@@ -32,7 +32,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
           onPressed: () =>
               Navigator.pushReplacementNamed(context, '/LoginView'),
         ),
-        title: AppBarTitle(title: '비밀번호 찾기').widget,
+        title: AppBarTitle(title: '비밀번호 찾기'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
@@ -53,7 +53,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
                   controller: emailController,
                   labelText: 'Email',
                   icon: Icon(Icons.email),
-                ).widget,
+                ),
                 SizedBox(height: largeGap),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(

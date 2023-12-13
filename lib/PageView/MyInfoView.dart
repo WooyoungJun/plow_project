@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../components/AppBarTitle.dart';
 import '../components/CustomDrawer.dart';
 import '../components/CustomTextField.dart';
@@ -31,17 +32,33 @@ class _MyInfoViewState extends State<MyInfoView> {
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
-            icon: Icon(Icons.menu),
+            icon: Icon(Icons.menu, color: Colors.white),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: AppBarTitle(title: '나의 정보').widget,
+        title: AppBarTitle(title: '나의 정보'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
-          IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
+          Row(
+            children: [
+              Visibility(
+                visible: !isEditing,
+                child: GestureDetector(
+                  child: Icon(Icons.edit, color: Colors.white),
+                  onTap: () {
+                    setState(() {
+                      isEditing = true;
+                      nameController.text = userProvider.userName ?? '';
+                    });
+                  },
+                ),
+              ), // 수정하기 버튼
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            ],
           )
         ],
       ),
@@ -92,7 +109,7 @@ class _MyInfoViewState extends State<MyInfoView> {
                     height: 10,
                   ), // 간격 조절
                   isEditing
-                      ? CustomTextField(controller: nameController).widget
+                      ? CustomTextField(controller: nameController)
                       : Text(userProvider.userName!,
                           style: TextStyle(fontSize: 16)),
                 ],
@@ -124,32 +141,6 @@ class _MyInfoViewState extends State<MyInfoView> {
               ),
             ),
             SizedBox(height: mediumGap),
-            Visibility(
-              visible: !isEditing,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isEditing = true;
-                      nameController.text = userProvider.userName ?? '';
-                    });
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.edit),
-                      SizedBox(width: 8),
-                      Text(
-                        '수정하기',
-                        style: TextStyle(
-                            // 텍스트 스타일 설정 (예: 폰트 크기, 색상 등)
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ), // 수정하기 버튼
           ],
         ),
       ),
