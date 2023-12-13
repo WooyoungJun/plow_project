@@ -120,7 +120,7 @@ class _HomeViewState extends State<HomeView> {
 
   // 하단 메뉴를 표시하는 함수
   Future<void> _showBottomSheet() async {
-    var bottomSheetController = await showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
         return Container(
@@ -158,19 +158,17 @@ class _HomeViewState extends State<HomeView> {
     uid = userProvider.user?.uid;
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: AppBarTitle(title: '자유 게시판').widget,
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
-        actions: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openEndDrawer(),
-            ),
-          ),
-        ],
       ),
-      endDrawer: CustomDrawer(
+      drawer: CustomDrawer(
         userProvider: userProvider,
         drawerItems: [
           DrawerItem(

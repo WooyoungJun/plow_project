@@ -33,40 +33,23 @@ class CustomDrawer extends StatelessWidget {
         itemCount: drawerItems.length + 1, // +1 for the header
         itemBuilder: (context, index) {
           if (index == 0) {
-            return DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 30,
-                      child: Icon(Icons.account_circle),
-                    ),
-                  ),
-                  Divider(
-                    color: Colors.grey,
-                    thickness: 2,
-                    indent: 20,
-                    endIndent: 20,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        userProvider.userName!,
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        userProvider.userEmail!,
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                    ),
-                  ),
-                ],
+            return UserAccountsDrawerHeader(
+              currentAccountPicture: Icon(Icons.account_circle),
+              accountName: Text(
+                userProvider.userName!,
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              accountEmail: Text(
+                userProvider.userEmail!,
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              onDetailsPressed: () {},
+              decoration: BoxDecoration(
+                  color: Colors.red[200],
+                  borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(40.0),
+                      bottomRight: Radius.circular(40.0)
+                  )
               ),
             ); // User 이미지, 이름, email 표시
           } else {
