@@ -10,6 +10,8 @@ class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 유저의 현재 상태
   User? _user; //
+  List<String> friend = [];
+
   UserProvider()
       : _auth = FirebaseAuth.instance,
         _user = FirebaseAuth.instance.currentUser,
@@ -35,7 +37,6 @@ class UserProvider extends ChangeNotifier {
   String? get userName => _user?.displayName ?? '이름을 설정하세요';
 
   IconData? get icon => _icon ?? Icons.account_circle;
-
 
   // 상태 변경 시 user 객체가 스트림으로 들어옴
   // 해당 객체 저장

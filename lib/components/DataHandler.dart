@@ -67,7 +67,7 @@ class Todo {
   final String uid;
   final String title;
   final String content;
-  final Timestamp createdDate;
+  final String createdDate;
 
   Map<String, dynamic> toMap() => {
         'id': postId,

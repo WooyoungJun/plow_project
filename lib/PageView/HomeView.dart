@@ -1,12 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomDrawer.dart';
 import 'package:plow_project/components/CustomTextField.dart';
 import 'package:provider/provider.dart';
-
 import '../components/AppBarTitle.dart';
 import '../components/DataHandler.dart';
 import '../components/UserProvider.dart';
+import 'package:intl/intl.dart';
 
 class HomeView extends StatefulWidget {
   @override
@@ -75,13 +74,15 @@ class _HomeViewState extends State<HomeView> {
                   return showToast('제목은 비어질 수 없습니다');
                 }
                 if (isAdd) {
-                  // 둘 중 하나라도 다르면 true
+                  DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
+                  // 날짜 및 시간 포맷 지정
+                  String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
                   Todo newTodo = Todo(
                       postId: '',
                       uid: _userProvider.uid!,
                       title: titleController.text,
                       content: contentController.text,
-                      createdDate: Timestamp.now());
+                      createdDate: formattedTime);
                   newTodo =
                       await DataInFireStore.addPost('BoardList', newTodo, _userProvider.uid!);
                   setState(() => todos.add(newTodo));
