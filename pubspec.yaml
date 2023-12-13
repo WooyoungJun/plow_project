@@ -43,6 +43,9 @@ dependencies:
   fluttertoast: ^8.2.4
   cloud_firestore: ^4.13.3
   flutter_tesseract_ocr: ^0.4.24
+  image_picker: ^1.0.4
+  firebase_storage: ^11.5.5
+  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:

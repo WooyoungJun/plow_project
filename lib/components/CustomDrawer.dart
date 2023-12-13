@@ -2,95 +2,101 @@ import 'package:flutter/material.dart';
 import 'package:plow_project/components/Size.dart';
 import 'package:plow_project/components/UserProvider.dart';
 
+class DrawerItem {
+  final IconData icon;
+  final Color color;
+  final String text;
+  final String route;
+
+  DrawerItem({
+    required this.icon,
+    required this.color,
+    required this.text,
+    required this.route,
+  });
+}
+
 class CustomDrawer extends StatelessWidget {
   final UserProvider userProvider;
+  final List<DrawerItem> drawerItems;
 
-  CustomDrawer({required this.userProvider});
+  CustomDrawer({
+    required this.userProvider,
+    required this.drawerItems,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
+      child: ListView.builder(
         padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 사용자 프로필 사진
-                Center(
-                  child: CircleAvatar(
-                    radius: 30,
-                    child: Icon(Icons.account_circle),
-                  ),
-                ),
-                Divider(
-                  color: Colors.grey,
-                  thickness: 2,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                // 사용자 이름
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      // 'name',
-                      userProvider.userName!,
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+        itemCount: drawerItems.length + 1, // +1 for the header
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: CircleAvatar(
+                      radius: 30,
+                      child: Icon(Icons.account_circle),
                     ),
                   ),
-                ),
-                // 사용자 이메일
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      // 'email',
-                      userProvider.userEmail!,
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                  Divider(
+                    color: Colors.grey,
+                    thickness: 2,
+                    indent: 20,
+                    endIndent: 20,
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        userProvider.userName!,
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            title: Row(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(left: 16.0), // 원하는 indent 값 설정
-                  child: Icon(Icons.person, color: Colors.blue), // userInfo 아이콘
-                ),
-                SizedBox(width: largeGap), // 아이콘과 텍스트 간격 조절
-                Text('나의 정보', style: TextStyle(color: Colors.blue)),
-              ],
-            ),
-            contentPadding: EdgeInsets.only(bottom: 4.0),
-            onTap: () => Navigator.pushNamed(context, '/MyInfoView'),
-          ), // 사용자 정보(My Info View)
-          Divider(
-            color: Colors.grey,
-            thickness: 1,
-            height: 10,
-          ),
-          ListTile(
-            title: Row(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(left: 16.0), // 원하는 indent 값 설정
-                  child: Icon(Icons.exit_to_app, color: Colors.red), // userInfo 아이콘
-                ),
-                SizedBox(width: largeGap),
-                Text('Logout', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-            contentPadding: EdgeInsets.only(bottom: 16.0),
-            onTap: () async {
-              await userProvider.signOut('Logout');
-              Navigator.pushReplacementNamed(context, '/LoginView');
-            },
-          ), // 로그아웃
-        ],
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        userProvider.userEmail!,
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ); // User 이미지, 이름, email 표시
+          } else {
+            final item = drawerItems[index - 1]; // Subtracting 1 for the header
+            return ListTile(
+              title: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(left: 16.0),
+                    child: Icon(item.icon, color: item.color),
+                  ),
+                  SizedBox(width: largeGap),
+                  Text(item.text, style: TextStyle(color: item.color)),
+                ],
+              ),
+              contentPadding: EdgeInsets.only(bottom: 4.0),
+              onTap: () {
+                if (item.route == '/LoginView') {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context, '/LoginView',
+                    (route) => false, // 모든 스택을 제거하고 '/LoginView'로 이동
+                  );
+                } else {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, item.route);
+                }
+              },
+            );
+          }
+        },
       ),
     );
   }
