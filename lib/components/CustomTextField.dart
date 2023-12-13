@@ -5,12 +5,14 @@ class CustomTextField extends StatelessWidget {
   final String? labelText;
   final String? hintText; // 텍스트 필드에 노출할 텍스트
   final Icon? icon; // 텍스트 폼에 적용할 아이콘
+  final bool isReadOnly;
 
   CustomTextField({
     required this.controller,
     this.labelText,
     this.hintText,
     this.icon,
+    this.isReadOnly = false,
   });
 
   final defaultDesign =
@@ -19,6 +21,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      readOnly: isReadOnly,
       controller: controller,
       // 비밀번호면 *로 표시
       obscureText: labelText == "Password" ? true : false,
@@ -30,9 +33,7 @@ class CustomTextField extends StatelessWidget {
         hintText: hintText,
         fillColor: Colors.white,
         filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         // 기본 디자인
         enabledBorder: defaultDesign,
         // 클릭 시 디자인

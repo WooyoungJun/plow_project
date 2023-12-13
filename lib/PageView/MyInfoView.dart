@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../components/AppBarTitle.dart';
 import '../components/CustomDrawer.dart';
 import '../components/CustomTextField.dart';
-import '../components/Size.dart';
 import '../components/UserProvider.dart';
 
 class MyInfoView extends StatefulWidget {
@@ -25,8 +24,7 @@ class _MyInfoViewState extends State<MyInfoView> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
+    final UserProvider userProvider = Provider.of<UserProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -90,31 +88,35 @@ class _MyInfoViewState extends State<MyInfoView> {
               endIndent: 20,
               height: 40,
             ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey, width: 1.0), // 테두리 속성 설정
-                borderRadius: BorderRadius.circular(8.0), // 테두리 둥글게 처리
-              ),
-              padding: EdgeInsets.all(8.0), // 내부 여백 추가
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'User Name:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Divider(
-                    color: Colors.grey,
-                    thickness: 1,
-                    height: 10,
-                  ), // 간격 조절
-                  isEditing
-                      ? CustomTextField(controller: nameController)
-                      : Text(userProvider.userName!,
-                          style: TextStyle(fontSize: 16)),
-                ],
-              ),
-            ),
+            Builder(builder: (context) {
+              return Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey, width: 1.0),
+                  // 테두리 속성 설정
+                  borderRadius: BorderRadius.circular(8.0), // 테두리 둥글게 처리
+                ),
+                padding: EdgeInsets.all(8.0), // 내부 여백 추가
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'User Name:',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Divider(
+                      color: Colors.grey,
+                      thickness: 1,
+                      height: 10,
+                    ), // 간격 조절
+                    isEditing
+                        ? CustomTextField(controller: nameController)
+                        : Text(userProvider.userName!,
+                            style: TextStyle(fontSize: 16)),
+                  ],
+                ),
+              );
+            }),
             Container(
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey, width: 1.0), // 테두리 속성 설정
@@ -140,7 +142,6 @@ class _MyInfoViewState extends State<MyInfoView> {
                 ],
               ),
             ),
-            SizedBox(height: mediumGap),
           ],
         ),
       ),

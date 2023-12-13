@@ -15,7 +15,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   late UserProvider _userProvider;
-  List<Todo> todos = [];
+  List<Post> posts = [];
 
   @override
   void initState() {
@@ -28,13 +28,13 @@ class _HomeViewState extends State<HomeView> {
 
   // 사용자 uid로 POST 가져오기
   Future<void> getData() async {
-    todos = await DataInFireStore.readPost('BoardList', _userProvider.uid!);
+    posts = await DataInFireStore.readPost('BoardList', _userProvider.uid!);
     setState(() {});
   }
 
   // 추가 or 수정하기 tab
   Future<void> onAddOrUpdateTab(
-      {Todo? todo,
+      {Post? post,
       int? index,
       required bool isAdd,
       required String uid}) async {
@@ -43,8 +43,8 @@ class _HomeViewState extends State<HomeView> {
 
     // 수정 하기
     if (!isAdd) {
-      titleController.text = todo!.title;
-      contentController.text = todo.content;
+      titleController.text = post!.title;
+      contentController.text = post.content;
     }
 
     await showDialog(
@@ -83,28 +83,28 @@ class _HomeViewState extends State<HomeView> {
                   // 날짜 및 시간 포맷 지정
                   String formattedTime =
                       DateFormat.yMd().add_jms().format(koreaTime);
-                  Todo newTodo = Todo(
+                  Post newPost = Post(
                       postId: '',
                       uid: _userProvider.uid!,
                       title: titleController.text,
                       content: contentController.text,
                       createdDate: formattedTime);
-                  newTodo = await DataInFireStore.addPost(
-                      'BoardList', newTodo, _userProvider.uid!);
-                  setState(() => todos.add(newTodo));
+                  newPost = await DataInFireStore.addPost(
+                      'BoardList', newPost, _userProvider.uid!);
+                  setState(() => posts.add(newPost));
                   Navigator.of(context).pop();
                 } else {
-                  if (!(todo!.title == titleController.text &&
-                      todo.content == contentController.text)) {
-                    Todo updatedTodo = Todo(
-                      postId: todo.postId,
+                  if (!(post!.title == titleController.text &&
+                      post.content == contentController.text)) {
+                    Post updatedPost = Post(
+                      postId: post.postId,
                       uid: _userProvider.uid!,
                       title: titleController.text,
                       content: contentController.text,
-                      createdDate: todo.createdDate,
+                      createdDate: post.createdDate,
                     );
-                    await DataInFireStore.updatePost('BoardList', updatedTodo);
-                    setState(() => todos[index!] = updatedTodo);
+                    await DataInFireStore.updatePost('BoardList', updatedPost);
+                    setState(() => posts[index!] = updatedPost);
                     Navigator.of(context).pop();
                   } else {
                     return showToast('변경 사항이 없습니다!');
@@ -184,12 +184,12 @@ class _HomeViewState extends State<HomeView> {
       ),
       body: ListView.builder(
         shrinkWrap: true, // 길이 맞게 위젯 축소 허용
-        itemCount: todos.length,
+        itemCount: posts.length,
         itemBuilder: (context, index) {
-          final todo = todos[index];
+          final post = posts[index];
           return InkWell(
             onTap: () => Navigator.pushNamed(context, '/PostScreenView',
-                arguments: todo),
+                arguments: post),
             child: Container(
               margin: EdgeInsets.only(left: 8, right: 8, top: 8),
               decoration: BoxDecoration(
@@ -214,7 +214,7 @@ class _HomeViewState extends State<HomeView> {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  title: Text(todo.title),
+                  title: Text(post.title),
                 ),
               ),
             ),
