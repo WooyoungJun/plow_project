@@ -52,6 +52,31 @@ class UserProvider extends ChangeNotifier {
     // -> Consumer 코드 다시 실행 되면서 화면 다시 build
   }
 
+  // 유저 uid를 사용, FirebaseFirestore에 데이터 저장하고 관리
+  Future<void> addFriend(String friendUid) async {
+    try {
+      if (_user != null) {
+        // Firestore 데이터베이스에 사용자의 친구 목록을 업데이트
+        // 찾아보니 FirebaseAuth는 사용자 인증/관리에 초점 맞추고 있고,
+        // 친구 부분은 사용자 인증보다는 데이터 저장/관리에 넣어야 할 것 같아서 이렇게 작성
+        await FirebaseFirestore.instance
+            .collection('UserInfo')
+            .doc(_user!.uid) // 현재 로그인한 사용자의 UID
+            .update({
+          'friends': FieldValue.arrayUnion([friendUid]), // 친구의 UID를 추가
+        });
+
+        // 로컬 친구 목록에도 추가
+        friend.add(friendUid);
+        showToast('친구 추가 완료!');
+      } else{
+        showToast('사용자를 인식할 수 없습니다!');
+      }
+    } catch (e) {
+      showToast('친구 추가 오류: $e');
+    }
+  }
+
   Future<void> setName(String name) async {
     if (_user != null) {
       var curName = _user!.displayName;
