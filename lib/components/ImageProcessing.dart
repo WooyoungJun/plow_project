@@ -79,14 +79,14 @@ class ImageProcessing {
     }
     return null;
   }
-}
-
-// 랜덤한 문자열 생성
-String randomString(int length) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  Random random = Random();
-  return String.fromCharCodes(
-    Iterable.generate(
-        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
-  );
+  
+  // 랜덤한 문자열 생성
+  static String randomString(int length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    Random random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+          length, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
+    );
+  }
 }

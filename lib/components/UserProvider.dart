@@ -109,10 +109,10 @@ class UserProvider extends ChangeNotifier {
       // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';
-    } on FirebaseAuthException catch (e) {
-      return e.message!;
-    } catch (e) {
-      return e.toString();
+    } on FirebaseAuthException catch (err) {
+      return err.message!;
+    } catch (err) {
+      return err.toString();
     }
   }
 
@@ -124,10 +124,10 @@ class UserProvider extends ChangeNotifier {
       // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';
-    } on FirebaseAuthException catch (e) {
-      return e.message!;
-    } catch (e) {
-      return e.toString();
+    } on FirebaseAuthException catch (err) {
+      return err.message!;
+    } catch (err) {
+      return err.toString();
     }
   }
 

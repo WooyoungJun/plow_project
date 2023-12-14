@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
 import 'CustomClass/CustomToast.dart';
 
 class DataInFireStore {
+  static final Reference storageRef = FirebaseStorage.instance.ref();
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Post>> readPost(String collection, String uid) async {
     try {
@@ -51,8 +53,21 @@ class DataInFireStore {
   // post 삭제
   static Future<void> deletePost(String collection, String postId) async {
     var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
+    var docSnapShot = await docRef.get();
+    var photoUrl = docSnapShot['photoUrl'];
     await docRef.delete();
-    CustomToast.showToast('Post delete 완료');
+    await deletePhoto(photoUrl);
+    CustomToast.showToast('Post delete + Photo delete 완료');
+  }
+
+  static Future<void> deletePhoto(String photoUrl) async{
+    // Firebase Storage 참조 얻기
+    try {
+      await storageRef.child(photoUrl).delete();
+      print('파일이 성공적으로 삭제되었습니다.');
+    } catch (e) {
+      print('파일 삭제 중 오류 발생: $e');
+    }
   }
 }
 

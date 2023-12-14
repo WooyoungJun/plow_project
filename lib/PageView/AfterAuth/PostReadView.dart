@@ -24,6 +24,7 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController contentController = TextEditingController();
   bool isEditing = false;
   bool isUpdate = false;
+  bool isUpload = false;
 
   final _picker = ImagePicker();
   File? _pickedFile;
