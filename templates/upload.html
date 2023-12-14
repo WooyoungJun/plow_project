@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+    <script>
+        function downloadAndAlert() {
+            var form = document.getElementById("downloadForm");
+            form.submit();
+            alert("다운로드가 완료되었습니다");
+        }
+    </script>
+</head>
+<body>
+    {% if msg %}
+        <h2>{{ msg }}</h2>
+    {% endif %}
+    <form action="/SWeetMe/read_notes/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+    {% if extracted_text %}
+        <h3>Extracted Text:</h3>
+        <p>{{ extracted_text }}</p>
+        <form id="downloadForm" action="/SWeetMe/read_notes/upload/download_txt" method="post">
+            <input type="hidden" name="extracted_text" value="{{ extracted_text }}">
+            <button type="button" onclick="downloadAndAlert()">Download Text</button>
+        </form>
+    {% endif %}
+    {% if img_src %}
+        <img src="{{ img_src }}" alt="Uploaded Image">
+    {% endif %}
+</body>
+</html>
