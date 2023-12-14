@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'CustomClass/CustomToast.dart';
 
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
@@ -23,8 +23,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   IconData? _icon;
-
-  User? get user => _user;
 
   // 유저의 현재 상태 (uninitialized, authenticated, authenticating, unauthenticated)
   Status get status => _status;
@@ -68,15 +66,16 @@ class UserProvider extends ChangeNotifier {
 
         // 로컬 친구 목록에도 추가
         friend.add(friendUid);
-        showToast('친구 추가 완료!');
-      } else{
-        showToast('사용자를 인식할 수 없습니다!');
+        CustomToast.showToast('친구 추가 완료!');
+      } else {
+        CustomToast.showToast('사용자를 인식할 수 없습니다!');
       }
     } catch (e) {
-      showToast('친구 추가 오류: $e');
+      CustomToast.showToast('친구 추가 오류: $e');
     }
   }
 
+  // userName 변경
   Future<void> setName(String name) async {
     if (_user != null) {
       var curName = _user!.displayName;
@@ -85,79 +84,57 @@ class UserProvider extends ChangeNotifier {
         await _user!.reload();
         _user = FirebaseAuth.instance.currentUser;
         if (_user!.displayName == name) {
-          showToast('이름 변경 완료!');
+          CustomToast.showToast('이름 변경 완료!');
         } else {
-          showToast('이름 변경 실패!');
-          print('ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ: ${_user!.displayName}');
+          CustomToast.showToast('이름 변경 실패!');
         }
       } else {
-        showToast('수정된 사항이 없습니다!');
+        CustomToast.showToast('수정된 사항이 없습니다!');
       }
     } else {
-      showToast('변경 사항이 없습니다!');
+      CustomToast.showToast('변경 사항이 없습니다!');
     }
   }
 
-  Future<String> signUpOrIn(
-      String email, String password, String buttonText, bool isUp) async {
+  // 회원 가입
+  Future<String> signUp(
+      String email, String password, String buttonText) async {
     try {
-      if (isUp) {
-        // signUp
-        // 생성 완료시 user 객체가 stream으로 전달
-        // 해당 객체가 _onStateChanged로 전달되어서 _user에 저장
-        // firebase에 해당 객체의 uid, userEmail, userName(default='') 저장
-        var userCredential = await _auth.createUserWithEmailAndPassword(
-            email: email, password: password);
-        // 새로운 Firestore 문서 생성 및 uid로 문서 ID 설정
-        await FirebaseFirestore.instance
-            .collection('UserInfo')
-            .doc(userCredential.user!.uid)
-            .set({'credit': 0});
-      } else {
-        // signIn
-        await _auth.signInWithEmailAndPassword(
-            email: email, password: password);
-      }
-      print('$buttonText 성공');
-      showToast('$buttonText 성공');
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+      await FirebaseFirestore.instance
+          .collection('UserInfo')
+          .doc(userCredential.user!.uid)
+          .set({'credit': 0}); // credit 초기화
+      // print('$buttonText 성공');
+      CustomToast.showToast('$buttonText 성공');
       return '성공';
     } on FirebaseAuthException catch (e) {
-      _status = Status.unauthenticated;
       return e.message!;
     } catch (e) {
       return e.toString();
     }
   }
 
-  Future<String> signUp(
-          String email, String password, String buttonText) async =>
-      signUpOrIn(email, password, buttonText, true);
-
   Future<String> signIn(
-          String email, String password, String buttonText) async =>
-      signUpOrIn(email, password, buttonText, false);
+          String email, String password, String buttonText) async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+      // print('$buttonText 성공');
+      CustomToast.showToast('$buttonText 성공');
+      return '성공';
+    } on FirebaseAuthException catch (e) {
+      return e.message!;
+    } catch (e) {
+      return e.toString();
+    }
+  }
 
   Future<void> signOut(String buttonText) async {
     await _auth.signOut();
-    notifyListeners();
-    print('$buttonText 성공');
-    showToast('$buttonText 성공');
+    _user = null;
+    // print('$buttonText 성공');
+    CustomToast.showToast('$buttonText 성공');
   }
-}
-
-void showToast(String msg) {
-  Fluttertoast.showToast(
-      msg: msg,
-      webPosition: 'center',
-      // 토스트 위치 = 중앙
-      toastLength: Toast.LENGTH_SHORT,
-      // 토스트 길이 짧게
-      gravity: ToastGravity.TOP,
-      // 위로 중력 설정
-      timeInSecForIosWeb: 3,
-      // 3초 유지
-      webShowClose: true,
-      backgroundColor: Colors.grey,
-      textColor: Colors.white,
-      fontSize: 16.0);
 }

@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:plow_project/components/Size.dart';
+import 'package:plow_project/components/const/Size.dart';
 import 'package:intl/intl.dart';
-import '../components/AppBarTitle.dart';
-import '../components/UserProvider.dart';
+import '../../components/AppBarTitle.dart';
+import '../../components/CustomClass/CustomToast.dart';
 
 class PhotoUploadView extends StatefulWidget {
   @override
@@ -66,7 +66,7 @@ class _HomeViewState extends State<PhotoUploadView> {
         var uploadTask = storageReference.putFile(_pickedFile!);
 
         TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() {});
-        showToast('업로드 완료');
+        CustomToast.showToast('업로드 완료');
 
         _fileStorageRef =
             await taskSnapshot.ref.getDownloadURL(); // 업로드된 파일의 다운로드 URL
@@ -74,7 +74,7 @@ class _HomeViewState extends State<PhotoUploadView> {
         print('업로드 오류: $err');
       }
     } else{
-      showToast('이미지를 선택하세요');
+      CustomToast.showToast('이미지를 선택하세요');
     }
   }
 
@@ -82,7 +82,7 @@ class _HomeViewState extends State<PhotoUploadView> {
     if (_fileStorageRef != null) {
       // 업로드 완료 후 텍스트 변환 가능
     } else {
-      showToast('이미지를 업로드 하세요.');
+      CustomToast.showToast('이미지를 업로드 하세요.');
     }
   }
 

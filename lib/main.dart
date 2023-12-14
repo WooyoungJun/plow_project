@@ -1,14 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:plow_project/PageView/HomeView.dart';
-import 'package:plow_project/PageView/LoginView.dart';
-import 'package:plow_project/PageView/PasswordResetView.dart';
-import 'package:plow_project/PageView/SignUpView.dart';
+import 'package:plow_project/PageView/AfterAuth/HomeView.dart';
+import 'package:plow_project/PageView/BeforeAuth/LoginView.dart';
+import 'package:plow_project/PageView/BeforeAuth/PasswordResetView.dart';
+import 'package:plow_project/PageView/BeforeAuth/SignUpView.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
-import 'PageView/MyInfoView.dart';
-import 'PageView/PostScreenView.dart';
-import 'PageView/PhotoUploadView.dart';
+import 'PageView/AfterAuth/MyInfoView.dart';
+import 'PageView/AfterAuth/PostReadView.dart';
+import 'PageView/AfterAuth/PhotoUploadView.dart';
+import 'PageView/AfterAuth/PostUploadView.dart';
 import 'firebase_options.dart';
 
 // firebase 초기화 기본 코드
@@ -42,7 +43,8 @@ class MyApp extends StatelessWidget {
               SafeArea(child: PasswordResetView()),
           "/MyInfoView": (context) => SafeArea(child: MyInfoView()),
           "/PhotoUploadView": (context) => SafeArea(child: PhotoUploadView()),
-          "/PostScreenView": (context) => SafeArea(child: PostScreenView()),
+          "/PostReadView": (context) => SafeArea(child: PostReadView()),
+          "/PostUploadView": (context) => SafeArea(child: PostUploadView()),
         },
       ),
     );
@@ -54,10 +56,9 @@ class AuthenticationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserProvider userProvider = Provider.of<UserProvider>(context);
-    if (userProvider.user == null) {
+    if (userProvider.uid == null) {
       return LoginView(); // 사용자가 로그인하지 않은 경우 로그인 화면으로 이동
     } else {
-      print("user 객체: ${userProvider.user}");
       return HomeView(); // 사용자가 로그인한 경우 홈으로 이동
     }
   }
