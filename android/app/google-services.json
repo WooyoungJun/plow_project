@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "77952150561",
+    "project_id": "sweetmeproject",
+    "storage_bucket": "sweetmeproject.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77952150561:android:4f9aa3a5fdf9198b694760",
+        "android_client_info": {
+          "package_name": "com.example.plow_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-b-FXAl_FjTnWL5NR76vxQ1StfLHqrJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
