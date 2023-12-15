@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:plow_project/components/const/Size.dart';
 import 'package:intl/intl.dart';
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomToast.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 
 class PhotoUploadView extends StatefulWidget {
   @override
@@ -55,6 +58,41 @@ class _HomeViewState extends State<PhotoUploadView> {
     }
   }
 
+  Future<void> getFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null) {
+        String filePath = result.files.single.path!;
+        String fileExtension = result.files.single.extension ?? '';
+
+        // 파일 유형에 따라 처리
+        if (imageExtensions.contains(fileExtension.toLowerCase())) {
+          // 이미지 파일인 경우
+          setState(() {
+            _fileExtension = fileExtension.toLowerCase();
+            _pickedFile = File(filePath);
+          });
+        } else if (fileExtension.toLowerCase() == 'pdf') {
+          // PDF 파일인 경우
+          setState(() {
+            _fileExtension = 'pdf';
+            _pickedFile = File(filePath);
+          });
+        } else {
+          // 다른 파일 유형인 경우
+          print('선택된 파일은 지원되지 않는 유형입니다.');
+          print(fileExtension);
+        }
+      }
+    } catch (err) {
+      print('파일 선택 오류: $err');
+    }
+  }
+
   Future<void> uploadFile() async {
     if (_pickedFile != null) {
       try {
@@ -73,16 +111,31 @@ class _HomeViewState extends State<PhotoUploadView> {
       } catch (err) {
         print('업로드 오류: $err');
       }
-    } else{
+    } else {
       CustomToast.showToast('이미지를 선택하세요');
     }
   }
 
   Future<void> fileToText() async {
     if (_fileStorageRef != null) {
-      // 업로드 완료 후 텍스트 변환 가능
+      try {
+        final response = await http.post(
+            Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'imageUrl': _fileStorageRef}));
+        if (response.statusCode == 200) {
+          String extractedText = response.body;
+          print(extractedText);
+          CustomToast.showToast('텍스트 변환 성공');
+        } else {
+          print('서버 응답 실패. Status code: ${response.statusCode}, Error: ${response.body}');
+          CustomToast.showToast('텍스트 변환 실패');
+        }
+      } catch (err) {
+        print('에러 발생: $err');
+      }
     } else {
-      CustomToast.showToast('이미지를 업로드 하세요.');
+      CustomToast.showToast('이미지를 업로드 하세요');
     }
   }
 

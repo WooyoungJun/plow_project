@@ -3,8 +3,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
 import 'CustomClass/CustomToast.dart';
 
-class DataInFireStore {
-  static final Reference storageRef = FirebaseStorage.instance.ref();
+class PostHandler {
+  static final FirebaseStorage _storageRef = FirebaseStorage.instance;
 
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Post>> readPost(String collection, String uid) async {
@@ -13,7 +13,7 @@ class DataInFireStore {
       var postsRef = FirebaseFirestore.instance.collection(collection);
       var querySnapshot = await postsRef
           .where('uid', isEqualTo: uid)
-          .orderBy('createdDate') // 시간 순(오름차 순) -> FireStore Index 설정 필요
+          .orderBy('createdDate', descending: true) // 시간 순(오름차 순) -> FireStore Index 설정 필요
           .limit(10)
           .get();
       List<Post> posts = querySnapshot.docs.map((doc) {
@@ -23,7 +23,8 @@ class DataInFireStore {
             title: doc.data()['title'],
             content: doc.data()['content'],
             createdDate: doc.data()['createdDate'],
-            photoUrl: doc.data()['photoUrl']);
+            relativePath: doc.data()['relativePath'],
+            downloadURL: doc.data()['downloadURL']);
       }).toList();
       return posts;
     } catch (err) {
@@ -37,10 +38,12 @@ class DataInFireStore {
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
     post.createdDate = formattedTime;
+
     var posts = FirebaseFirestore.instance.collection(collection);
-    var docRef = await posts.add(post.toMap());
+    var docRef = await posts.add(post.toMap()); // document ID 반환
+
     post.postId = docRef.id;
-    await posts.doc(docRef.id).set(post.toMap());
+    await posts.doc(docRef.id).update({'postId': docRef.id}); // postId update
     CustomToast.showToast('Post add 완료');
     return post;
   }
@@ -54,22 +57,25 @@ class DataInFireStore {
   }
 
   // post 삭제
-  static Future<void> deletePost(String collection, String postId) async {
-    var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
-    var docSnapShot = await docRef.get();
-    var photoUrl = docSnapShot['photoUrl'];
+  static Future<void> deletePost(String collection, String postId, String? relativePath) async {
+    var docRef =
+        FirebaseFirestore.instance.collection(collection).doc(postId);
+    if (relativePath != null) {
+      await deletePhoto(relativePath);
+    }
     await docRef.delete();
-    await deletePhoto(photoUrl);
-    CustomToast.showToast('Post delete + Photo delete 완료');
+    CustomToast.showToast('Post delete 완료');
   }
 
-  static Future<void> deletePhoto(String photoUrl) async {
+  static Future<void> deletePhoto(String relativePath) async {
     // Firebase Storage 참조 얻기
     try {
-      await storageRef.child(photoUrl).delete();
+      await _storageRef.ref().child(relativePath).delete();
       print('업로드 된 파일이 성공적으로 삭제되었습니다.');
-    } catch (e) {
-      print('파일 삭제 중 오류 발생: $e');
+      CustomToast.showToast('Photo delete 완료');
+    } catch (e, stackTrace) {
+      print('파일 삭제 중 오류 발생: $e\n$stackTrace');
+      CustomToast.showToast('Photo delete 에러 $e');
     }
   }
 }
@@ -81,7 +87,8 @@ class Post {
       this.title = '',
       this.content = '',
       this.createdDate,
-      this.photoUrl});
+      this.relativePath,
+      this.downloadURL});
 
   final String uid;
   String postId;
@@ -89,7 +96,8 @@ class Post {
   String content;
   String? createdDate;
   String? modifyDate;
-  String? photoUrl;
+  String? relativePath;
+  String? downloadURL;
 
   Map<String, dynamic> toMap() => {
         'postId': postId,
@@ -97,6 +105,7 @@ class Post {
         'title': title,
         'content': content,
         'createdDate': createdDate,
-        'photoUrl': photoUrl,
+        'relativePath': relativePath,
+        'downloadURL': downloadURL,
       };
 }

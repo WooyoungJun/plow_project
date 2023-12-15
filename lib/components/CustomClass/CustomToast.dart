@@ -11,7 +11,7 @@ class CustomToast {
         // 토스트 길이 짧게
         gravity: ToastGravity.TOP,
         // 위로 중력 설정
-        timeInSecForIosWeb: 3,
+        timeInSecForIosWeb: 2,
         // 3초 유지
         webShowClose: true,
         backgroundColor: Colors.grey,

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomClass/CustomDrawer.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
 import 'package:plow_project/components/const/Size.dart';
 import 'package:provider/provider.dart';
 import '../../components/AppBarTitle.dart';
-import '../../components/DataHandler.dart';
+import '../../components/PostHandler.dart';
 import '../../components/UserProvider.dart';
 
 class HomeView extends StatefulWidget {
@@ -16,7 +17,7 @@ class _HomeViewState extends State<HomeView> {
   List<Post> posts = [];
 
   Future<void> getData() async {
-    posts = await DataInFireStore.readPost('BoardList', userProvider.uid!);
+    posts = await PostHandler.readPost('BoardList', userProvider.uid!);
   }
 
   @override
@@ -24,7 +25,7 @@ class _HomeViewState extends State<HomeView> {
     super.didChangeDependencies();
     userProvider = Provider.of<UserProvider>(context);
     await getData();
-    setState(() {});
+    setState((){});
   }
 
   @override
@@ -92,7 +93,10 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () => getData(),
+            onPressed: () {
+              getData();
+              setState(() => CustomToast.showToast('새로고침 완료'));
+            },
             icon: Icon(Icons.sync),
           )
         ],

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
@@ -8,8 +7,8 @@ import 'package:provider/provider.dart';
 import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomToast.dart';
-import '../../components/DataHandler.dart';
-import '../../components/ImageProcessing.dart';
+import '../../components/PostHandler.dart';
+import '../../components/FileProcessing.dart';
 import '../../components/const/Size.dart';
 
 class PostReadView extends StatefulWidget {
@@ -62,22 +61,27 @@ class _PostReadViewState extends State<PostReadView> {
     if (titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
-    if (!(post.title == titleController.text &&
-        post.content == contentController.text)) {
+    if ((post.title != titleController.text) ||
+        (post.content != contentController.text) ||
+        (_pickedFile != null)) {
       Post updatedPost = Post(
         postId: post.postId,
         uid: userProvider.uid!,
         title: titleController.text,
         content: contentController.text,
         createdDate: post.createdDate,
-        photoUrl: post.photoUrl,
+        relativePath: post.relativePath,
       );
       if (_pickedFile != null) {
-        // 업로드 후 photoUrl 업데이트
-        updatedPost.photoUrl =
-            await ImageProcessing.uploadFile(_pickedFile, _fileExtension);
+        // 업로드 후 relativePath 업데이트
+        Map<String, String>? result =
+            await FileProcessing.uploadFile(_pickedFile, _fileExtension);
+        if (result != null) {
+          updatedPost.relativePath = result['relativePath'];
+          updatedPost.downloadURL = result['downloadURL'];
+        }
       }
-      await DataInFireStore.updatePost('BoardList', updatedPost); // post 업데이트
+      await PostHandler.updatePost('BoardList', updatedPost); // post 업데이트
       post = updatedPost;
       isUpdate = true;
     } else {
@@ -108,7 +112,8 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Text('확인'),
                   onPressed: () async {
                     // 확인 버튼이 눌렸을 때, 게시물 삭제 수행
-                    await DataInFireStore.deletePost('BoardList', post.postId);
+                    await PostHandler.deletePost(
+                        'BoardList', post.postId, post.relativePath);
                     Navigator.of(context).pop(); // 다이얼로그 닫기
                     Navigator.pop(context, {'isUpdate': true});
                   },
@@ -207,8 +212,8 @@ class _PostReadViewState extends State<PostReadView> {
               SizedBox(height: largeGap),
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: ImageProcessing.imageOrText(
-                    pickedFile: _pickedFile, photoUrl: post.photoUrl),
+                child: FileProcessing.imageOrText(
+                    pickedFile: _pickedFile, downloadURL: post.downloadURL),
               ), // 작성일
               isEditing
                   ? Column(
@@ -219,7 +224,7 @@ class _PostReadViewState extends State<PostReadView> {
                           children: [
                             ElevatedButton(
                               onPressed: () async {
-                                var result = await ImageProcessing.getImage(
+                                var result = await FileProcessing.getImage(
                                     _picker, ImageSource.gallery);
                                 if (result != null) {
                                   _pickedFile = result['pickedFile'] as File;
@@ -232,7 +237,7 @@ class _PostReadViewState extends State<PostReadView> {
                             ),
                             ElevatedButton(
                               onPressed: () async {
-                                var result = await ImageProcessing.getImage(
+                                var result = await FileProcessing.getImage(
                                     _picker, ImageSource.camera);
                                 if (result != null) {
                                   _fileExtension =
@@ -248,7 +253,7 @@ class _PostReadViewState extends State<PostReadView> {
                         SizedBox(height: largeGap),
                         ElevatedButton(
                           onPressed: () async {
-                            await ImageProcessing.fileToText(post.photoUrl);
+                            await FileProcessing.fileToText(post.relativePath);
                           },
                           child: Text('텍스트 변환'),
                         ),
@@ -259,13 +264,15 @@ class _PostReadViewState extends State<PostReadView> {
           ),
         ),
       ),
-      floatingActionButton: !isEditing ? FloatingActionButton(
-        onPressed: () => _showDeleteCheck(context),
-        child: Icon(
-          Icons.delete,
-          color: Colors.red,
-        ),
-      ) : null,
+      floatingActionButton: !isEditing
+          ? FloatingActionButton(
+              onPressed: () => _showDeleteCheck(context),
+              child: Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+            )
+          : null,
     );
   }
 }

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'CustomClass/CustomToast.dart';
 
-class ImageProcessing {
+class FileProcessing {
   // image 가져오기
   static Future<Map<String, dynamic>?> getImage(
       ImagePicker picker, ImageSource imageSource) async {
@@ -33,31 +33,30 @@ class ImageProcessing {
     return null;
   }
 
-  static Widget imageOrText({File? pickedFile, String? photoUrl}) {
+  static Widget imageOrText({File? pickedFile, String? downloadURL}) {
     if (pickedFile != null) { // pickedFile를 먼저 확인
       return Image.file(pickedFile, fit: BoxFit.cover, width: double.infinity);
-    } else if (photoUrl != null) {
-      return Image.network(photoUrl);
+    } else if (downloadURL != null) {
+      return Image.network(downloadURL);
     } else {
       return Container();
     }
   }
 
-  static Future<String?> uploadFile(
+  static Future<Map<String, String>?> uploadFile(
       File? pickedFile, String? fileExtension) async {
     if (pickedFile != null) {
       try {
         // 밀리초 -> 거의 유일하게 저장 가능
         String formattedDateTime =
             DateTime.now().millisecondsSinceEpoch.toString();
-        var storageReference = FirebaseStorage.instance.ref().child(
-            'uploads/${formattedDateTime}_${randomString(6)}_$fileExtension');
-        var uploadTask = storageReference.putFile(pickedFile);
+        String relativePath = 'uploads/${formattedDateTime}_${randomString(6)}_$fileExtension';
+        var storageReference = FirebaseStorage.instance.ref().child(relativePath);
+        TaskSnapshot snapShot = await storageReference.putFile(pickedFile);
+        String downloadURL = await snapShot.ref.getDownloadURL();
 
-        TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() {});
-        CustomToast.showToast('업로드 완료');
-
-        return await taskSnapshot.ref.getDownloadURL(); // 업로드된 파일의 다운로드 URL
+        CustomToast.showToast('이미지 업로드 완료');
+        return {'downloadURL': downloadURL, 'relativePath': relativePath};
       } catch (err) {
         print('업로드 오류: $err');
         CustomToast.showToast('이미지 업로드 오류');
@@ -68,8 +67,8 @@ class ImageProcessing {
     return null;
   }
 
-  static Future<String?> fileToText(String? photoUrl) async {
-    if (photoUrl != null) {
+  static Future<String?> fileToText(String? relativePath) async {
+    if (relativePath != null) {
       // 업로드 완료 후 텍스트 변환 가능
       String result = '';
       // setState(() => contentController.text = result);

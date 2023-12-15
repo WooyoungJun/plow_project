@@ -2,13 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
-import 'package:plow_project/components/ImageProcessing.dart';
+import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
 import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomToast.dart';
-import '../../components/DataHandler.dart';
+import '../../components/PostHandler.dart';
 import '../../components/const/Size.dart';
 
 class PostUploadView extends StatefulWidget {
@@ -58,11 +58,15 @@ class _PostScreenViewState extends State<PostUploadView> {
       content: contentController.text,
     );
     if (_pickedFile != null) {
-      // 업로드 후 photoUrl 업데이트
-      newPost.photoUrl =
-      await ImageProcessing.uploadFile(_pickedFile, _fileExtension);
+      // 업로드 후 relativePath 업데이트
+      Map<String, String>? result =
+      await FileProcessing.uploadFile(_pickedFile, _fileExtension);
+      if (result != null) {
+        newPost.relativePath = result['relativePath'];
+        newPost.downloadURL = result['downloadURL'];
+      }
     }
-    newPost = await DataInFireStore.addPost('BoardList', newPost);
+    newPost = await PostHandler.addPost('BoardList', newPost);
     Navigator.pop(context, {'post': newPost});
   }
 
@@ -138,8 +142,8 @@ class _PostScreenViewState extends State<PostUploadView> {
               SizedBox(height: largeGap),
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: ImageProcessing.imageOrText(
-                    pickedFile: _pickedFile, photoUrl: post.photoUrl),
+                child: FileProcessing.imageOrText(
+                    pickedFile: _pickedFile, downloadURL: post.downloadURL),
               ), //
               SizedBox(height: largeGap),
               Row(
@@ -147,7 +151,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
-                      var result = await ImageProcessing.getImage(
+                      var result = await FileProcessing.getImage(
                           _picker, ImageSource.gallery);
                       if (result != null) {
                         _fileExtension = result['fileExtension'] as String;
@@ -159,7 +163,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                   ),
                   ElevatedButton(
                     onPressed: () async {
-                      var result = await ImageProcessing.getImage(
+                      var result = await FileProcessing.getImage(
                           _picker, ImageSource.camera);
                       if (result != null) {
                         _fileExtension = result['fileExtension'] as String;
@@ -174,7 +178,7 @@ class _PostScreenViewState extends State<PostUploadView> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  await ImageProcessing.fileToText(post.photoUrl);
+                  await FileProcessing.fileToText(post.relativePath);
                 },
                 child: Text('텍스트 변환'),
               ),
