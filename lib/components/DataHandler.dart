@@ -5,9 +5,11 @@ import 'CustomClass/CustomToast.dart';
 
 class DataInFireStore {
   static final Reference storageRef = FirebaseStorage.instance.ref();
+
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Post>> readPost(String collection, String uid) async {
     try {
+      print('readPost');
       var postsRef = FirebaseFirestore.instance.collection(collection);
       var querySnapshot = await postsRef
           .where('uid', isEqualTo: uid)
@@ -20,7 +22,8 @@ class DataInFireStore {
             uid: doc.data()['uid'],
             title: doc.data()['title'],
             content: doc.data()['content'],
-            createdDate: doc.data()['createdDate']);
+            createdDate: doc.data()['createdDate'],
+            photoUrl: doc.data()['photoUrl']);
       }).toList();
       return posts;
     } catch (err) {
@@ -60,11 +63,11 @@ class DataInFireStore {
     CustomToast.showToast('Post delete + Photo delete 완료');
   }
 
-  static Future<void> deletePhoto(String photoUrl) async{
+  static Future<void> deletePhoto(String photoUrl) async {
     // Firebase Storage 참조 얻기
     try {
       await storageRef.child(photoUrl).delete();
-      print('파일이 성공적으로 삭제되었습니다.');
+      print('업로드 된 파일이 성공적으로 삭제되었습니다.');
     } catch (e) {
       print('파일 삭제 중 오류 발생: $e');
     }
@@ -97,4 +100,3 @@ class Post {
         'photoUrl': photoUrl,
       };
 }
-

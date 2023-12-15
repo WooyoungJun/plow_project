@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomClass/CustomDrawer.dart';
+import 'package:plow_project/components/const/Size.dart';
 import 'package:provider/provider.dart';
 import '../../components/AppBarTitle.dart';
 import '../../components/DataHandler.dart';
@@ -14,12 +15,6 @@ class _HomeViewState extends State<HomeView> {
   late UserProvider userProvider;
   List<Post> posts = [];
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => getData());
-  }
-
   Future<void> getData() async {
     posts = await DataInFireStore.readPost('BoardList', userProvider.uid!);
   }
@@ -28,7 +23,7 @@ class _HomeViewState extends State<HomeView> {
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
     userProvider = Provider.of<UserProvider>(context);
-    posts = await DataInFireStore.readPost('BoardList', userProvider.uid!);
+    await getData();
     setState(() {});
   }
 
@@ -81,8 +76,12 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     print('build');
+    double screenHeight = MediaQuery.of(context).size.height; // 화면의 높이 계산
+    double visibleCount = 15;
+    double itemHeight = screenHeight / visibleCount;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
         leading: Builder(
           builder: (context) => IconButton(
             icon: Icon(Icons.menu, color: Colors.white),
@@ -91,7 +90,12 @@ class _HomeViewState extends State<HomeView> {
         ),
         title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          IconButton(
+            onPressed: () => getData(),
+            icon: Icon(Icons.sync),
+          )
+        ],
       ),
       drawer: CustomDrawer(
         userProvider: userProvider,
@@ -109,8 +113,9 @@ class _HomeViewState extends State<HomeView> {
         ],
       ),
       body: ListView.builder(
-        shrinkWrap: true, // 길이 맞게 위젯 축소 허용
+        // shrinkWrap: true, // 길이 맞게 위젯 축소 허용
         itemCount: posts.length,
+        itemExtent: itemHeight, // 각 문서의 높이
         itemBuilder: (context, index) {
           final post = posts[index];
           return InkWell(
@@ -129,7 +134,8 @@ class _HomeViewState extends State<HomeView> {
               }
             }),
             child: Container(
-              margin: EdgeInsets.only(left: 8, right: 8, top: 8),
+              height: itemHeight,
+              margin: EdgeInsets.only(left: 6, right: 6, top: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border.all(color: Colors.grey, width: 0.5),
@@ -142,18 +148,24 @@ class _HomeViewState extends State<HomeView> {
                       offset: Offset(0, 2)),
                 ],
               ),
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent,
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(color: Colors.white),
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.blueAccent,
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
-                  title: Text(post.title),
-                ),
+                  SizedBox(width: mediumGap),
+                  Text(
+                    post.title,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           );

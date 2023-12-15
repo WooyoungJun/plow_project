@@ -34,7 +34,7 @@ class ImageProcessing {
   }
 
   static Widget imageOrText({File? pickedFile, String? photoUrl}) {
-    if (pickedFile != null) {
+    if (pickedFile != null) { // pickedFile를 먼저 확인
       return Image.file(pickedFile, fit: BoxFit.cover, width: double.infinity);
     } else if (photoUrl != null) {
       return Image.network(photoUrl);

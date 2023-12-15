@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
@@ -71,14 +72,18 @@ class _PostReadViewState extends State<PostReadView> {
         createdDate: post.createdDate,
         photoUrl: post.photoUrl,
       );
-      await DataInFireStore.updatePost('BoardList', updatedPost);
+      if (_pickedFile != null) {
+        // 업로드 후 photoUrl 업데이트
+        updatedPost.photoUrl =
+            await ImageProcessing.uploadFile(_pickedFile, _fileExtension);
+      }
+      await DataInFireStore.updatePost('BoardList', updatedPost); // post 업데이트
+      post = updatedPost;
       isUpdate = true;
     } else {
       CustomToast.showToast('변경 사항이 없습니다!');
     }
     setState(() {
-      post.title = titleController.text;
-      post.content = contentController.text;
       isEditing = !isEditing;
     });
   }
@@ -103,8 +108,7 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Text('확인'),
                   onPressed: () async {
                     // 확인 버튼이 눌렸을 때, 게시물 삭제 수행
-                    await DataInFireStore.deletePost(
-                        'BoardList', post.postId);
+                    await DataInFireStore.deletePost('BoardList', post.postId);
                     Navigator.of(context).pop(); // 다이얼로그 닫기
                     Navigator.pop(context, {'isUpdate': true});
                   },
@@ -174,95 +178,94 @@ class _PostReadViewState extends State<PostReadView> {
               route: '/LoginView'),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            CustomTextField(
-              hintText: userProvider.userName,
-              icon: Icon(Icons.person),
-              isReadOnly: true,
-            ),
-            CustomTextField(
-              controller: titleController,
-              icon: Icon(Icons.title),
-              isReadOnly: !isEditing,
-            ), // 제목
-            CustomTextField(
-              controller: contentController,
-              icon: Icon(Icons.description),
-              isReadOnly: !isEditing,
-            ), // 본문
-            CustomTextField(
-              hintText: post.createdDate,
-              icon: Icon(Icons.calendar_month),
-              isReadOnly: true,
-            ),
-            SizedBox(height: largeGap),
-            Padding(
-              padding: EdgeInsets.all(16.0),
-              child: ImageProcessing.imageOrText(
-                  pickedFile: _pickedFile, photoUrl: post.photoUrl),
-            ), // 작성일
-            isEditing
-                ? Column(
-                    children: [
-                      SizedBox(height: largeGap),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () async {
-                              var result = await ImageProcessing.getImage(
-                                  _picker, ImageSource.gallery);
-                              if (result != null) {
-                                _fileExtension =
-                                    result['fileExtension'] as String;
-                                _pickedFile = result['pickedFile'] as File;
-                                setState(() {});
-                              }
-                            },
-                            child: Text('갤러리에서 이미지 선택'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              var result = await ImageProcessing.getImage(
-                                  _picker, ImageSource.camera);
-                              if (result != null) {
-                                _fileExtension =
-                                    result['fileExtension'] as String;
-                                _pickedFile = result['pickedFile'] as File;
-                                setState(() {});
-                              }
-                            },
-                            child: Text('카메라로 촬영하기'),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () async {
-                          post.photoUrl = await ImageProcessing.uploadFile(
-                              _pickedFile, _fileExtension);
-                        },
-                        child: Text('이미지 업로드'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await ImageProcessing.fileToText(post.photoUrl);
-                        },
-                        child: Text('텍스트 변환'),
-                      ),
-                    ],
-                  )
-                : Container()
-          ],
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              CustomTextField(
+                hintText: userProvider.userName,
+                icon: Icon(Icons.person),
+                isReadOnly: true,
+              ),
+              CustomTextField(
+                controller: titleController,
+                icon: Icon(Icons.title),
+                isReadOnly: !isEditing,
+              ), // 제목
+              CustomTextField(
+                controller: contentController,
+                icon: Icon(Icons.description),
+                isReadOnly: !isEditing,
+              ), // 본문
+              CustomTextField(
+                hintText: post.createdDate,
+                icon: Icon(Icons.calendar_month),
+                isReadOnly: true,
+              ),
+              SizedBox(height: largeGap),
+              Padding(
+                padding: EdgeInsets.all(16.0),
+                child: ImageProcessing.imageOrText(
+                    pickedFile: _pickedFile, photoUrl: post.photoUrl),
+              ), // 작성일
+              isEditing
+                  ? Column(
+                      children: [
+                        SizedBox(height: largeGap),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                var result = await ImageProcessing.getImage(
+                                    _picker, ImageSource.gallery);
+                                if (result != null) {
+                                  _pickedFile = result['pickedFile'] as File;
+                                  _fileExtension =
+                                      result['fileExtension'] as String;
+                                  setState(() {});
+                                }
+                              },
+                              child: Text('갤러리에서 이미지 선택'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                var result = await ImageProcessing.getImage(
+                                    _picker, ImageSource.camera);
+                                if (result != null) {
+                                  _fileExtension =
+                                      result['fileExtension'] as String;
+                                  _pickedFile = result['pickedFile'] as File;
+                                  setState(() {});
+                                }
+                              },
+                              child: Text('카메라로 촬영하기'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: largeGap),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await ImageProcessing.fileToText(post.photoUrl);
+                          },
+                          child: Text('텍스트 변환'),
+                        ),
+                      ],
+                    )
+                  : Container(),
+            ],
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !isEditing ? FloatingActionButton(
         onPressed: () => _showDeleteCheck(context),
-        child: Icon(Icons.delete, color: Colors.red,),
-      ),
+        child: Icon(
+          Icons.delete,
+          color: Colors.red,
+        ),
+      ) : null,
     );
   }
 }
