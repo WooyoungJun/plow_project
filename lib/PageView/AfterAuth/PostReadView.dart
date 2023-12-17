@@ -22,9 +22,11 @@ class _PostReadViewState extends State<PostReadView> {
   late int index;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
+  final TextEditingController translateController = TextEditingController();
   bool isEditing = false;
   bool isUpdate = false;
   bool isUpload = false;
+  bool isTranslate = false;
 
   final _picker = ImagePicker();
   File? _pickedFile;
@@ -40,6 +42,9 @@ class _PostReadViewState extends State<PostReadView> {
     index = argRef['index'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
+    if (post.translateContent != null) {
+      translateController.text = post.translateContent!;
+    }
     // 끝나고 build 호출
   }
 
@@ -53,6 +58,7 @@ class _PostReadViewState extends State<PostReadView> {
     // 페이지가 dispose 될 때 controller를 dispose 해줍니다.
     titleController.dispose();
     contentController.dispose();
+    translateController.dispose();
     // print('post screen dispose');
     super.dispose();
   }
@@ -63,7 +69,8 @@ class _PostReadViewState extends State<PostReadView> {
     }
     if ((post.title != titleController.text) ||
         (post.content != contentController.text) ||
-        (_pickedFile != null)) {
+        (_pickedFile != null) ||
+        (translateController.text != '')) {
       Post updatedPost = Post(
         postId: post.postId,
         uid: userProvider.uid!,
@@ -71,6 +78,7 @@ class _PostReadViewState extends State<PostReadView> {
         content: contentController.text,
         createdDate: post.createdDate,
         relativePath: post.relativePath,
+        translateContent: translateController.text,
       );
       if (_pickedFile != null) {
         // 업로드 후 relativePath 업데이트
@@ -212,54 +220,67 @@ class _PostReadViewState extends State<PostReadView> {
               SizedBox(height: largeGap),
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: FileProcessing.imageOrText(
-                    pickedFile: _pickedFile, downloadURL: post.downloadURL),
+                child:
+                    FileProcessing.imageOrText(downloadURL: post.downloadURL),
               ), // 작성일
-              isEditing
-                  ? Column(
-                      children: [
-                        SizedBox(height: largeGap),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                var result = await FileProcessing.getImage(
-                                    _picker, ImageSource.gallery);
-                                if (result != null) {
-                                  _pickedFile = result['pickedFile'] as File;
-                                  _fileExtension =
-                                      result['fileExtension'] as String;
-                                  setState(() {});
-                                }
-                              },
-                              child: Text('갤러리에서 이미지 선택'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () async {
-                                var result = await FileProcessing.getImage(
-                                    _picker, ImageSource.camera);
-                                if (result != null) {
-                                  _fileExtension =
-                                      result['fileExtension'] as String;
-                                  _pickedFile = result['pickedFile'] as File;
-                                  setState(() {});
-                                }
-                              },
-                              child: Text('카메라로 촬영하기'),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: largeGap),
-                        ElevatedButton(
-                          onPressed: () async {
-                            await FileProcessing.fileToText(post.relativePath);
-                          },
-                          child: Text('텍스트 변환'),
-                        ),
-                      ],
-                    )
-                  : Container(),
+              if (isEditing && post.downloadURL == null)
+                Column(
+                  children: [
+                    SizedBox(height: largeGap),
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () async {
+                                  var result = await FileProcessing.getImage(
+                                      _picker, ImageSource.gallery);
+                                  if (result != null) {
+                                    post.relativePath = result['relativePath'];
+                                    post.downloadURL = result['downloadURL'];
+                                    setState(() {});
+                                  }
+                                },
+                                child: Text('갤러리에서 이미지 선택'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  var result = await FileProcessing.getImage(
+                                      _picker, ImageSource.camera);
+                                  if (result != null) {
+                                    post.relativePath = result['relativePath'];
+                                    post.downloadURL = result['downloadURL'];
+                                    setState(() {});
+                                  }
+                                },
+                                child: Text('카메라로 촬영하기'),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: largeGap),
+                          ElevatedButton(
+                            onPressed: () async {
+                              String? result =
+                              await FileProcessing.fileToText(post.downloadURL);
+                              if (result != null) {
+                                translateController.text = result;
+                                setState(() => isTranslate = true);
+                              }
+                            },
+                            child: Text('텍스트 변환'),
+                          )
+                        ],
+                      )
+                  ],
+                )
+              else
+                Container(),
+              CustomTextField(
+                controller: translateController,
+                icon: Icon(Icons.g_translate),
+                isReadOnly: !isTranslate && !isEditing,
+              ),
             ],
           ),
         ),

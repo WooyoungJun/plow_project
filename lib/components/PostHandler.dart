@@ -13,7 +13,8 @@ class PostHandler {
       var postsRef = FirebaseFirestore.instance.collection(collection);
       var querySnapshot = await postsRef
           .where('uid', isEqualTo: uid)
-          .orderBy('createdDate', descending: true) // 시간 순(오름차 순) -> FireStore Index 설정 필요
+          .orderBy('createdDate',
+              descending: true) // 시간 순(오름차 순) -> FireStore Index 설정 필요
           .limit(10)
           .get();
       List<Post> posts = querySnapshot.docs.map((doc) {
@@ -22,7 +23,9 @@ class PostHandler {
             uid: doc.data()['uid'],
             title: doc.data()['title'],
             content: doc.data()['content'],
+            translateContent: doc.data()['translateContent'],
             createdDate: doc.data()['createdDate'],
+            modifyDate: doc.data()['modifyDate'],
             relativePath: doc.data()['relativePath'],
             downloadURL: doc.data()['downloadURL']);
       }).toList();
@@ -50,6 +53,10 @@ class PostHandler {
 
   // post update
   static Future<void> updatePost(String collection, Post post) async {
+    DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
+    String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
+    post.modifyDate = formattedTime;
+
     var docRef =
         FirebaseFirestore.instance.collection(collection).doc(post.postId);
     await docRef.update(post.toMap());
@@ -57,9 +64,9 @@ class PostHandler {
   }
 
   // post 삭제
-  static Future<void> deletePost(String collection, String postId, String? relativePath) async {
-    var docRef =
-        FirebaseFirestore.instance.collection(collection).doc(postId);
+  static Future<void> deletePost(
+      String collection, String postId, String? relativePath) async {
+    var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
     if (relativePath != null) {
       await deletePhoto(relativePath);
     }
@@ -81,19 +88,23 @@ class PostHandler {
 }
 
 class Post {
-  Post(
-      {required this.uid,
-      this.postId = '',
-      this.title = '',
-      this.content = '',
-      this.createdDate,
-      this.relativePath,
-      this.downloadURL});
+  Post({
+    required this.uid,
+    this.postId = '',
+    this.title = '',
+    this.content = '',
+    this.createdDate,
+    this.relativePath,
+    this.downloadURL,
+    this.modifyDate,
+    this.translateContent,
+  });
 
   final String uid;
   String postId;
   String title;
   String content;
+  String? translateContent;
   String? createdDate;
   String? modifyDate;
   String? relativePath;
@@ -104,7 +115,9 @@ class Post {
         'uid': uid,
         'title': title,
         'content': content,
+        'translateContent': translateContent,
         'createdDate': createdDate,
+        'modifyDate': modifyDate,
         'relativePath': relativePath,
         'downloadURL': downloadURL,
       };

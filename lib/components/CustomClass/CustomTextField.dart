@@ -23,6 +23,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      maxLines: null,
       readOnly: isReadOnly,
       controller: controller,
       // 비밀번호면 *로 표시
