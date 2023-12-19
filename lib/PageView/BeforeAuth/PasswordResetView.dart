@@ -33,7 +33,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
 
   @override
   void setState(VoidCallback fn) {
-    if(mounted) {
+    if (mounted) {
       super.setState(fn);
     }
   }
@@ -85,7 +85,10 @@ class _PasswordResetViewState extends State<PasswordResetView> {
                 'Reset Password',
                 style: TextStyle(fontSize: 16),
               ), // 버튼 텍스트
-              onPressed: () {},
+              onPressed: () async {
+                userProvider.resetPassword(emailController.text);
+                Navigator.pushReplacementNamed(context, '/LoginView');
+              },
             ),
             SizedBox(
               child: Text(

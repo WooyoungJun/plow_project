@@ -126,7 +126,7 @@ class _HomeViewState extends State<HomeView> {
             onTap: () => Navigator.pushNamed(context, '/PostReadView',
                 arguments: {'post': post, 'index': index}).then((result) {
               result = result as Map<String, dynamic>?;
-              if (result != null && result['isUpdate'] as bool == true) {
+              if (result != null) {
                 Post? post = result['post'] as Post?;
                 setState(() {
                   if (post != null) {

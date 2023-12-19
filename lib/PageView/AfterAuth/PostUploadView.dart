@@ -26,6 +26,9 @@ class _PostScreenViewState extends State<PostUploadView> {
   bool isSaving = false;
 
   final _picker = ImagePicker();
+  String? relativePath;
+  String? downloadURL;
+  String? fileName;
 
   @override
   Future<void> didChangeDependencies() async {
@@ -58,13 +61,23 @@ class _PostScreenViewState extends State<PostUploadView> {
     if (titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
+    if (relativePath != null) {
+      Map<String, String>? result =
+          await FileProcessing.transitionToStorage(relativePath!, fileName!);
+      if (result != null) {
+        post.relativePath = result['relativePath'];
+        post.downloadURL = result['downloadURL'];
+        post.fileName = result['fileName'];
+      }
+    }
     Post newPost = Post(
       uid: userProvider.uid!,
       title: titleController.text,
       content: contentController.text,
       translateContent: translateController.text,
-      relativePath: post.relativePath,
-      downloadURL: post.downloadURL,
+      relativePath: relativePath,
+      downloadURL: downloadURL,
+      fileName: fileName,
     );
     newPost = await PostHandler.addPost('BoardList', newPost);
     Navigator.pop(context, {'post': newPost});
@@ -97,9 +110,6 @@ class _PostScreenViewState extends State<PostUploadView> {
               child: Text('확인'),
               onPressed: () async {
                 Navigator.pop(context);
-                if (post.relativePath != null) {
-                  await PostHandler.deletePhoto(post.relativePath!);
-                }
                 Navigator.pushReplacementNamed(
                     context, '/HomeView'); // 그냥 홈으로 이동
               },
@@ -108,6 +118,17 @@ class _PostScreenViewState extends State<PostUploadView> {
         );
       },
     );
+  }
+
+  void setResult(Map<String, String>? result) {
+    if (result != null) {
+      relativePath = result['relativePath'];
+      downloadURL = result['downloadURL'];
+      fileName = result['fileName'];
+      translateController.clear();
+      print(downloadURL);
+      setState(() {});
+    }
   }
 
   @override
@@ -185,35 +206,50 @@ class _PostScreenViewState extends State<PostUploadView> {
                 Padding(
                   padding: EdgeInsets.all(16.0),
                   child:
-                      FileProcessing.imageOrText(downloadURL: post.downloadURL),
+                      FileProcessing.imageOrText(downloadURL: downloadURL),
                 ), //
                 SizedBox(height: largeGap),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        var result = await FileProcessing.getImage(
-                            _picker, ImageSource.gallery);
-                        if (result != null) {
-                          post.relativePath = result['relativePath'];
-                          post.downloadURL = result['downloadURL'];
-                          setState(() {});
-                        }
-                      },
-                      child: Text('갤러리에서 이미지 선택'),
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          var result = await FileProcessing.getImage(
+                              _picker, ImageSource.gallery);
+                          setResult(result);
+                        },
+                        child: Text(
+                          '갤러리에서 \n이미지 선택',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        var result = await FileProcessing.getImage(
-                            _picker, ImageSource.camera);
-                        if (result != null) {
-                          post.relativePath = result['relativePath'];
-                          post.downloadURL = result['downloadURL'];
-                          setState(() {});
-                        }
-                      },
-                      child: Text('카메라로 촬영하기'),
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          var result = await FileProcessing.getImage(
+                              _picker, ImageSource.camera);
+                          setResult(result);
+                        },
+                        child: Text(
+                          '카메라로 \n촬영하기',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          var result = await FileProcessing.getFile();
+                          setResult(result);
+                        },
+                        child: Text(
+                          '파일 \n선택하기',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -221,7 +257,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                 ElevatedButton(
                   onPressed: () async {
                     String? result =
-                        await FileProcessing.fileToText(post.downloadURL);
+                        await FileProcessing.fileToText(downloadURL);
                     if (result != null) {
                       translateController.text = result;
                       setState(() => isTranslate = true);

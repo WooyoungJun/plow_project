@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
@@ -24,13 +23,13 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
   bool isEditing = false;
-  bool isUpdate = false;
   bool isUpload = false;
   bool isTranslate = false;
 
   final _picker = ImagePicker();
-  File? _pickedFile;
-  String? _fileExtension;
+  String? relativePath;
+  String? downloadURL;
+  String? fileName;
 
   @override
   Future<void> didChangeDependencies() async {
@@ -42,6 +41,9 @@ class _PostReadViewState extends State<PostReadView> {
     index = argRef['index'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
+    relativePath = post.relativePath;
+    downloadURL = post.downloadURL;
+    fileName = post.fileName;
     if (post.translateContent != null) {
       translateController.text = post.translateContent!;
     }
@@ -69,29 +71,27 @@ class _PostReadViewState extends State<PostReadView> {
     }
     if ((post.title != titleController.text) ||
         (post.content != contentController.text) ||
-        (_pickedFile != null) ||
+        (relativePath != null) ||
         (translateController.text != '')) {
       Post updatedPost = Post(
         postId: post.postId,
         uid: userProvider.uid!,
         title: titleController.text,
         content: contentController.text,
-        createdDate: post.createdDate,
-        relativePath: post.relativePath,
         translateContent: translateController.text,
       );
-      if (_pickedFile != null) {
-        // 업로드 후 relativePath 업데이트
+      if (relativePath != null) {
         Map<String, String>? result =
-            await FileProcessing.uploadFile(_pickedFile, _fileExtension);
+        await FileProcessing.transitionToStorage(relativePath!, fileName!);
         if (result != null) {
           updatedPost.relativePath = result['relativePath'];
           updatedPost.downloadURL = result['downloadURL'];
+          updatedPost.fileName = result['fileName'];
         }
       }
       await PostHandler.updatePost('BoardList', updatedPost); // post 업데이트
       post = updatedPost;
-      isUpdate = true;
+      Navigator.pop(context, {'post': updatedPost});
     } else {
       CustomToast.showToast('변경 사항이 없습니다!');
     }
@@ -123,7 +123,7 @@ class _PostReadViewState extends State<PostReadView> {
                     await PostHandler.deletePost(
                         'BoardList', post.postId, post.relativePath);
                     Navigator.of(context).pop(); // 다이얼로그 닫기
-                    Navigator.pop(context, {'isUpdate': true});
+                    Navigator.pop(context, {'isDelete': true});
                   },
                 ),
               ],
@@ -132,6 +132,16 @@ class _PostReadViewState extends State<PostReadView> {
         );
       },
     );
+  }
+
+  void setResult(Map<String, String>? result) {
+    if (result != null) {
+      relativePath = result['relativePath'];
+      downloadURL = result['downloadURL'];
+      fileName = result['fileName'];
+      translateController.clear();
+      setState(() {});
+    }
   }
 
   @override
@@ -172,7 +182,7 @@ class _PostReadViewState extends State<PostReadView> {
           IconButton(
             icon: Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () =>
-                Navigator.pop(context, {'isUpdate': isUpdate, 'post': post}),
+                Navigator.pop(context, {'post': post}),
           )
         ],
       ),
@@ -221,57 +231,72 @@ class _PostReadViewState extends State<PostReadView> {
               Padding(
                 padding: EdgeInsets.all(16.0),
                 child:
-                    FileProcessing.imageOrText(downloadURL: post.downloadURL),
+                    FileProcessing.imageOrText(downloadURL: downloadURL),
               ), // 작성일
-              if (isEditing && post.downloadURL == null)
+              if (isEditing)
                 Column(
                   children: [
                     SizedBox(height: largeGap),
-                      Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              ElevatedButton(
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: ElevatedButton(
                                 onPressed: () async {
                                   var result = await FileProcessing.getImage(
                                       _picker, ImageSource.gallery);
-                                  if (result != null) {
-                                    post.relativePath = result['relativePath'];
-                                    post.downloadURL = result['downloadURL'];
-                                    setState(() {});
-                                  }
+                                  setResult(result);
                                 },
-                                child: Text('갤러리에서 이미지 선택'),
+                                child: Text(
+                                  '갤러리에서 \n이미지 선택',
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                              ElevatedButton(
+                            ),
+                            Flexible(
+                              child: ElevatedButton(
                                 onPressed: () async {
                                   var result = await FileProcessing.getImage(
                                       _picker, ImageSource.camera);
-                                  if (result != null) {
-                                    post.relativePath = result['relativePath'];
-                                    post.downloadURL = result['downloadURL'];
-                                    setState(() {});
-                                  }
+                                  setResult(result);
                                 },
-                                child: Text('카메라로 촬영하기'),
+                                child: Text(
+                                  '카메라로 \n촬영하기',
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                            ],
-                          ),
-                          SizedBox(height: largeGap),
-                          ElevatedButton(
-                            onPressed: () async {
-                              String? result =
-                              await FileProcessing.fileToText(post.downloadURL);
-                              if (result != null) {
-                                translateController.text = result;
-                                setState(() => isTranslate = true);
-                              }
-                            },
-                            child: Text('텍스트 변환'),
-                          )
-                        ],
-                      )
+                            ),
+                            Flexible(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  var result = await FileProcessing.getFile();
+                                  setResult(result);
+                                },
+                                child: Text(
+                                  '파일 \n선택하기',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: largeGap),
+                        ElevatedButton(
+                          onPressed: () async {
+                            String? result =
+                                await FileProcessing.fileToText(downloadURL);
+                            if (result != null) {
+                              translateController.text = result;
+                              setState(() => isTranslate = true);
+                            }
+                          },
+                          child: Text('텍스트 변환'),
+                        )
+                      ],
+                    )
                   ],
                 )
               else

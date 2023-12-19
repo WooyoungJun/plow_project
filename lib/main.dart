@@ -1,27 +1,37 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:plow_project/firebase_options.dart';
+import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeView.dart';
 import 'package:plow_project/PageView/BeforeAuth/LoginView.dart';
 import 'package:plow_project/PageView/BeforeAuth/PasswordResetView.dart';
 import 'package:plow_project/PageView/BeforeAuth/SignUpView.dart';
-import 'package:plow_project/components/UserProvider.dart';
-import 'package:provider/provider.dart';
-import 'PageView/AfterAuth/MyInfoView.dart';
-import 'PageView/AfterAuth/PostReadView.dart';
-import 'PageView/AfterAuth/PhotoUploadView.dart';
-import 'PageView/AfterAuth/PostUploadView.dart';
-import 'firebase_options.dart';
+import 'package:plow_project/PageView/AfterAuth/MyInfoView.dart';
+import 'package:plow_project/PageView/AfterAuth/PostReadView.dart';
+import 'package:plow_project/PageView/AfterAuth/PhotoUploadView.dart';
+import 'package:plow_project/PageView/AfterAuth/PostUploadView.dart';
 
-// firebase 초기화 기본 코드
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // firebase 초기화 기본 코드
   runApp(MyApp());
 }
 
 // 초기 화면 구성
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   final UserProvider userProvider = UserProvider();
+
+  @override
+  void dispose() {
+    userProvider.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +41,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue), // 테마 색깔 지정
         ),
         initialRoute: '/',
         routes: {

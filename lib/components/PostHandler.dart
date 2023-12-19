@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:plow_project/components/FileProcessing.dart';
 import 'CustomClass/CustomToast.dart';
 
 class PostHandler {
-  static final FirebaseStorage _storageRef = FirebaseStorage.instance;
-
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Post>> readPost(String collection, String uid) async {
     try {
@@ -27,7 +25,8 @@ class PostHandler {
             createdDate: doc.data()['createdDate'],
             modifyDate: doc.data()['modifyDate'],
             relativePath: doc.data()['relativePath'],
-            downloadURL: doc.data()['downloadURL']);
+            downloadURL: doc.data()['downloadURL'],
+            fileName: doc.data()['fileName']);
       }).toList();
       return posts;
     } catch (err) {
@@ -68,22 +67,10 @@ class PostHandler {
       String collection, String postId, String? relativePath) async {
     var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
     if (relativePath != null) {
-      await deletePhoto(relativePath);
+      await FileProcessing.deleteFile(relativePath);
     }
     await docRef.delete();
     CustomToast.showToast('Post delete 완료');
-  }
-
-  static Future<void> deletePhoto(String relativePath) async {
-    // Firebase Storage 참조 얻기
-    try {
-      await _storageRef.ref().child(relativePath).delete();
-      print('업로드 된 파일이 성공적으로 삭제되었습니다.');
-      CustomToast.showToast('Photo delete 완료');
-    } catch (e, stackTrace) {
-      print('파일 삭제 중 오류 발생: $e\n$stackTrace');
-      CustomToast.showToast('Photo delete 에러 $e');
-    }
   }
 }
 
@@ -98,6 +85,7 @@ class Post {
     this.downloadURL,
     this.modifyDate,
     this.translateContent,
+    this.fileName,
   });
 
   final String uid;
@@ -109,6 +97,7 @@ class Post {
   String? modifyDate;
   String? relativePath;
   String? downloadURL;
+  String? fileName;
 
   Map<String, dynamic> toMap() => {
         'postId': postId,
@@ -120,5 +109,6 @@ class Post {
         'modifyDate': modifyDate,
         'relativePath': relativePath,
         'downloadURL': downloadURL,
+        'fileName': fileName,
       };
 }

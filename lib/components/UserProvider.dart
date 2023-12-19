@@ -5,12 +5,11 @@ import 'CustomClass/CustomToast.dart';
 
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
-// FirebaseAuth, status(로그인 상태), User객체 가지고 있음
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
-  Status _status; // 유저의 현재 상태
-  User? _user; //
-  List<String> friend = [];
+  Status _status; // 현재 사용자 상태
+  User? _user; // 사용자의 정보 담고 있는 객체
+  List<String> friend = []; // 친구 uid 저장
 
   UserProvider()
       : _auth = FirebaseAuth.instance,
@@ -54,9 +53,6 @@ class UserProvider extends ChangeNotifier {
   Future<void> addFriend(String friendUid) async {
     try {
       if (_user != null) {
-        // Firestore 데이터베이스에 사용자의 친구 목록을 업데이트
-        // 찾아보니 FirebaseAuth는 사용자 인증/관리에 초점 맞추고 있고,
-        // 친구 부분은 사용자 인증보다는 데이터 저장/관리에 넣어야 할 것 같아서 이렇게 작성
         await FirebaseFirestore.instance
             .collection('UserInfo')
             .doc(_user!.uid) // 현재 로그인한 사용자의 UID
@@ -117,10 +113,9 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<String> signIn(
-          String email, String password, String buttonText) async {
+      String email, String password, String buttonText) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-          email: email, password: password);
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';
@@ -136,5 +131,20 @@ class UserProvider extends ChangeNotifier {
     _user = null;
     // print('$buttonText 성공');
     CustomToast.showToast('$buttonText 성공');
+  }
+
+  Future<void> resetPassword(String email) async {
+    try {
+      // 이메일이 Firebase Authentication에 존재하는지 확인
+      try {
+        await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+      } catch (err) {
+        return CustomToast.showToast(err.toString());
+      }
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      CustomToast.showToast('비밀번호 재설정 이메일이 전송되었습니다.');
+    } catch (e) {
+      print("비밀번호 재설정 이메일 전송 실패: $e");
+    }
   }
 }
