@@ -91,7 +91,7 @@ class FileProcessing {
   static Future<Map<String, String>?> transitionToStorage(
       String relativePath, String fileName) async {
     try {
-      String newRelativePath = 'uploads/saved/$fileName}';
+      String newRelativePath = 'uploads/saved/$fileName';
       Reference sourceReference = _storageRef.ref(relativePath);
       Reference destinationReference = _storageRef.ref(newRelativePath);
       Uint8List? sourceData = await sourceReference.getData();
@@ -171,6 +171,6 @@ class FileProcessing {
       Iterable.generate(
           10, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
     );
-    return '${formattedDateTime}_${name}_$fileExtension';
+    return '${formattedDateTime}_$name.$fileExtension';
   }
 }

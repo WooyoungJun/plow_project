@@ -57,10 +57,10 @@ class _PostScreenViewState extends State<PostUploadView> {
     if (isSaving) {
       return CustomToast.showToast("처리중입니다");
     }
-    isSaving = true;
     if (titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
+    isSaving = true;
     if (relativePath != null) {
       Map<String, String>? result =
           await FileProcessing.transitionToStorage(relativePath!, fileName!);
