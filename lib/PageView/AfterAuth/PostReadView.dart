@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomDrawer.dart';
+import '../../components/CustomClass/CustomProgressIndicator.dart';
 import '../../components/CustomClass/CustomToast.dart';
 import '../../components/FileProcessing.dart';
 import '../../components/PostHandler.dart';
@@ -27,33 +28,37 @@ class _PostReadViewState extends State<PostReadView> {
   bool isEditing = false;
   bool isUpload = false;
   bool isTranslate = false;
+  bool _isInitComplete = false;
 
   final _picker = ImagePicker();
   String? relativePath;
   String? fileName;
-  Future<Uint8List?>? fileBytes;
+  Uint8List? fileBytes;
 
   @override
   void initState() {
     super.initState();
-    didChangeDependencies();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await initPostReadView());
+  }
+
+  Future<void> initPostReadView() async {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+    var argRef =
+        ModalRoute.of(context)!.settings.arguments as Map<String, Post>;
+    post = argRef['post']!;
+    titleController.text = post.title;
+    contentController.text = post.content;
+    fileBytes = await FileProcessing.loadFileFromStorage(post.relativePath);
+    if (post.translateContent != null) {
+      translateController.text = post.translateContent!;
+    }
+    setState(() => _isInitComplete = true);
   }
 
   @override
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context, listen: false);
-    var argRef =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    post = argRef['post'] as Post;
-    titleController.text = post.title;
-    contentController.text = post.content;
-    relativePath = post.relativePath;
-    fileName = post.fileName;
-    fileBytes = FileProcessing.loadFileFromStorage(relativePath);
-    if (post.translateContent != null) {
-      translateController.text = post.translateContent!;
-    }
   }
 
   @override
@@ -61,8 +66,9 @@ class _PostReadViewState extends State<PostReadView> {
     if (mounted) super.setState(fn);
   }
 
-  void setResult(Map<String, dynamic>? result) {
+  Future<void> setResult(Map<String, dynamic>? result) async {
     if (result != null) {
+      await FileProcessing.deleteFile(relativePath);
       relativePath = result['relativePath'];
       fileName = result['fileName'];
       fileBytes = result['fileBytes'];
@@ -96,13 +102,12 @@ class _PostReadViewState extends State<PostReadView> {
         content: contentController.text,
         translateContent: translateController.text,
       );
-      if (relativePath != null) {
-        Map<String, String>? result =
-            await FileProcessing.transitionToStorage(relativePath!, fileName!);
-        if (result != null) {
-          updatedPost.relativePath = result['relativePath'];
-          updatedPost.fileName = result['fileName'];
-        }
+      Map<String, String>? result = await FileProcessing.transitionToStorage(
+          relativePath, fileName, fileBytes);
+      if (result != null) {
+        FileProcessing.deleteFile(post.relativePath);
+        updatedPost.relativePath = result['relativePath'];
+        updatedPost.fileName = result['fileName'];
       }
       await PostHandler.updatePost('BoardList', updatedPost); // post 업데이트
       post = updatedPost;
@@ -122,7 +127,6 @@ class _PostReadViewState extends State<PostReadView> {
         return AlertDialog(
           title: Text('정말 삭제하시겠습니까?', textAlign: TextAlign.center),
           titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
-          // content: Text('정말 삭제하시겠습니까?'),
           actions: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -135,8 +139,8 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Text('확인'),
                   onPressed: () async {
                     // 확인 버튼이 눌렸을 때, 게시물 삭제 수행
-                    await PostHandler.deletePost(
-                        'BoardList', post.postId, post.relativePath);
+                    await FileProcessing.deleteFile(post.relativePath);
+                    await PostHandler.deletePost('BoardList', post.postId);
                     Navigator.of(context).pop(); // 다이얼로그 닫기
                     Navigator.pop(context, {'isDelete': true});
                   },
@@ -151,6 +155,7 @@ class _PostReadViewState extends State<PostReadView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
         leading: Builder(
@@ -174,13 +179,11 @@ class _PostReadViewState extends State<PostReadView> {
                     )
                   : Icon(Icons.edit, color: Colors.white),
               onTap: () {
-                setState(() {
-                  if (isEditing) {
-                    _handleSaveButton();
-                  } else {
-                    isEditing = !isEditing;
-                  }
-                });
+                if (isEditing) {
+                  _handleSaveButton();
+                } else {
+                  setState(() => isEditing = !isEditing);
+                }
               },
             ),
           ), // 수정하기 버튼
@@ -243,26 +246,9 @@ class _PostReadViewState extends State<PostReadView> {
               SizedBox(height: largeGap),
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: FutureBuilder<Uint8List?>(
-                  future: fileBytes,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      // 데이터 로딩 중에 표시할 로딩 스피너
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      // 오류 발생 시에 대한 처리
-                      return Text('이미지를 불러오는 중 오류 발생');
-                    } else {
-                      // 데이터가 로드되면 이미지를 표시
-                      return Image.memory(
-                        snapshot.data!,
-                        width: 200,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      );
-                    }
-                  },
-                ),
+                child: fileBytes != null
+                    ? Image.memory(fileBytes!)
+                    : Text('이미지가 없습니다'),
               ), // 작성일
               if (isEditing)
                 Column(
@@ -279,7 +265,7 @@ class _PostReadViewState extends State<PostReadView> {
                                 onPressed: () async {
                                   var result = await FileProcessing.getImage(
                                       _picker, ImageSource.gallery);
-                                  setResult(result);
+                                  await setResult(result);
                                 },
                                 child: Text(
                                   '갤러리에서 \n이미지 선택',
@@ -292,7 +278,7 @@ class _PostReadViewState extends State<PostReadView> {
                                 onPressed: () async {
                                   var result = await FileProcessing.getImage(
                                       _picker, ImageSource.camera);
-                                  setResult(result);
+                                  await setResult(result);
                                 },
                                 child: Text(
                                   '카메라로 \n촬영하기',
@@ -304,7 +290,7 @@ class _PostReadViewState extends State<PostReadView> {
                               child: ElevatedButton(
                                 onPressed: () async {
                                   var result = await FileProcessing.getFile();
-                                  setResult(result);
+                                  await setResult(result);
                                 },
                                 child: Text(
                                   '파일 \n선택하기',

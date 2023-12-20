@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomDrawer.dart';
+import '../../components/CustomClass/CustomProgressIndicator.dart';
 import '../../components/CustomClass/CustomToast.dart';
 import '../../components/PostHandler.dart';
 import '../../components/const/Size.dart';
@@ -27,6 +28,7 @@ class _PostScreenViewState extends State<PostUploadView> {
   bool isTranslate = false;
   bool isBackPressed = false;
   bool isSaving = false;
+  bool _isInitComplete = false;
 
   final _picker = ImagePicker();
   String? relativePath;
@@ -36,8 +38,14 @@ class _PostScreenViewState extends State<PostUploadView> {
   @override
   void initState() {
     super.initState();
-    userProvider = Provider.of<UserProvider>(context);
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await initPostUploadView());
+  }
+
+  Future<void> initPostUploadView() async {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     post = Post(uid: userProvider.uid!); // 새로운 post 작성
+    setState(() => _isInitComplete = true);
   }
 
   @override
@@ -50,8 +58,9 @@ class _PostScreenViewState extends State<PostUploadView> {
     if (mounted) super.setState(fn);
   }
 
-  void setResult(Map<String, dynamic>? result) {
+  Future<void> setResult(Map<String, dynamic>? result) async {
     if (result != null) {
+      await FileProcessing.deleteFile(relativePath);
       relativePath = result['relativePath'];
       fileName = result['fileName'];
       fileBytes = result['fileBytes'];
@@ -78,13 +87,11 @@ class _PostScreenViewState extends State<PostUploadView> {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
     isSaving = true;
-    if (relativePath != null) {
-      Map<String, dynamic>? result =
-          await FileProcessing.transitionToStorage(relativePath!, fileName!);
-      if (result != null) {
-        post.relativePath = result['relativePath'];
-        post.fileName = result['fileName'];
-      }
+    Map<String, String>? result = await FileProcessing.transitionToStorage(
+        relativePath, fileName, fileBytes);
+    if (result != null) {
+      relativePath = result['relativePath'];
+      fileName = result['fileName'];
     }
     Post newPost = Post(
       uid: userProvider.uid!,
@@ -125,6 +132,7 @@ class _PostScreenViewState extends State<PostUploadView> {
               child: Text('확인'),
               onPressed: () async {
                 Navigator.pop(context);
+                await FileProcessing.deleteFile(relativePath);
                 Navigator.pushReplacementNamed(
                     context, '/HomeView'); // 그냥 홈으로 이동
               },
@@ -137,6 +145,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitComplete) return CustomProgressIndicator();
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) async {
@@ -210,7 +219,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                 Padding(
                   padding: EdgeInsets.all(16.0),
                   child: fileBytes != null
-                      ? Image.memory(fileBytes!, fit: BoxFit.cover)
+                      ? Image.memory(fileBytes!)
                       : Text('이미지가 없습니다'),
                 ), //
                 SizedBox(height: largeGap),
@@ -223,7 +232,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         onPressed: () async {
                           var result = await FileProcessing.getImage(
                               _picker, ImageSource.gallery);
-                          setResult(result);
+                          await setResult(result);
                         },
                         child: Text(
                           '갤러리에서 \n이미지 선택',
@@ -236,7 +245,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         onPressed: () async {
                           var result = await FileProcessing.getImage(
                               _picker, ImageSource.camera);
-                          setResult(result);
+                          await setResult(result);
                         },
                         child: Text(
                           '카메라로 \n촬영하기',
@@ -248,7 +257,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                       child: ElevatedButton(
                         onPressed: () async {
                           var result = await FileProcessing.getFile();
-                          setResult(result);
+                          await setResult(result);
                         },
                         child: Text(
                           '파일 \n선택하기',

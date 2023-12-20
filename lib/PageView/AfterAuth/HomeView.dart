@@ -4,6 +4,7 @@ import 'package:plow_project/components/CustomClass/CustomToast.dart';
 import 'package:plow_project/components/const/Size.dart';
 import 'package:provider/provider.dart';
 import '../../components/AppBarTitle.dart';
+import '../../components/CustomClass/CustomProgressIndicator.dart';
 import '../../components/PostHandler.dart';
 import '../../components/UserProvider.dart';
 
@@ -15,17 +16,28 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   late UserProvider userProvider;
   List<Post> posts = [];
+  bool _isInitComplete = false;
 
   Future<void> getData() async {
     posts = await PostHandler.readPost('BoardList', userProvider.uid!);
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await initHomeView());
+  }
+
+  Future<void> initHomeView() async {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+    await getData();
+    setState(() => _isInitComplete = true);
+  }
+
+  @override
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context);
-    await getData();
-    setState((){});
   }
 
   @override
@@ -69,6 +81,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitComplete) return CustomProgressIndicator();
     double screenHeight = MediaQuery.of(context).size.height; // 화면의 높이 계산
     double visibleCount = 15;
     double itemHeight = screenHeight / visibleCount;

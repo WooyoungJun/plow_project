@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:plow_project/components/FileProcessing.dart';
 import 'CustomClass/CustomToast.dart';
 
 class PostHandler {
@@ -62,12 +61,8 @@ class PostHandler {
   }
 
   // post 삭제
-  static Future<void> deletePost(
-      String collection, String postId, String? relativePath) async {
+  static Future<void> deletePost(String collection, String postId) async {
     var docRef = FirebaseFirestore.instance.collection(collection).doc(postId);
-    if (relativePath != null) {
-      await FileProcessing.deleteFile(relativePath);
-    }
     await docRef.delete();
     CustomToast.showToast('Post delete 완료');
   }
