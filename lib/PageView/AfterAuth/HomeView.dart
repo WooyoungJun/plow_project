@@ -47,13 +47,6 @@ class _HomeViewState extends State<HomeView> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context); // 작성 후 뒤돌아왔을 때 BottomSheet 없애기 위해 pop
-                  Navigator.pushNamed(context, '/PhotoUploadView').then((_) {});
-                },
-                child: Text('사진 업로드하기'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // 작성 후 뒤돌아왔을 때 BottomSheet 없애기 위해 pop
                   Navigator.pushNamed(context, '/PostUploadView')
                       .then((result) {
                     result = result as Map<String, Post>?;
