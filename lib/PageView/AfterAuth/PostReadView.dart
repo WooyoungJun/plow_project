@@ -1,13 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
-import '../../components/CustomClass/CustomDrawer.dart';
+
 import '../../components/AppBarTitle.dart';
+import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/CustomClass/CustomToast.dart';
-import '../../components/PostHandler.dart';
 import '../../components/FileProcessing.dart';
+import '../../components/PostHandler.dart';
 import '../../components/const/Size.dart';
 
 class PostReadView extends StatefulWidget {
@@ -18,7 +21,6 @@ class PostReadView extends StatefulWidget {
 class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
-  late int index;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
@@ -28,31 +30,45 @@ class _PostReadViewState extends State<PostReadView> {
 
   final _picker = ImagePicker();
   String? relativePath;
-  String? downloadURL;
   String? fileName;
+  Future<Uint8List?>? fileBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    didChangeDependencies();
+  }
 
   @override
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     var argRef =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
-    index = argRef['index'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
     relativePath = post.relativePath;
-    downloadURL = post.downloadURL;
     fileName = post.fileName;
+    fileBytes = FileProcessing.loadFileFromStorage(relativePath);
     if (post.translateContent != null) {
       translateController.text = post.translateContent!;
     }
-    // 끝나고 build 호출
   }
 
   @override
   void setState(VoidCallback fn) {
     if (mounted) super.setState(fn);
+  }
+
+  void setResult(Map<String, dynamic>? result) {
+    if (result != null) {
+      relativePath = result['relativePath'];
+      fileName = result['fileName'];
+      fileBytes = result['fileBytes'];
+      translateController.clear();
+      setState(() {});
+    }
   }
 
   @override
@@ -82,10 +98,9 @@ class _PostReadViewState extends State<PostReadView> {
       );
       if (relativePath != null) {
         Map<String, String>? result =
-        await FileProcessing.transitionToStorage(relativePath!, fileName!);
+            await FileProcessing.transitionToStorage(relativePath!, fileName!);
         if (result != null) {
           updatedPost.relativePath = result['relativePath'];
-          updatedPost.downloadURL = result['downloadURL'];
           updatedPost.fileName = result['fileName'];
         }
       }
@@ -134,16 +149,6 @@ class _PostReadViewState extends State<PostReadView> {
     );
   }
 
-  void setResult(Map<String, String>? result) {
-    if (result != null) {
-      relativePath = result['relativePath'];
-      downloadURL = result['downloadURL'];
-      fileName = result['fileName'];
-      translateController.clear();
-      setState(() {});
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,9 +185,17 @@ class _PostReadViewState extends State<PostReadView> {
             ),
           ), // 수정하기 버튼
           IconButton(
+            onPressed: () {
+              setState(() => CustomToast.showToast('새로고침 완료'));
+            },
+            icon: Icon(
+              Icons.sync,
+              color: Colors.white,
+            ),
+          ),
+          IconButton(
             icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () =>
-                Navigator.pop(context, {'post': post}),
+            onPressed: () => Navigator.pop(context, {'post': post}),
           )
         ],
       ),
@@ -230,8 +243,26 @@ class _PostReadViewState extends State<PostReadView> {
               SizedBox(height: largeGap),
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child:
-                    FileProcessing.imageOrText(downloadURL: downloadURL),
+                child: FutureBuilder<Uint8List?>(
+                  future: fileBytes,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      // 데이터 로딩 중에 표시할 로딩 스피너
+                      return CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      // 오류 발생 시에 대한 처리
+                      return Text('이미지를 불러오는 중 오류 발생');
+                    } else {
+                      // 데이터가 로드되면 이미지를 표시
+                      return Image.memory(
+                        snapshot.data!,
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      );
+                    }
+                  },
+                ),
               ), // 작성일
               if (isEditing)
                 Column(
@@ -287,7 +318,7 @@ class _PostReadViewState extends State<PostReadView> {
                         ElevatedButton(
                           onPressed: () async {
                             String? result =
-                                await FileProcessing.fileToText(downloadURL);
+                                await FileProcessing.fileToText(relativePath);
                             if (result != null) {
                               translateController.text = result;
                               setState(() => isTranslate = true);

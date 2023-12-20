@@ -1,11 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
-import '../../components/CustomClass/CustomDrawer.dart';
+
 import '../../components/AppBarTitle.dart';
+import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/CustomClass/CustomToast.dart';
 import '../../components/PostHandler.dart';
 import '../../components/const/Size.dart';
@@ -27,20 +30,34 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   final _picker = ImagePicker();
   String? relativePath;
-  String? downloadURL;
   String? fileName;
+  Uint8List? fileBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    userProvider = Provider.of<UserProvider>(context);
+    post = Post(uid: userProvider.uid!); // 새로운 post 작성
+  }
 
   @override
   Future<void> didChangeDependencies() async {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context);
-    post = Post(uid: userProvider.uid!); // 새로운 post 작성
-    // 끝나고 build 호출
   }
 
   @override
   void setState(VoidCallback fn) {
     if (mounted) super.setState(fn);
+  }
+
+  void setResult(Map<String, dynamic>? result) {
+    if (result != null) {
+      relativePath = result['relativePath'];
+      fileName = result['fileName'];
+      fileBytes = result['fileBytes'];
+      translateController.clear();
+      setState(() {});
+    }
   }
 
   @override
@@ -62,11 +79,10 @@ class _PostScreenViewState extends State<PostUploadView> {
     }
     isSaving = true;
     if (relativePath != null) {
-      Map<String, String>? result =
+      Map<String, dynamic>? result =
           await FileProcessing.transitionToStorage(relativePath!, fileName!);
       if (result != null) {
         post.relativePath = result['relativePath'];
-        post.downloadURL = result['downloadURL'];
         post.fileName = result['fileName'];
       }
     }
@@ -76,7 +92,6 @@ class _PostScreenViewState extends State<PostUploadView> {
       content: contentController.text,
       translateContent: translateController.text,
       relativePath: relativePath,
-      downloadURL: downloadURL,
       fileName: fileName,
     );
     newPost = await PostHandler.addPost('BoardList', newPost);
@@ -118,17 +133,6 @@ class _PostScreenViewState extends State<PostUploadView> {
         );
       },
     );
-  }
-
-  void setResult(Map<String, String>? result) {
-    if (result != null) {
-      relativePath = result['relativePath'];
-      downloadURL = result['downloadURL'];
-      fileName = result['fileName'];
-      translateController.clear();
-      print(downloadURL);
-      setState(() {});
-    }
   }
 
   @override
@@ -205,8 +209,9 @@ class _PostScreenViewState extends State<PostUploadView> {
                 SizedBox(height: largeGap),
                 Padding(
                   padding: EdgeInsets.all(16.0),
-                  child:
-                      FileProcessing.imageOrText(downloadURL: downloadURL),
+                  child: fileBytes != null
+                      ? Image.memory(fileBytes!, fit: BoxFit.cover)
+                      : Text('이미지가 없습니다'),
                 ), //
                 SizedBox(height: largeGap),
                 Row(
@@ -257,7 +262,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                 ElevatedButton(
                   onPressed: () async {
                     String? result =
-                        await FileProcessing.fileToText(downloadURL);
+                        await FileProcessing.fileToText(relativePath);
                     if (result != null) {
                       translateController.text = result;
                       setState(() => isTranslate = true);

@@ -69,7 +69,6 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    print('build');
     double screenHeight = MediaQuery.of(context).size.height; // 화면의 높이 계산
     double visibleCount = 15;
     double itemHeight = screenHeight / visibleCount;
@@ -117,7 +116,7 @@ class _HomeViewState extends State<HomeView> {
           final post = posts[index];
           return InkWell(
             onTap: () => Navigator.pushNamed(context, '/PostReadView',
-                arguments: {'post': post, 'index': index}).then((result) {
+                arguments: {'post': post}).then((result) {
               result = result as Map<String, dynamic>?;
               if (result != null) {
                 Post? post = result['post'] as Post?;

@@ -2,18 +2,32 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'CustomClass/CustomToast.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+
+import 'CustomClass/CustomToast.dart';
 
 class FileProcessing {
   static final FirebaseStorage _storageRef = FirebaseStorage.instance;
 
+  static Future<Uint8List?> loadFileFromStorage(String? relativePath) async {
+    if (relativePath != null) {
+      try {
+        Uint8List? fileBytes =
+            await _storageRef.ref().child(relativePath).getData();
+        return fileBytes;
+      } catch (err) {
+        print('이미지 가져오는 중에 에러 : $err');
+      }
+    }
+    return null;
+  }
+
   // image 가져오기
-  static Future<Map<String, String>?> getFile() async {
+  static Future<Map<String, dynamic>?> getFile() async {
     try {
       const List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
       FilePickerResult? fileResult = await FilePicker.platform.pickFiles(
@@ -25,8 +39,9 @@ class FileProcessing {
       if (fileResult != null && fileResult.files.isNotEmpty) {
         String fileExtension = fileResult.files.first.extension!.toLowerCase();
         File pickedFile = File(fileResult.files.first.path!);
-        Map<String, String>? result =
-            await uploadFileToTmp(pickedFile, fileExtension);
+        Uint8List fileBytes = fileResult.files.single.bytes!;
+        Map<String, dynamic>? result =
+            await uploadFileToTmp(pickedFile, fileExtension, fileBytes);
         return result;
       } else {
         CustomToast.showToast('파일을 선택해주세요');
@@ -37,19 +52,20 @@ class FileProcessing {
     return null;
   }
 
-  static Future<Map<String, String>?> getImage(
+  static Future<Map<String, dynamic>?> getImage(
       ImagePicker picker, ImageSource imageSource) async {
     try {
       const List<String> imageExtensions = ['jpg', 'jpeg', 'png'];
-      var imageFile = await picker.pickImage(source: imageSource);
+      XFile? imageFile = await picker.pickImage(source: imageSource);
 
       if (imageFile != null) {
         // jpg, jpeg, png만 인식
         var fileExtension = imageFile.path.split('.').last.toLowerCase();
         if (imageExtensions.contains(fileExtension)) {
           File pickedFile = File(imageFile.path);
-          Map<String, String>? result =
-              await uploadFileToTmp(pickedFile, fileExtension);
+          Uint8List fileBytes = await imageFile.readAsBytes();
+          Map<String, dynamic>? result =
+              await uploadFileToTmp(pickedFile, fileExtension, fileBytes);
           return result;
         } else {
           // 이미지 파일이 아닌 경우 처리
@@ -66,20 +82,26 @@ class FileProcessing {
     return null;
   }
 
-  static Future<Map<String, String>?> uploadFileToTmp(
-      File pickedFile, String fileExtension) async {
+  static Future<String?> getDownloadURL(String? relativePath) async {
+    if (relativePath != null) {
+      return await _storageRef.ref().child(relativePath).getDownloadURL();
+    } else {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> uploadFileToTmp(
+      File pickedFile, String fileExtension, Uint8List fileBytes) async {
     try {
       String fileName = randomString(fileExtension);
       String relativePath = 'uploads/tmp/$fileName';
       var storageReference = _storageRef.ref().child(relativePath);
-      TaskSnapshot snapShot = await storageReference.putFile(pickedFile);
-      String downloadURL = await snapShot.ref.getDownloadURL();
-
+      await storageReference.putFile(pickedFile);
       CustomToast.showToast('이미지 업로드 완료');
       return {
-        'downloadURL': downloadURL,
         'relativePath': relativePath,
         'fileName': fileName,
+        'fileBytes': fileBytes,
       };
     } catch (err) {
       print('업로드 오류: $err');
@@ -102,10 +124,8 @@ class FileProcessing {
       } else {
         print('파일 이동 실패: 복사 중 문제 발생');
       }
-      String downloadURL = await copyTask.ref.getDownloadURL();
       CustomToast.showToast('이미지 업로드 완료');
       return {
-        'downloadURL': downloadURL,
         'relativePath': newRelativePath,
         'fileName': fileName,
       };
@@ -128,21 +148,13 @@ class FileProcessing {
     }
   }
 
-  static Widget imageOrText({String? downloadURL}) {
-    if (downloadURL != null) {
-      return Image.network(downloadURL);
-    } else {
-      return Container();
-    }
-  }
-
-  static Future<String?> fileToText(String? downloadURL) async {
-    if (downloadURL != null) {
+  static Future<String?> fileToText(String? relativaPath) async {
+    if (relativaPath != null) {
       try {
         final response = await http.post(
             Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'imageUrl': downloadURL}));
+            body: jsonEncode({'imageUrl': relativaPath}));
         if (response.statusCode == 200) {
           String extractedText = response.body;
           print(extractedText);

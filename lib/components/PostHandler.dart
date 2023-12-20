@@ -25,7 +25,6 @@ class PostHandler {
             createdDate: doc.data()['createdDate'],
             modifyDate: doc.data()['modifyDate'],
             relativePath: doc.data()['relativePath'],
-            downloadURL: doc.data()['downloadURL'],
             fileName: doc.data()['fileName']);
       }).toList();
       return posts;
@@ -82,7 +81,6 @@ class Post {
     this.content = '',
     this.createdDate,
     this.relativePath,
-    this.downloadURL,
     this.modifyDate,
     this.translateContent,
     this.fileName,
@@ -96,7 +94,6 @@ class Post {
   String? createdDate;
   String? modifyDate;
   String? relativePath;
-  String? downloadURL;
   String? fileName;
 
   Map<String, dynamic> toMap() => {
@@ -108,7 +105,6 @@ class Post {
         'createdDate': createdDate,
         'modifyDate': modifyDate,
         'relativePath': relativePath,
-        'downloadURL': downloadURL,
         'fileName': fileName,
       };
 }
