@@ -10,19 +10,21 @@ app.register_blueprint(app_read_notes)
 def home():
     return render_template('home.html')
 
-# api 연결 추가
-@app.route('/search', methods=['GET'])
+@app.route('/SWeetMe/search', methods=['GET'])
 def search():
     keyword = request.args.get('keyword')
     if not keyword:
-        return jsonify({'message': 'please enter your contents'})
+        return render_template('search_results.html', message='검색어를 입력해주세요.')
 
-    # api 호출
-    kocw_courses = kocw_api.get_kocw_courses(keyword) # kocw
-    kmooc_courses = kmooc_api.get_kmooc_courses(keyword)# kmooc
-    # youtube
+    # API 호출
+    kocw_courses = kocw_api.get_kocw_courses(keyword)  # kocw
+    kmooc_courses = kmooc_api.get_kmooc_courses(keyword)  # kmooc
+    
+    # 로그 출력
+    print("KOCW Courses:", kocw_courses)
+    print("KMOOC Courses:", kmooc_courses)
 
-    return jsonify(kocw_courses)
+    return render_template('search_results.html', kocw_courses=kocw_courses, kmooc_courses=kmooc_courses)
 
 if __name__ == '__main__':
     app.run(debug=True)

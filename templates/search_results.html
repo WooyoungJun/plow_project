@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>검색</h1>
+    <!-- 검색 폼 -->
+    <form action="/SWeetMe/search" method="get">
+        <input type="text" name="keyword" placeholder="검색어를 입력하세요">
+        <button type="submit">검색</button>
+    </form>
+
+    <h2>검색 결과</h2>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% else %}
+        <h3>KOCW 강좌</h3>
+        <ul>
+            {% for course in kocw_courses %}
+            <li>{{ course.course_title }}
+                {{ course.course_description }}</li>
+            {% endfor %}
+        </ul>
+
+        <h3>KMOOC 강좌</h3>
+        <ul>
+            {% for course in kmooc_courses %}
+            <li>{{ course.course_title }}
+                {{ course.short_description }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
