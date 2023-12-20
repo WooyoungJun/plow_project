@@ -58,49 +58,51 @@ class _PasswordResetViewState extends State<PasswordResetView> {
       resizeToAvoidBottomInset: false, // 키보드로 인한 오버플로우 방지
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(height: largeGap),
-            Logo(), // 비밀번호 재설정 페이지 설명
-            SizedBox(height: largeGap),
-            Text(
-              'SWeetMe Project 비밀번호 변경',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ), // 페이지 설명
-            SizedBox(height: largeGap),
-            CustomTextField(
-              controller: emailController,
-              labelText: 'Email',
-              icon: Icon(Icons.email),
-            ),
-            SizedBox(height: largeGap),
-            ElevatedButton(
-              child: Text(
-                'Reset Password',
-                style: TextStyle(fontSize: 16),
-              ), // 버튼 텍스트
-              onPressed: () async {
-                userProvider.resetPassword(emailController.text);
-                Navigator.pushReplacementNamed(context, '/LoginView');
-              },
-            ),
-            SizedBox(
-              child: Text(
-                msg,
+        child: Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: largeGap),
+              Logo(), // 비밀번호 재설정 페이지 설명
+              SizedBox(height: largeGap),
+              Text(
+                'SWeetMe Project 비밀번호 변경',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.redAccent,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ), // 페이지 설명
+              SizedBox(height: largeGap),
+              CustomTextField(
+                controller: emailController,
+                labelText: 'Email',
+                icon: Icon(Icons.email),
+              ),
+              SizedBox(height: largeGap),
+              ElevatedButton(
+                child: Text(
+                  'Reset Password',
+                  style: TextStyle(fontSize: 16),
+                ), // 버튼 텍스트
+                onPressed: () async {
+                  userProvider.resetPassword(emailController.text);
+                  Navigator.pushReplacementNamed(context, '/LoginView');
+                },
+              ),
+              SizedBox(
+                child: Text(
+                  msg,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

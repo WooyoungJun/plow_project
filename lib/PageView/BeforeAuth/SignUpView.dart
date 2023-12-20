@@ -61,66 +61,69 @@ class _SignUpViewState extends State<SignUpView> {
       resizeToAvoidBottomInset: false, // 키보드로 인한 오버플로우 방지
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(height: largeGap),
-            Logo(),
-            SizedBox(height: largeGap),
-            Text(
-              'SWeetMe Project 회원 가입',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ), // 페이지 설명
-            SizedBox(height: largeGap),
-            CustomTextField(
-              controller: emailController,
-              labelText: 'Email',
-              icon: Icon(Icons.email),
-            ), // 컨트롤러 포함 텍스트 폼 위젯
-            SizedBox(height: largeGap),
-            CustomTextField(
-              controller: passwordController,
-              labelText: 'Password',
-              icon: Icon(Icons.lock),
-            ), // 컨트롤러 포함 텍스트 폼 위젯
-            SizedBox(height: largeGap),
-            ElevatedButton(
-              child: Text(
-                'Sign Up',
-                style: TextStyle(fontSize: 16),
-              ), // 버튼 텍스트
-              onPressed: () async {
-                var result = await userProvider.signUp(
-                  emailController.text,
-                  passwordController.text,
-                  'signUp',
-                );
-                if (result == '성공') {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context, '/HomeView',
-                    (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
-                  );
-                } else {
-                  setState(() => msg = result);
-                }
-              },
-            ),
-            SizedBox(
-              child: Text(
-                msg,
+        child: Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: largeGap),
+              Logo(),
+              SizedBox(height: largeGap),
+              Text(
+                'SWeetMe Project 회원 가입',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.redAccent,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ), // 페이지 설명
+              SizedBox(height: largeGap),
+              CustomTextField(
+                controller: emailController,
+                labelText: 'Email',
+                icon: Icon(Icons.email),
+              ), // 컨트롤러 포함 텍스트 폼 위젯
+              SizedBox(height: largeGap),
+              CustomTextField(
+                controller: passwordController,
+                labelText: 'Password',
+                icon: Icon(Icons.lock),
+                maxLines: 1,
+              ), // 컨트롤러 포함 텍스트 폼 위젯
+              SizedBox(height: largeGap),
+              ElevatedButton(
+                child: Text(
+                  'Sign Up',
+                  style: TextStyle(fontSize: 16),
+                ), // 버튼 텍스트
+                onPressed: () async {
+                  var result = await userProvider.signUp(
+                    emailController.text,
+                    passwordController.text,
+                    'signUp',
+                  );
+                  if (result == '성공') {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context, '/HomeView',
+                      (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
+                    );
+                  } else {
+                    setState(() => msg = result);
+                  }
+                },
+              ),
+              SizedBox(
+                child: Text(
+                  msg,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

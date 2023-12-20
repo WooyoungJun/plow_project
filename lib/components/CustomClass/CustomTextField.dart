@@ -6,6 +6,7 @@ class CustomTextField extends StatelessWidget {
   final String? hintText; // 텍스트 필드에 노출할 텍스트
   final Icon? icon; // 텍스트 폼에 적용할 아이콘
   final bool isReadOnly;
+  final int? maxLines;
   static const TextStyle textStyle =
       TextStyle(fontWeight: FontWeight.bold, color: Colors.grey);
 
@@ -15,6 +16,7 @@ class CustomTextField extends StatelessWidget {
     this.hintText,
     this.icon,
     this.isReadOnly = false,
+    this.maxLines,
   });
 
   final defaultDesign =
@@ -23,7 +25,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
-      maxLines: null,
+      maxLines: maxLines,
       readOnly: isReadOnly,
       controller: controller,
       // 비밀번호면 *로 표시
