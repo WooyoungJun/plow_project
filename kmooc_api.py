@@ -1,13 +1,15 @@
+# kmooc 수정중
+
 import requests
 
 def get_kmooc_courses(keyword):
     service_key = "hgZLcXYGW%2BV162eJNAgEpQfM4QeoW8Hqyjx1B%2FiUXuIORmyrq68teftqf9OBWASMCBSXMhQW7Yuk398mef1K3g%3D%3D"
     page = 1
-    org = "FUNMOOC"  # 기관 번호
+    # org = "FUNMOOC"  # 기관 번호
     mobile = 1       # 모바일 표시 여부
 
     try:
-        response = requests.get(f"http://apis.data.go.kr/B552881/kmooc/courseList?ServiceKey={service_key}&page={page}&org={org}&mobile={mobile}")
+        response = requests.get(f"http://apis.data.go.kr/B552881/kmooc/courseList?ServiceKey={service_key}&page={page}&mobile={mobile}")
         print("Response from KMOOC API:", response.text)
 
         # 응답 상태 코드 확인
@@ -19,7 +21,7 @@ def get_kmooc_courses(keyword):
         data = response.json()
 
         kmooc_courses = []
-        for course in data['results']:
+        for course in data['results']: # results 안에 media 속성 안에 값들이 있음.. 그리고 필드명 다시 확인해볼것
             course_title = course.get('name', '').lower()
             course_description = course.get('short_description', '').lower()
             keyword_lower = keyword.lower()
@@ -28,17 +30,17 @@ def get_kmooc_courses(keyword):
             if keyword.lower() in course_title or keyword.lower() in course_description:
                 kmooc_courses.append({
                     # 기존에 정의된 필드들
-                    'course_url': course.get('blocks_url', ''),
+                    'course_url': course['blocks_url'],
                     # 'effort': course.get('effort', ''),
                     # 'end_date': course.get('End', ''),
                     # 'enrollment_start': course.get('enrollment_start', ''),
                     # 'enrollment_end': course.get('enrollment_end', ''),
                     # 'course_id': course.get('id', ''),
-                    'course_image': course.get('course_image', ''),
-                    'course_title': course_title,
+                    'course_image': course['media']['image']['raw'],
+                    'course_title': course['name'],
                     # 'course_number': course.get('Number', ''),
                     # 'provider': course.get('Org', ''),
-                    'short_description': course_description,
+                    'short_description': course['short_description'],
                     # 'start_date': course.get('start', ''),
                     # 'start_display': course.get('start_display', ''),
                     # 'start_type': course.get('start_type', ''),
