@@ -45,11 +45,11 @@ class CustomDrawer extends StatelessWidget {
                   ),
                 ),
                 accountName: Text(
-                  userProvider.userName!,
+                  userProvider.userName,
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 accountEmail: Text(
-                  userProvider.userEmail!,
+                  userProvider.userEmail,
                   style: TextStyle(color: Colors.white, fontSize: 14),
                 ),
                 onDetailsPressed: () {},

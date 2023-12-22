@@ -42,6 +42,12 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   }
 
   @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   void setState(VoidCallback fn) {
     if (mounted) super.setState(fn);
   }

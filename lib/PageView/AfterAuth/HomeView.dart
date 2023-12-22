@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewAllBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewMyInfo.dart';
-import 'package:provider/provider.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/UserProvider.dart';
@@ -49,7 +49,12 @@ class _HomeViewState extends State<HomeView> {
     if (mounted) super.setState(fn);
   }
 
-  final homeViewItems = [HomeViewAllBoard(), HomeViewFriendBoard(), Text('3'), HomeViewMyInfo()];
+  final homeViewItems = [
+    HomeViewAllBoard(),
+    HomeViewFriendBoard(),
+    Text('3'),
+    HomeViewMyInfo()
+  ];
 
   @override
   Widget build(BuildContext context) {

@@ -36,7 +36,6 @@ class UserProvider extends ChangeNotifier {
   IconData? get icon => _icon ?? Icons.account_circle;
 
   // 상태 변경 시 user 객체가 스트림으로 들어옴
-  // 해당 객체 저장
   Future<void> _onStateChanged(User? user) async {
     if (user == null) {
       _status = Status.unauthenticated;
@@ -44,9 +43,6 @@ class UserProvider extends ChangeNotifier {
       _status = Status.authenticated;
       _user = user;
     }
-    notifyListeners();
-    // 사용자 정보 변경 시 해당 코드 실행
-    // -> Consumer 코드 다시 실행 되면서 화면 다시 build
   }
 
   // 유저 uid를 사용, FirebaseFirestore에 데이터 저장하고 관리
