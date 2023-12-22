@@ -1,12 +1,11 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
-
 import '../../components/AppBarTitle.dart';
 import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/CustomClass/CustomProgressIndicator.dart';
@@ -26,7 +25,6 @@ class _PostScreenViewState extends State<PostUploadView> {
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
   bool isTranslate = false;
-  bool isBackPressed = false;
   bool isSaving = false;
   bool _isInitComplete = false;
 
@@ -86,6 +84,8 @@ class _PostScreenViewState extends State<PostUploadView> {
     if (titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
+
+    CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
     isSaving = true;
     Map<String, String>? result = await FileProcessing.transitionToStorage(
         relativePath, fileName, fileBytes);
@@ -102,14 +102,11 @@ class _PostScreenViewState extends State<PostUploadView> {
       fileName: fileName,
     );
     newPost = await PostHandler.addPost('BoardList', newPost);
+    CustomLoadingDialog.pop(context);
     Navigator.pop(context, {'post': newPost});
   }
 
   Future<void> onBackPressed(BuildContext context) async {
-    if (isBackPressed) {
-      return CustomToast.showToast("처리중입니다");
-    }
-    isBackPressed = true;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -131,8 +128,11 @@ class _PostScreenViewState extends State<PostUploadView> {
             TextButton(
               child: Text('확인'),
               onPressed: () async {
-                Navigator.pop(context);
+                CustomLoadingDialog.showLoadingDialog(
+                    context, '취소중입니다. \n잠시만 기다리세요');
                 await FileProcessing.deleteFile(relativePath);
+                CustomLoadingDialog.pop(context);
+                Navigator.pop(context);
                 Navigator.pushReplacementNamed(
                     context, '/HomeView'); // 그냥 홈으로 이동
               },

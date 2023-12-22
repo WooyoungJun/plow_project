@@ -96,12 +96,12 @@ class UserProvider extends ChangeNotifier {
   Future<String> signUp(
       String email, String password, String buttonText) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
       await FirebaseFirestore.instance
           .collection('UserInfo')
-          .doc(userCredential.user!.uid)
-          .set({'credit': 0}); // credit 초기화
+          .doc(userCredential.user!.email)
+          .set({'credit': 0, 'friend_uid': [userCredential.user!.email]}); // credit 초기화
       // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';
