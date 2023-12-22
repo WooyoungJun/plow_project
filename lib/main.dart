@@ -7,7 +7,6 @@ import 'package:plow_project/PageView/AfterAuth/HomeView.dart';
 import 'package:plow_project/PageView/BeforeAuth/LoginView.dart';
 import 'package:plow_project/PageView/BeforeAuth/PasswordResetView.dart';
 import 'package:plow_project/PageView/BeforeAuth/SignUpView.dart';
-import 'package:plow_project/PageView/AfterAuth/MyInfoView.dart';
 import 'package:plow_project/PageView/AfterAuth/PostReadView.dart';
 import 'package:plow_project/PageView/AfterAuth/PostUploadView.dart';
 
@@ -50,7 +49,6 @@ class _MyAppState extends State<MyApp> {
           "/SignUpView": (context) => SafeArea(child: SignUpView()),
           "/PasswordResetView": (context) =>
               SafeArea(child: PasswordResetView()),
-          "/MyInfoView": (context) => SafeArea(child: MyInfoView()),
           "/PostReadView": (context) => SafeArea(child: PostReadView()),
           "/PostUploadView": (context) => SafeArea(child: PostUploadView()),
         },

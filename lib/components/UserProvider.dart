@@ -29,9 +29,9 @@ class UserProvider extends ChangeNotifier {
   // 유저의 이메일, 이름, 번호 저장
   String? get uid => _user?.uid;
 
-  String? get userEmail => _user?.email ?? '알수없음';
+  String get userEmail => _user?.email ?? '알수없음';
 
-  String? get userName => _user?.displayName ?? '이름을 설정하세요';
+  String get userName => _user?.displayName ?? '이름을 설정하세요';
 
   IconData? get icon => _icon ?? Icons.account_circle;
 
@@ -102,6 +102,7 @@ class UserProvider extends ChangeNotifier {
           .collection('UserInfo')
           .doc(userCredential.user!.email)
           .set({'credit': 0, 'friend_uid': [userCredential.user!.email]}); // credit 초기화
+      friend.add(email);
       // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';

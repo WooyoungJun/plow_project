@@ -4,15 +4,18 @@ import 'CustomClass/CustomToast.dart';
 
 class PostHandler {
   // uid에 해당하는 유저의 게시글 가져오기
-  static Future<List<Post>> readPost(String collection, List<String> uids) async {
+  static Future<List<Post>> readPost(
+      {required String collection, List<String>? uids, int? limit}) async {
     try {
       print('readPost');
       var postsRef = FirebaseFirestore.instance.collection(collection);
+      Query query = postsRef;
+      if (uids != null) {
+        query = query.where('uid', whereIn: uids);
+      }
       var querySnapshot = await postsRef
-          .where('uid', whereIn: uids)
-          .orderBy('createdDate',
-              descending: true) // 시간 순(오름차 순) -> FireStore Index 설정 필요
-          .limit(10)
+          .orderBy('createdDate') // 내림차 순(최근 글 위로)
+          .limit(limit ?? 10)
           .get();
       List<Post> posts = querySnapshot.docs.map((doc) {
         return Post(

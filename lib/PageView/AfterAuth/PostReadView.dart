@@ -1,19 +1,16 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:provider/provider.dart';
-
-import '../../components/AppBarTitle.dart';
-import '../../components/CustomClass/CustomDrawer.dart';
-import '../../components/CustomClass/CustomLoadingDialog.dart';
-import '../../components/CustomClass/CustomProgressIndicator.dart';
-import '../../components/CustomClass/CustomToast.dart';
-import '../../components/FileProcessing.dart';
-import '../../components/PostHandler.dart';
-import '../../components/const/Size.dart';
+import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/FileProcessing.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/const/Size.dart';
 
 class PostReadView extends StatefulWidget {
   @override
@@ -235,33 +232,9 @@ class _PostReadViewState extends State<PostReadView> {
               ),
             ), // 수정하기 버튼
             IconButton(
-              onPressed: () {
-                setState(() => CustomToast.showToast('새로고침 완료'));
-              },
-              icon: Icon(
-                Icons.sync,
-                color: Colors.white,
-              ),
-            ),
-            IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context, {'post': post}),
             )
-          ],
-        ),
-        drawer: CustomDrawer(
-          userProvider: userProvider,
-          drawerItems: [
-            DrawerItem(
-                icon: Icons.person,
-                color: Colors.blue,
-                text: '나의 정보',
-                route: '/MyInfoView'),
-            DrawerItem(
-                icon: Icons.exit_to_app,
-                color: Colors.red,
-                text: '로그아웃',
-                route: '/LoginView'),
           ],
         ),
         body: SingleChildScrollView(
@@ -271,7 +244,7 @@ class _PostReadViewState extends State<PostReadView> {
             child: Column(
               children: [
                 CustomTextField(
-                  hintText: userProvider.userName,
+                  hintText: userProvider.uid,
                   icon: Icon(Icons.person),
                   isReadOnly: true,
                 ),
@@ -374,7 +347,7 @@ class _PostReadViewState extends State<PostReadView> {
             ),
           ),
         ),
-        floatingActionButton: !isEditing
+        floatingActionButton: !isEditing && post.uid == userProvider.uid
             ? FloatingActionButton(
                 onPressed: () => _showDeleteCheck(context),
                 child: Icon(
