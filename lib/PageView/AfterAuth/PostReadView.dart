@@ -195,9 +195,7 @@ class _PostReadViewState extends State<PostReadView> {
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) async {
-        if (didPop) {
-          return;
-        }
+        if (didPop) return;
         await onBackPressed(context);
       },
       child: Scaffold(
@@ -244,7 +242,7 @@ class _PostReadViewState extends State<PostReadView> {
             child: Column(
               children: [
                 CustomTextField(
-                  hintText: userProvider.uid,
+                  hintText: userProvider.userName,
                   icon: Icon(Icons.person),
                   isReadOnly: true,
                 ),

@@ -149,9 +149,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) async {
-        if (didPop) {
-          return;
-        }
+        if (didPop) return;
         await onBackPressed(context);
       },
       child: Scaffold(

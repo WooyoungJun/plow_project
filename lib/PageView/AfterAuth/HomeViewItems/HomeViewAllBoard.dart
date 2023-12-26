@@ -3,20 +3,15 @@ import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
 import 'package:plow_project/components/const/Size.dart';
-import 'package:provider/provider.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/UserProvider.dart';
 
 class HomeViewAllBoard extends StatefulWidget {
-  const HomeViewAllBoard({super.key});
-
   @override
   State<HomeViewAllBoard> createState() => _HomeViewAllBoardState();
 }
 
 class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
-  late UserProvider userProvider;
   List<Post> posts = [];
   bool _isInitComplete = false;
   double visibleCount = 15; // 화면에 표시할 게시글 갯수
@@ -40,7 +35,6 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     screenHeight = MediaQuery.of(context).size.height -
         MediaQuery.of(context).padding.bottom;
     itemHeight = screenHeight / visibleCount;
@@ -82,8 +76,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white),
             onPressed: () async {
-              CustomLoadingDialog.showLoadingDialog(
-                  context, '새로고침 중입니다.');
+              CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
               await getData();
               CustomLoadingDialog.pop(context);
               setState(() => CustomToast.showToast('새로고침 완료'));

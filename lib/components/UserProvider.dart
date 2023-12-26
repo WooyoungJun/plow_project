@@ -6,6 +6,7 @@ import 'CustomClass/CustomToast.dart';
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
 class UserProvider extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
@@ -46,21 +47,29 @@ class UserProvider extends ChangeNotifier {
   }
 
   // 유저 uid를 사용, FirebaseFirestore에 데이터 저장하고 관리
-  Future<void> addFriend(String friendUid) async {
+  Future<void> addFriend(String friendEmail) async {
     try {
+      friendEmail = friendEmail.trim();
       if (_user != null) {
-        await FirebaseFirestore.instance
-            .collection('UserInfo')
-            .doc(_user!.uid) // 현재 로그인한 사용자의 UID
-            .update({
-          'friends': FieldValue.arrayUnion([friendUid]), // 친구의 UID를 추가
-        });
-
-        // 로컬 친구 목록에도 추가
-        friend.add(friendUid);
-        CustomToast.showToast('친구 추가 완료!');
+        if (friendEmail.isNotEmpty) {
+          DocumentSnapshot userDoc =
+              await _firestore.collection('UserInfo').doc(friendEmail).get();
+          // 친구 uid확인
+          if (userDoc.exists) {
+            await _firestore.collection('UserInfo').doc(_user!.uid).update({
+              'friends': FieldValue.arrayUnion([friendEmail]), // 친구의 UID를 추가
+            });
+            // 로컬 친구 목록에도 추가
+            friend.add(friendEmail);
+            return CustomToast.showToast('친구 추가 완료!');
+          } else {
+            return CustomToast.showToast('해당하는 이메일로 가입한 유저를 찾을 수 없습니다!');
+          }
+        } else {
+          return CustomToast.showToast('이메일을 입력해주세요!');
+        }
       } else {
-        CustomToast.showToast('사용자를 인식할 수 없습니다!');
+        CustomToast.showToast('사용자를 찾을 수 없습니다!');
       }
     } catch (e) {
       CustomToast.showToast('친구 추가 오류: $e');
@@ -94,7 +103,7 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
-      await FirebaseFirestore.instance.collection('UserInfo').doc(email).set({
+      await _firestore.collection('UserInfo').doc(email).set({
         'credit': 0,
         'friend_uid': [email]
       }); // credit 초기화

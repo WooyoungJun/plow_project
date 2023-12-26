@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendMangae.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewAllBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
@@ -14,8 +15,9 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   late UserProvider userProvider;
-  List<Post> posts = [];
+  late List<Widget> homeViewItems;
   bool _isInitComplete = false;
+  List<Post> posts = [];
   int _currentIndex = 0;
 
   Future<void> getData(List<String> uids) async {
@@ -35,6 +37,12 @@ class _HomeViewState extends State<HomeView> {
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    homeViewItems = [
+      HomeViewAllBoard(),
+      HomeViewFriendBoard(),
+      HomeViewFriendManage(),
+      HomeViewMyInfo()
+    ];
     await getData([userProvider.uid!]);
     setState(() => _isInitComplete = true);
   }
@@ -49,12 +57,6 @@ class _HomeViewState extends State<HomeView> {
     if (mounted) super.setState(fn);
   }
 
-  final homeViewItems = [
-    HomeViewAllBoard(),
-    HomeViewFriendBoard(),
-    Text('3'),
-    HomeViewMyInfo()
-  ];
 
   @override
   Widget build(BuildContext context) {
