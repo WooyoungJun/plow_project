@@ -8,8 +8,8 @@ class CustomTextField extends StatelessWidget {
   final double? iconSize;
   final bool isReadOnly;
   final int? maxLines;
-  final double? height;
-  final double? fontSize;
+  final double height = 25.0;
+  final double fontSize;
   final defaultDesign =
       OutlineInputBorder(borderRadius: BorderRadius.circular(6));
   final Icon? icon;
@@ -23,7 +23,6 @@ class CustomTextField extends StatelessWidget {
     this.iconSize = 15.0,
     this.isReadOnly = false,
     this.maxLines,
-    this.height = 25.0,
     this.fontSize = 12.5,
     Icon? icon,
     TextStyle? textStyle,
@@ -39,7 +38,7 @@ class CustomTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: height,
+      height: maxLines != null ? null : height,
       child: TextField(
         maxLines: maxLines,
         readOnly: isReadOnly,

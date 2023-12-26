@@ -20,10 +20,6 @@ class _HomeViewState extends State<HomeView> {
   List<Post> posts = [];
   int _currentIndex = 0;
 
-  Future<void> getData(List<String> uids) async {
-    posts = await PostHandler.readPost(collection: 'BoardList', uids: uids);
-  }
-
   @override
   void initState() {
     super.initState();
@@ -37,13 +33,17 @@ class _HomeViewState extends State<HomeView> {
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    double screenHeight = MediaQuery.of(context).size.height -
+        AppBar().preferredSize.height -
+        kBottomNavigationBarHeight;
+    int visibleCount = 12;
+    double itemHeight = screenHeight / visibleCount;
     homeViewItems = [
-      HomeViewAllBoard(),
-      HomeViewFriendBoard(),
+      HomeViewAllBoard(itemHeight: itemHeight, visibleCount: visibleCount),
+      HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
       HomeViewFriendManage(),
       HomeViewMyInfo()
     ];
-    await getData([userProvider.uid!]);
     setState(() => _isInitComplete = true);
   }
 
@@ -57,14 +57,12 @@ class _HomeViewState extends State<HomeView> {
     if (mounted) super.setState(fn);
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       body: Center(child: homeViewItems[_currentIndex]),
       bottomNavigationBar: BottomNavigationBar(
-        // backgroundColor: Colors.black,
         type: BottomNavigationBarType.fixed,
         // 각 항목 일정 너비, 화면 아래 고정된 탭 표시
         showSelectedLabels: false,

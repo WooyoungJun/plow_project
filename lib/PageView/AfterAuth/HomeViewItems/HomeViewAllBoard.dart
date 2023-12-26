@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
@@ -7,20 +9,34 @@ import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart
 import 'package:plow_project/components/PostHandler.dart';
 
 class HomeViewAllBoard extends StatefulWidget {
+  final double itemHeight;
+  final int visibleCount;
+
+  HomeViewAllBoard({required this.itemHeight, required this.visibleCount});
+
   @override
   State<HomeViewAllBoard> createState() => _HomeViewAllBoardState();
 }
 
 class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
+  late int _totalPages;
+  int _curPage = 1;
+  late int _start;
+  late int _end;
   List<Post> posts = [];
   bool _isInitComplete = false;
-  double visibleCount = 15; // 화면에 표시할 게시글 갯수
-  late double screenHeight;
-  late double itemHeight;
 
-  Future<void> getData({List<String>? uids}) async {
+  Future<void> getData(
+      {List<String>? uids,
+      required int start,
+      required int end}) async {
     posts = await PostHandler.readPost(
-        collection: 'BoardList', uids: uids, limit: 10); // 모든 글 중 10개 읽어오기
+      collection: 'BoardList',
+      uids: uids,
+      limit: widget.visibleCount - 2,
+      start: start,
+      end: end,
+    ); // 모든 글 중 10개 읽어오기
   }
 
   @override
@@ -35,11 +51,11 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    screenHeight = MediaQuery.of(context).size.height -
-        AppBar().preferredSize.height -
-        kBottomNavigationBarHeight;
-    itemHeight = screenHeight / visibleCount;
-    await getData();
+    _totalPages =
+        (await PostHandler.totalPostCount / widget.visibleCount).ceil();
+    _start = (_curPage - 1) * (widget.visibleCount - 2);
+    _end = min((_curPage) * (widget.visibleCount - 2), _totalPages);
+    await getData(start: 0, end: 10);
     setState(() => _isInitComplete = true);
   }
 
@@ -59,7 +75,6 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
     return Scaffold(
       appBar: AppBar(
         leading: Container(),
-        // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,
@@ -80,68 +95,114 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
             icon: Icon(Icons.sync, color: Colors.white),
             onPressed: () async {
               CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
-              await getData();
+              await getData(start: _start, end: _end);
               CustomLoadingDialog.pop(context);
               setState(() => CustomToast.showToast('새로고침 완료'));
             },
           )
         ],
       ),
-      body: ListView.builder(
-        itemCount: posts.length,
-        itemExtent: itemHeight,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          return InkWell(
-            onTap: () {
-              Navigator.pushNamed(context, '/PostReadView',
-                  arguments: {'post': post}).then((result) {
-                result = result as Map<String, Post?>?;
-                if (result != null) {
-                  Post? post = result['post'];
-                  setState(() {
-                    if (post != null) {
-                      posts[index] = post;
-                    } else {
-                      posts.removeAt(index);
-                    }
-                  });
-                }
-              });
-            },
-            child: Container(
-              margin: EdgeInsets.only(left: 6, right: 6, top: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey, width: 0.5),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 2,
-                      offset: Offset(0, 2)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.blueAccent,
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(color: Colors.white),
-                      ),
+      body: Column(
+        children: [
+          Flexible(
+            child: ListView.builder(
+              itemCount: posts.length,
+              itemExtent: widget.itemHeight,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return InkWell(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/PostReadView',
+                        arguments: {'post': post}).then((result) {
+                      result = result as Map<String, Post?>?;
+                      if (result != null) {
+                        Post? post = result['post'];
+                        setState(() {
+                          if (post != null) {
+                            posts[index] = post;
+                          } else {
+                            posts.removeAt(index);
+                          }
+                        });
+                      }
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(left: 6, right: 6, top: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey, width: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            spreadRadius: 1,
+                            blurRadius: 2,
+                            offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
+                          child: CircleAvatar(
+                            backgroundColor: Colors.blueAccent,
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: mediumGap),
+                        Text(post.title, overflow: TextOverflow.ellipsis),
+                      ],
                     ),
                   ),
-                  SizedBox(width: mediumGap),
-                  Text(post.title, overflow: TextOverflow.ellipsis),
-                ],
+                );
+              },
+            ),
+          ),
+          // 페이지네이션 링크 표시
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                min(_totalPages, _curPage + 5), // 최대 10페이지까지 표시
+                (pageIndex) {
+                  _curPage = pageIndex + 1;
+                  _start = (_curPage - 1) * (widget.visibleCount - 2);
+                  _end =
+                      min((_curPage) * (widget.visibleCount - 2), _totalPages);
+                  return GestureDetector(
+                    onTap: () async {
+                      CustomLoadingDialog.showLoadingDialog(
+                          context, '로딩 중입니다.');
+                      await getData(start: _start, end: _end);
+                      CustomLoadingDialog.pop(context);
+                      setState(() {});
+                    },
+                    child: Container(
+                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey,
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        _curPage.toString(),
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

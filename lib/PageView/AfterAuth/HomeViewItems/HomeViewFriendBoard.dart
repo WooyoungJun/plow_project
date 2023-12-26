@@ -9,7 +9,10 @@ import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/UserProvider.dart';
 
 class HomeViewFriendBoard extends StatefulWidget {
-  const HomeViewFriendBoard({super.key});
+  final double itemHeight;
+  final int visibleCount;
+
+  HomeViewFriendBoard({required this.itemHeight, required this.visibleCount});
 
   @override
   State<HomeViewFriendBoard> createState() => _HomeViewAllBoardState();
@@ -17,15 +20,17 @@ class HomeViewFriendBoard extends StatefulWidget {
 
 class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   late UserProvider userProvider;
+  late int _totalFriendPages;
   List<Post> posts = [];
   bool _isInitComplete = false;
-  double visibleCount = 15; // 화면에 표시할 게시글 갯수
-  late double screenHeight;
-  late double itemHeight;
 
   Future<void> getData({List<String>? uids}) async {
     posts = await PostHandler.readPost(
-        collection: 'BoardList', uids: uids, limit: 10); // 모든 글 중 10개 읽어오기
+        collection: 'BoardList',
+        uids: uids,
+        limit: widget.visibleCount - 2,
+        start: 0,
+        end: 10); // 모든 글 중 10개 읽어오기
   }
 
   @override
@@ -41,10 +46,8 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    screenHeight = MediaQuery.of(context).size.height -
-        AppBar().preferredSize.height -
-        kBottomNavigationBarHeight;
-    itemHeight = screenHeight / visibleCount;
+    _totalFriendPages =
+        await PostHandler.totalFriendPostCount(userProvider.friend);
     await getData(uids: userProvider.friend);
     setState(() => _isInitComplete = true);
   }
@@ -64,7 +67,8 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
-        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+        leading: Container(),
+        // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '친구 게시판'),
         centerTitle: true,
@@ -84,8 +88,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white),
             onPressed: () async {
-              CustomLoadingDialog.showLoadingDialog(
-                  context, '새로고침 중입니다.');
+              CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
               await getData(uids: userProvider.friend);
               CustomLoadingDialog.pop(context);
               setState(() => CustomToast.showToast('새로고침 완료'));
@@ -95,7 +98,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
       ),
       body: ListView.builder(
         itemCount: posts.length,
-        itemExtent: itemHeight,
+        itemExtent: widget.itemHeight,
         itemBuilder: (context, index) {
           final post = posts[index];
           return InkWell(

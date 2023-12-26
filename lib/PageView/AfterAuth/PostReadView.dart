@@ -146,7 +146,7 @@ class _PostReadViewState extends State<PostReadView> {
                     CustomLoadingDialog.showLoadingDialog(
                         context, '삭제중입니다. \n잠시만 기다리세요');
                     await FileProcessing.deleteFile(post.relativePath);
-                    await PostHandler.deletePost('BoardList', post.postId);
+                    await PostHandler.deletePost('BoardList', post);
                     CustomLoadingDialog.pop(context);
                     Navigator.pop(context); // 다이얼로그 닫기
                     Navigator.pop(context, {'post': null});
