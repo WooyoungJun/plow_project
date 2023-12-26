@@ -7,7 +7,6 @@ import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:provider/provider.dart';
 import '../../components/AppBarTitle.dart';
-import '../../components/CustomClass/CustomDrawer.dart';
 import '../../components/CustomClass/CustomProgressIndicator.dart';
 import '../../components/CustomClass/CustomToast.dart';
 import '../../components/PostHandler.dart';
@@ -154,12 +153,6 @@ class _PostScreenViewState extends State<PostUploadView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: Builder(
-            builder: (context) => IconButton(
-              icon: Icon(Icons.menu, color: Colors.white),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
-          ),
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -175,21 +168,6 @@ class _PostScreenViewState extends State<PostUploadView> {
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async => await onBackPressed(context),
             )
-          ],
-        ),
-        drawer: CustomDrawer(
-          userProvider: userProvider,
-          drawerItems: [
-            DrawerItem(
-                icon: Icons.person,
-                color: Colors.blue,
-                text: '나의 정보',
-                route: '/MyInfoView'),
-            DrawerItem(
-                icon: Icons.exit_to_app,
-                color: Colors.red,
-                text: '로그아웃',
-                route: '/LoginView'),
           ],
         ),
         body: SingleChildScrollView(
@@ -268,8 +246,11 @@ class _PostScreenViewState extends State<PostUploadView> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
+                    CustomLoadingDialog.showLoadingDialog(
+                        context, '텍스트 변환중입니다');
                     String? result =
-                        await FileProcessing.fileToText(relativePath);
+                        await FileProcessing.fileToText(relativePath, fileName);
+                    CustomLoadingDialog.pop(context);
                     if (result != null) {
                       translateController.text = result;
                       setState(() => isTranslate = true);

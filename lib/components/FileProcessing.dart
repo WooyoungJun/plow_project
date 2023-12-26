@@ -137,13 +137,13 @@ class FileProcessing {
     }
   }
 
-  static Future<String?> fileToText(String? relativePath) async {
+  static Future<String?> fileToText(String? relativePath, String? fileName) async {
     if (relativePath != null) {
       try {
         final response = await http.post(
             Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'imageUrl': relativePath}));
+            body: jsonEncode({'file_url': relativePath, 'file_name': fileName}));
         if (response.statusCode == 200) {
           String extractedText = response.body;
           print(extractedText);

@@ -200,12 +200,6 @@ class _PostReadViewState extends State<PostReadView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: Builder(
-            builder: (context) => IconButton(
-              icon: Icon(Icons.menu, color: Colors.white),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            ),
-          ),
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -321,8 +315,10 @@ class _PostReadViewState extends State<PostReadView> {
                           SizedBox(height: largeGap),
                           ElevatedButton(
                             onPressed: () async {
+                              CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
                               String? result =
-                                  await FileProcessing.fileToText(relativePath);
+                                  await FileProcessing.fileToText(relativePath ?? post.relativePath, fileName ?? post.fileName);
+                              CustomLoadingDialog.pop(context);
                               if (result != null) {
                                 translateController.text = result;
                                 setState(() {});
