@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/const/Size.dart';
 import 'package:provider/provider.dart';
@@ -62,40 +63,54 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _emailController1,
-              decoration: InputDecoration(
-                labelText: '추가하고자 하는 친구의 이메일을 입력하세요.',
-                border: OutlineInputBorder(),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black, width: 2),
+                borderRadius: BorderRadius.circular(10),
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            SizedBox(height: largeGap),
-            ElevatedButton(
-              onPressed: () async {
-                FocusScope.of(context).unfocus(); // 키보드를 내림
-                await userProvider.addFriend(_emailController1.text);
-                _emailController1.clear();
-              },
-              child: Text('친구 추가 버튼'),
-            ),
-            SizedBox(height: largeGap),
-            TextField(
-              controller: _emailController2,
-              decoration: InputDecoration(
-                labelText: '삭제하고자 하는 친구의 이메일을 입력하세요.',
-                border: OutlineInputBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Text('추가하고자 하는 친구의 이메일을 입력하세요'),
+                    CustomTextField(controller: _emailController1),
+                    SizedBox(height: mediumGap),
+                    ElevatedButton(
+                      onPressed: () async {
+                        FocusScope.of(context).unfocus(); // 키보드를 내림
+                        await userProvider.addFriend(_emailController1.text);
+                        _emailController1.clear();
+                      },
+                      child: Text('친구 추가 버튼'),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: largeGap),
-            ElevatedButton(
-              onPressed: () async {
-                FocusScope.of(context).unfocus(); // 키보드를 내림
-                await userProvider.deleteFriend(_emailController2.text);
-                _emailController2.clear();
-              },
-              child: Text('친구 삭제 버튼'),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black, width: 2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Text('삭제하고자 하는 친구의 이메일을 입력하세요'),
+                    CustomTextField(controller: _emailController2),
+                    SizedBox(height: mediumGap),
+                    ElevatedButton(
+                      onPressed: () async {
+                        FocusScope.of(context).unfocus(); // 키보드를 내림
+                        await userProvider.deleteFriend(_emailController2.text);
+                        _emailController2.clear();
+                      },
+                      child: Text('친구 삭제 버튼'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

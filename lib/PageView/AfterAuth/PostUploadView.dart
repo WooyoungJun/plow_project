@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,7 @@ class PostUploadView extends StatefulWidget {
 class _PostScreenViewState extends State<PostUploadView> {
   late UserProvider userProvider;
   late Post post;
+  late double contentHeight;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
@@ -42,6 +44,9 @@ class _PostScreenViewState extends State<PostUploadView> {
   Future<void> initPostUploadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     post = Post(uid: userProvider.uid!); // 새로운 post 작성
+    contentHeight = MediaQuery.of(context).size.height -
+        AppBar().preferredSize.height -
+        kBottomNavigationBarHeight;
     setState(() => _isInitComplete = true);
   }
 
@@ -153,7 +158,8 @@ class _PostScreenViewState extends State<PostUploadView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+          leading: Container(),
+          // Navigator.push로 인한 leading 버튼 없애기
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -171,94 +177,102 @@ class _PostScreenViewState extends State<PostUploadView> {
             )
           ],
         ),
-        body: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                CustomTextField(
-                  hintText: userProvider.userName,
-                  icon: Icons.person,
-                  iconSize: 10.0,
-                  isReadOnly: true,
-                ),
-                CustomTextField(
-                  controller: titleController,
-                  icon: Icons.title,
-                  iconSize: 10.0,
-                  isReadOnly: false,
-                ), // 제목
-                CustomTextField(
-                  controller: contentController,
-                  icon: Icons.description,
-                  iconSize: 10.0,
-                  isReadOnly: false,
-                ), // 본문
-                SizedBox(height: largeGap),
-                Padding(
+        body: LayoutBuilder(builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: contentHeight),
+              child: IntrinsicHeight(
+                child: Padding(
                   padding: EdgeInsets.all(16.0),
-                  child: fileBytes != null
-                      ? Image.memory(fileBytes!)
-                      : Text('이미지가 없습니다'),
-                ), //
-                SizedBox(height: largeGap),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          var result = await FileProcessing.getImage(
-                              _picker, ImageSource.camera);
-                          await setResult(result);
-                        },
-                        child: Text(
-                          '카메라로 \n촬영하기',
-                          textAlign: TextAlign.center,
-                        ),
+                  child: Column(
+                    children: [
+                      CustomTextField(
+                        hintText: userProvider.userName,
+                        iconData: Icons.person,
+                        iconSize: 10.0,
+                        isReadOnly: true,
                       ),
-                    ),
-                    Flexible(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          var result = await FileProcessing.getFile();
-                          await setResult(result);
-                        },
-                        child: Text(
-                          '파일 \n선택하기',
-                          textAlign: TextAlign.center,
-                        ),
+                      CustomTextField(
+                        controller: titleController,
+                        iconData: Icons.title,
+                        iconSize: 10.0,
+                        isReadOnly: false,
+                      ), // 제목
+                      CustomTextField(
+                        controller: contentController,
+                        iconData: Icons.description,
+                        iconSize: 10.0,
+                        isReadOnly: false,
+                      ), // 본문
+                      SizedBox(height: largeGap),
+                      Flexible(
+                        child: fileBytes != null
+                            ? ((fileName ?? post.fileName!).endsWith('.pdf')
+                                ? PDFView(
+                                    pdfData: fileBytes!,
+                                    enableSwipe: true,
+                                    swipeHorizontal: true,
+                                    autoSpacing: false,
+                                    pageFling: false,
+                                    fitPolicy: FitPolicy.BOTH,
+                                  )
+                                : Image.memory(fileBytes!, fit: BoxFit.cover))
+                            : Text('이미지가 없습니다'),
+                      ), //
+                      SizedBox(height: largeGap),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () async {
+                              var result = await FileProcessing.getImage(
+                                  _picker, ImageSource.camera);
+                              await setResult(result);
+                            },
+                            icon: Icon(Icons.photo_camera),
+                            iconSize: 30.0,
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              var result = await FileProcessing.getFile();
+                              await setResult(result);
+                            },
+                            icon: Icon(Icons.file_open),
+                            iconSize: 30.0,
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              CustomLoadingDialog.showLoadingDialog(
+                                  context, '텍스트 변환중입니다');
+                              String? result = await FileProcessing.fileToText(
+                                  relativePath, fileName);
+                              CustomLoadingDialog.pop(context);
+                              if (result != null) {
+                                translateController.text = result;
+                                setState(() => isTranslate = true);
+                              }
+                            },
+                            icon: Icon(Icons.g_translate),
+                            iconSize: 30.0,
+                          )
+                        ],
                       ),
-                    ),
-                  ],
+                      SizedBox(height: largeGap),
+                      CustomTextField(
+                        controller: translateController,
+                        iconData: Icons.g_translate,
+                        iconSize: 10.0,
+                        isReadOnly: !isTranslate,
+                      ), // 작성일
+                    ],
+                  ),
                 ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    CustomLoadingDialog.showLoadingDialog(
-                        context, '텍스트 변환중입니다');
-                    String? result =
-                        await FileProcessing.fileToText(relativePath, fileName);
-                    CustomLoadingDialog.pop(context);
-                    if (result != null) {
-                      translateController.text = result;
-                      setState(() => isTranslate = true);
-                    }
-                  },
-                  child: Text('텍스트 변환'),
-                ),
-                CustomTextField(
-                  controller: translateController,
-                  icon: Icons.g_translate,
-                  iconSize: 10.0,
-                  isReadOnly: !isTranslate,
-                ), // 작성일
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }

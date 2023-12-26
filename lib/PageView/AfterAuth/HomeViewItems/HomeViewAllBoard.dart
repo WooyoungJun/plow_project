@@ -35,8 +35,9 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    screenHeight =
-        MediaQuery.of(context).size.height - kBottomNavigationBarHeight;
+    screenHeight = MediaQuery.of(context).size.height -
+        AppBar().preferredSize.height -
+        kBottomNavigationBarHeight;
     itemHeight = screenHeight / visibleCount;
     await getData();
     setState(() => _isInitComplete = true);

@@ -103,12 +103,12 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
             ),
             CustomTextField(
               controller: nameController,
-              iconData: Icon(Icons.badge, size: 25.0),
+              icon: Icon(Icons.badge, size: 25.0),
               isReadOnly: !isEditing,
             ),
             CustomTextField(
               hintText: userProvider.userEmail,
-              iconData: Icon(Icons.email, size: 25.0),
+              icon: Icon(Icons.email, size: 25.0),
               isReadOnly: true,
             ),
             SizedBox(height: largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절

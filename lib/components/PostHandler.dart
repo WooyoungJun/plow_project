@@ -57,9 +57,8 @@ class PostHandler {
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
     post.modifyDate = formattedTime;
 
-    var docRef =
-        FirebaseFirestore.instance.collection(collection).doc(post.postId);
-    await docRef.update(post.toMap());
+    var posts = FirebaseFirestore.instance.collection(collection);
+    await posts.doc(post.postId).update(post.toMap());
     CustomToast.showToast('Post update 완료');
   }
 

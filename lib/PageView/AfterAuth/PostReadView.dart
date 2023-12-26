@@ -93,13 +93,14 @@ class _PostReadViewState extends State<PostReadView> {
     if ((post.title != titleController.text) ||
         (post.content != contentController.text) ||
         (relativePath != null) ||
-        (translateController.text != '')) {
+        (translateController.text != post.translateContent)) {
       CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. \n잠시만 기다리세요');
       Post updatedPost = Post(
         postId: post.postId,
         uid: userProvider.uid!,
         title: titleController.text,
         content: contentController.text,
+        createdDate: post.createdDate,
         translateContent: translateController.text,
         relativePath: post.relativePath,
         fileName: post.fileName,
@@ -195,9 +196,9 @@ class _PostReadViewState extends State<PostReadView> {
           )
         ],
       ),
-      body: LayoutBuilder(
-          builder: (context, constraints) {
+      body: LayoutBuilder(builder: (context, constraints) {
         return SingleChildScrollView(
+          scrollDirection: Axis.vertical,
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: contentHeight),
             child: IntrinsicHeight(
@@ -207,31 +208,30 @@ class _PostReadViewState extends State<PostReadView> {
                   children: [
                     CustomTextField(
                       hintText: post.uid,
-                      icon: Icons.person,
+                      iconData: Icons.person,
                       iconSize: 10.0,
                       isReadOnly: true,
                     ),
                     CustomTextField(
                       controller: titleController,
-                      icon: Icons.title,
+                      iconData: Icons.title,
                       iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ), // 제목
                     CustomTextField(
                       controller: contentController,
-                      icon: Icons.description,
+                      iconData: Icons.description,
                       iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ), // 본문
                     CustomTextField(
-                      hintText: post.createdDate,
-                      icon: Icons.calendar_month,
+                      hintText: post.modifyDate ?? post.createdDate,
+                      iconData: Icons.calendar_month,
                       iconSize: 10.0,
                       isReadOnly: true,
                     ),
-                    SizedBox(height: largeGap),
-                    Padding(
-                      padding: EdgeInsets.all(16.0),
+                    SizedBox(height: mediumGap),
+                    Flexible(
                       child: fileBytes != null
                           ? ((fileName ?? post.fileName!).endsWith('.pdf')
                               ? PDFView(
@@ -240,11 +240,11 @@ class _PostReadViewState extends State<PostReadView> {
                                   swipeHorizontal: true,
                                   autoSpacing: false,
                                   pageFling: false,
-                                  fitPolicy: FitPolicy.HEIGHT,
+                                  fitPolicy: FitPolicy.BOTH,
                                 )
                               : Image.memory(fileBytes!, fit: BoxFit.cover))
                           : Text('이미지가 없습니다'),
-                    ), // 작성일
+                    ),
                     if (isEditing)
                       Column(
                         children: [
@@ -252,56 +252,48 @@ class _PostReadViewState extends State<PostReadView> {
                           Column(
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Flexible(
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        var result =
-                                            await FileProcessing.getImage(
-                                                _picker, ImageSource.camera);
-                                        await setResult(result);
-                                      },
-                                      child: Text(
-                                        '카메라로 \n촬영하기',
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      var result =
+                                          await FileProcessing.getImage(
+                                              _picker, ImageSource.camera);
+                                      await setResult(result);
+                                    },
+                                    icon: Icon(Icons.photo_camera),
+                                    iconSize: 30.0,
                                   ),
-                                  Flexible(
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        var result =
-                                            await FileProcessing.getFile();
-                                        await setResult(result);
-                                      },
-                                      child: Text(
-                                        '파일 \n선택하기',
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      var result =
+                                          await FileProcessing.getFile();
+                                      await setResult(result);
+                                    },
+                                    icon: Icon(Icons.file_open),
+                                    iconSize: 30.0,
                                   ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      CustomLoadingDialog.showLoadingDialog(
+                                          context, '텍스트 변환중입니다');
+                                      String? result =
+                                          await FileProcessing.fileToText(
+                                              relativePath ?? post.relativePath,
+                                              fileName ?? post.fileName);
+                                      CustomLoadingDialog.pop(context);
+                                      if (result != null) {
+                                        translateController.text = result;
+                                        setState(() {});
+                                      }
+                                    },
+                                    icon: Icon(Icons.g_translate),
+                                    iconSize: 30.0,
+                                  )
                                 ],
                               ),
                               SizedBox(height: largeGap),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  CustomLoadingDialog.showLoadingDialog(
-                                      context, '텍스트 변환중입니다');
-                                  String? result =
-                                      await FileProcessing.fileToText(
-                                          relativePath ?? post.relativePath,
-                                          fileName ?? post.fileName);
-                                  CustomLoadingDialog.pop(context);
-                                  if (result != null) {
-                                    translateController.text = result;
-                                    setState(() {});
-                                  }
-                                },
-                                child: Text('텍스트 변환'),
-                              )
                             ],
                           )
                         ],
@@ -309,8 +301,9 @@ class _PostReadViewState extends State<PostReadView> {
                     else
                       Container(),
                     CustomTextField(
+                      maxLines: 10,
                       controller: translateController,
-                      icon: Icons.g_translate,
+                      iconData: Icons.g_translate,
                       iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ),

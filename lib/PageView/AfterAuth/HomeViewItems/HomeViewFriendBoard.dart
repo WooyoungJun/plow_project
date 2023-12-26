@@ -42,7 +42,8 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     screenHeight = MediaQuery.of(context).size.height -
-        MediaQuery.of(context).padding.bottom;
+        AppBar().preferredSize.height -
+        kBottomNavigationBarHeight;
     itemHeight = screenHeight / visibleCount;
     await getData(uids: userProvider.friend);
     setState(() => _isInitComplete = true);

@@ -81,13 +81,13 @@ class _SignUpViewState extends State<SignUpView> {
             CustomTextField(
               controller: emailController,
               labelText: 'Email',
-              icon: Icons.email,
+              iconData: Icons.email,
             ), // 컨트롤러 포함 텍스트 폼 위젯
             SizedBox(height: largeGap),
             CustomTextField(
               controller: passwordController,
               labelText: 'Password',
-              icon: Icons.lock,
+              iconData: Icons.lock,
               maxLines: 1,
             ), // 컨트롤러 포함 텍스트 폼 위젯
             SizedBox(height: largeGap),
