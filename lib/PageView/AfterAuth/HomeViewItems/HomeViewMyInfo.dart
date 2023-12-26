@@ -57,7 +57,8 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
-        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+        leading: Container(),
+        // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '나의 정보'),
         centerTitle: true,
@@ -87,7 +88,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Center(
               child: CircleAvatar(
@@ -102,25 +103,26 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
             ),
             CustomTextField(
               controller: nameController,
-              icon: Icon(Icons.badge),
+              iconData: Icon(Icons.badge, size: 25.0),
               isReadOnly: !isEditing,
             ),
             CustomTextField(
               hintText: userProvider.userEmail,
-              icon: Icon(Icons.email),
+              iconData: Icon(Icons.email, size: 25.0),
               isReadOnly: true,
             ),
-            SizedBox(height: 20), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
-            if (userProvider.friend.isEmpty)
+            SizedBox(height: largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
+            if (userProvider.friend.length == 1)
               Text("친구가 없습니다.")
             else
               Text(
-                userProvider.friend.join('\n'),
+                userProvider.friend.sublist(1).join('\n'),
                 textAlign: TextAlign.center, // 필요에 따라 정렬 설정
-                style: TextStyle(fontSize: 16.0), // 필요에 따라 폰트 크기 설정
+                style: TextStyle(fontSize: 15.0), // 필요에 따라 폰트 크기 설정
               ),
             ListTile(
               title: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Padding(
                     padding: EdgeInsets.only(left: 16.0),
@@ -130,7 +132,6 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                   Text('로그아웃', style: TextStyle(color: Colors.red)),
                 ],
               ),
-              contentPadding: EdgeInsets.only(bottom: 4.0),
               onTap: () {
                 userProvider.signOut('signOut');
                 Navigator.pushNamedAndRemoveUntil(

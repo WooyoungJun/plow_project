@@ -35,8 +35,8 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    screenHeight = MediaQuery.of(context).size.height -
-        MediaQuery.of(context).padding.bottom;
+    screenHeight =
+        MediaQuery.of(context).size.height - kBottomNavigationBarHeight;
     itemHeight = screenHeight / visibleCount;
     await getData();
     setState(() => _isInitComplete = true);
@@ -57,7 +57,8 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
-        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+        leading: Container(),
+        // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,

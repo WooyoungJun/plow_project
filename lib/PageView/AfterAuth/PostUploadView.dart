@@ -179,17 +179,20 @@ class _PostScreenViewState extends State<PostUploadView> {
               children: [
                 CustomTextField(
                   hintText: userProvider.userName,
-                  icon: Icon(Icons.person),
+                  icon: Icons.person,
+                  iconSize: 10.0,
                   isReadOnly: true,
                 ),
                 CustomTextField(
                   controller: titleController,
-                  icon: Icon(Icons.title),
+                  icon: Icons.title,
+                  iconSize: 10.0,
                   isReadOnly: false,
                 ), // 제목
                 CustomTextField(
                   controller: contentController,
-                  icon: Icon(Icons.description),
+                  icon: Icons.description,
+                  iconSize: 10.0,
                   isReadOnly: false,
                 ), // 본문
                 SizedBox(height: largeGap),
@@ -204,19 +207,6 @@ class _PostScreenViewState extends State<PostUploadView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Flexible(
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          var result = await FileProcessing.getImage(
-                              _picker, ImageSource.gallery);
-                          await setResult(result);
-                        },
-                        child: Text(
-                          '갤러리에서 \n이미지 선택',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
                     Flexible(
                       child: ElevatedButton(
                         onPressed: () async {
@@ -261,7 +251,8 @@ class _PostScreenViewState extends State<PostUploadView> {
                 ),
                 CustomTextField(
                   controller: translateController,
-                  icon: Icon(Icons.g_translate),
+                  icon: Icons.g_translate,
+                  iconSize: 10.0,
                   isReadOnly: !isTranslate,
                 ), // 작성일
               ],
