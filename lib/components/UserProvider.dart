@@ -72,9 +72,9 @@ class UserProvider extends ChangeNotifier {
     if (_user != null) {
       var curName = _user!.displayName;
       if (curName != name) {
-        await _user!.updateDisplayName(name);
-        await _user!.reload();
-        _user = FirebaseAuth.instance.currentUser;
+        await _user!.updateDisplayName(name); // 이름 초기값 설정
+        await _user!.reload(); // 변경사항 적용
+        _user = FirebaseAuth.instance.currentUser; // 변경된 객체 다시 적용
         if (_user!.displayName == name) {
           CustomToast.showToast('이름 변경 완료!');
         } else {
@@ -92,14 +92,16 @@ class UserProvider extends ChangeNotifier {
   Future<String> signUp(
       String email, String password, String buttonText) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
-      await FirebaseFirestore.instance
-          .collection('UserInfo')
-          .doc(userCredential.user!.email)
-          .set({'credit': 0, 'friend_uid': [userCredential.user!.email]}); // credit 초기화
-      friend.add(email);
-      // print('$buttonText 성공');
+      await FirebaseFirestore.instance.collection('UserInfo').doc(email).set({
+        'credit': 0,
+        'friend_uid': [email]
+      }); // credit 초기화
+      friend.add(email); // friend 추가
+      await _user!.updateDisplayName(email); // 이름 초기값 설정
+      await _user!.reload(); // 변경사항 적용
+      _user = FirebaseAuth.instance.currentUser; // 변경된 객체 다시 적용]
       CustomToast.showToast('$buttonText 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {

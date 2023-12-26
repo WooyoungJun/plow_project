@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/AppBarTitle.dart';
@@ -96,11 +97,13 @@ class _LoginViewState extends State<LoginView> {
                 style: TextStyle(fontSize: 16),
               ), // 버튼 텍스트
               onPressed: () async {
+                CustomLoadingDialog.showLoadingDialog(context, '로그인 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signIn(
                   emailController.text,
                   passwordController.text,
                   'Login',
                 );
+                CustomLoadingDialog.pop(context);
                 if (result == '성공') {
                   Navigator.pushNamedAndRemoveUntil(
                     context, '/HomeView',

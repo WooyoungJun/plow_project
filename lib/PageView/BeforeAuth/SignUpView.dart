@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/CustomClass/CustomTextField.dart';
@@ -96,11 +97,13 @@ class _SignUpViewState extends State<SignUpView> {
                 style: TextStyle(fontSize: 16),
               ), // 버튼 텍스트
               onPressed: () async {
+                CustomLoadingDialog.showLoadingDialog(context, '회원가입 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signUp(
                   emailController.text,
                   passwordController.text,
                   'signUp',
                 );
+                CustomLoadingDialog.pop(context);
                 if (result == '성공') {
                   Navigator.pushNamedAndRemoveUntil(
                     context, '/HomeView',
