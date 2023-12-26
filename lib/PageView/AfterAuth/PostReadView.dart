@@ -209,25 +209,21 @@ class _PostReadViewState extends State<PostReadView> {
                     CustomTextField(
                       hintText: post.uid,
                       iconData: Icons.person,
-                      iconSize: 10.0,
                       isReadOnly: true,
                     ),
                     CustomTextField(
                       controller: titleController,
                       iconData: Icons.title,
-                      iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ), // 제목
                     CustomTextField(
                       controller: contentController,
                       iconData: Icons.description,
-                      iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ), // 본문
                     CustomTextField(
                       hintText: post.modifyDate ?? post.createdDate,
                       iconData: Icons.calendar_month,
-                      iconSize: 10.0,
                       isReadOnly: true,
                     ),
                     SizedBox(height: mediumGap),
@@ -301,10 +297,8 @@ class _PostReadViewState extends State<PostReadView> {
                     else
                       Container(),
                     CustomTextField(
-                      maxLines: 10,
                       controller: translateController,
                       iconData: Icons.g_translate,
-                      iconSize: 10.0,
                       isReadOnly: !isEditing,
                     ),
                   ],

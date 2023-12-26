@@ -190,19 +190,16 @@ class _PostScreenViewState extends State<PostUploadView> {
                       CustomTextField(
                         hintText: userProvider.userName,
                         iconData: Icons.person,
-                        iconSize: 10.0,
                         isReadOnly: true,
                       ),
                       CustomTextField(
                         controller: titleController,
                         iconData: Icons.title,
-                        iconSize: 10.0,
                         isReadOnly: false,
                       ), // 제목
                       CustomTextField(
                         controller: contentController,
                         iconData: Icons.description,
-                        iconSize: 10.0,
                         isReadOnly: false,
                       ), // 본문
                       SizedBox(height: largeGap),
@@ -263,7 +260,6 @@ class _PostScreenViewState extends State<PostUploadView> {
                       CustomTextField(
                         controller: translateController,
                         iconData: Icons.g_translate,
-                        iconSize: 10.0,
                         isReadOnly: !isTranslate,
                       ), // 작성일
                     ],

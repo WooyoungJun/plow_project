@@ -11,7 +11,7 @@ class CustomTextField extends StatelessWidget {
   final double? height;
   final double? fontSize;
   final defaultDesign =
-      OutlineInputBorder(borderRadius: BorderRadius.circular(10));
+      OutlineInputBorder(borderRadius: BorderRadius.circular(6));
   final Icon? icon;
   final TextStyle? textStyle;
 
@@ -20,7 +20,7 @@ class CustomTextField extends StatelessWidget {
     this.labelText,
     this.hintText,
     this.iconData,
-    this.iconSize,
+    this.iconSize = 15.0,
     this.isReadOnly = false,
     this.maxLines,
     this.height = 25.0,
@@ -47,7 +47,7 @@ class CustomTextField extends StatelessWidget {
         obscureText: labelText == "Password" ? true : false,
         style: isReadOnly ? textStyle : TextStyle(fontSize: fontSize),
         decoration: InputDecoration(
-          contentPadding: EdgeInsets.symmetric(vertical: 0),
+          contentPadding: EdgeInsets.symmetric(horizontal: 8.0),
           prefixIcon: icon,
           labelText: labelText,
           hintText: hintText,
