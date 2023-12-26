@@ -97,6 +97,7 @@ class _LoginViewState extends State<LoginView> {
                 style: TextStyle(fontSize: 16),
               ), // 버튼 텍스트
               onPressed: () async {
+                FocusScope.of(context).unfocus(); // 키보드를 내림
                 CustomLoadingDialog.showLoadingDialog(context, '로그인 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signIn(
                   emailController.text,

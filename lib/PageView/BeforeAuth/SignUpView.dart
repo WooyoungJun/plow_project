@@ -97,6 +97,7 @@ class _SignUpViewState extends State<SignUpView> {
                 style: TextStyle(fontSize: 16),
               ), // 버튼 텍스트
               onPressed: () async {
+                FocusScope.of(context).unfocus(); // 키보드를 내림
                 CustomLoadingDialog.showLoadingDialog(context, '회원가입 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signUp(
                   emailController.text,

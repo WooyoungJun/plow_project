@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'CustomClass/CustomToast.dart';
 
 class PostHandler {
+  // final CollectionReference _boardList =
+  //     FirebaseFirestore.instance.collection('BoardList');
+
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<List<Post>> readPost(
       {required String collection, List<String>? uids, int? limit}) async {
