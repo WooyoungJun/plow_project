@@ -57,9 +57,10 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
+        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+        backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '나의 정보'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
         actions: [
           Row(
             children: [

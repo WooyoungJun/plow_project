@@ -1,16 +1,16 @@
 import 'dart:typed_data';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:provider/provider.dart';
-import '../../components/AppBarTitle.dart';
-import '../../components/CustomClass/CustomProgressIndicator.dart';
-import '../../components/CustomClass/CustomToast.dart';
-import '../../components/PostHandler.dart';
-import '../../components/const/Size.dart';
+import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/const/Size.dart';
 
 class PostUploadView extends StatefulWidget {
   @override
@@ -153,6 +153,7 @@ class _PostScreenViewState extends State<PostUploadView> {
       },
       child: Scaffold(
         appBar: AppBar(
+          leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,

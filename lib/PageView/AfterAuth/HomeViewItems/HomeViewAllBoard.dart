@@ -57,6 +57,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
+        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,

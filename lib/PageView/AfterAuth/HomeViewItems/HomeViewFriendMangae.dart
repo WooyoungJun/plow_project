@@ -53,9 +53,10 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
     if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       appBar: AppBar(
+        leading: Container(), // Navigator.push로 인한 leading 버튼 없애기
+        backgroundColor: Theme.of(context).colorScheme.primary,
         title: AppBarTitle(title: '친구 추가하기'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
