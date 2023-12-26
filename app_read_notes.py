@@ -7,10 +7,10 @@ import cv2
 import pytesseract
 
 # 이미지 저장 폴더 경로
-UPLOAD_FOLDER = 'C:/Users/gram/goorm_python/SWeetme/image/'
+UPLOAD_FOLDER = '././image/'
 default_name = "read_notes"
-default_dir = f"C:/Users/gram/goorm_python/SWeetme/test/{default_name}"
-default_templates = f"C:/Users/gram/goorm_python/SWeetme/test/templates/"
+default_dir = f"././{default_name}"
+default_templates = f"./templates/"
 app_read_notes = Blueprint(f"app_{default_name}", __name__, url_prefix=f"/SWeetMe/{default_name}")
 
 #allow files of a specific type
