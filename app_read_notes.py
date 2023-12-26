@@ -10,7 +10,7 @@ import pytesseract
 UPLOAD_FOLDER = '././image/'
 default_name = "read_notes"
 default_dir = f"././{default_name}"
-default_templates = f"./templates/"
+default_templates = f"././templates/"
 app_read_notes = Blueprint(f"app_{default_name}", __name__, url_prefix=f"/SWeetMe/{default_name}")
 
 #allow files of a specific type
