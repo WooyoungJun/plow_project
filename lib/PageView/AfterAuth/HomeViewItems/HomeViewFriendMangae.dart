@@ -68,7 +68,10 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async => await userProvider.addFriend(_emailController.text),
+              onPressed: () async {
+                await userProvider.addFriend(_emailController.text);
+                FocusScope.of(context).unfocus(); // 키보드를 내림
+              },
               child: Text('친구 추가 버튼'),
             ),
           ],

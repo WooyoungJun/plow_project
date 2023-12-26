@@ -7,27 +7,24 @@ class PostHandler {
   static Future<List<Post>> readPost(
       {required String collection, List<String>? uids, int? limit}) async {
     try {
-      print('readPost');
       var postsRef = FirebaseFirestore.instance.collection(collection);
       Query query = postsRef;
-      if (uids != null) {
-        query = query.where('uid', whereIn: uids);
-      }
-      var querySnapshot = await postsRef
-          .orderBy('createdDate') // 내림차 순(최근 글 위로)
+      if (uids != null) query = query.where('uid', whereIn: uids);
+      QuerySnapshot querySnapshot = await query
+          .orderBy('createdDate', descending: true) // 내림차 순(최근 글 위로)
           .limit(limit ?? 10)
           .get();
       List<Post> posts = querySnapshot.docs.map((doc) {
         return Post(
-            postId: doc.id,
-            uid: doc.data()['uid'],
-            title: doc.data()['title'],
-            content: doc.data()['content'],
-            translateContent: doc.data()['translateContent'],
-            createdDate: doc.data()['createdDate'],
-            modifyDate: doc.data()['modifyDate'],
-            relativePath: doc.data()['relativePath'],
-            fileName: doc.data()['fileName']);
+            postId: doc['postId'],
+            uid: doc['uid'],
+            title: doc['title'],
+            content: doc['content'],
+            translateContent: doc['translateContent'],
+            createdDate: doc['createdDate'],
+            modifyDate: doc['modifyDate'],
+            relativePath: doc['relativePath'],
+            fileName: doc['fileName']);
       }).toList();
       return posts;
     } catch (err) {

@@ -10,7 +10,7 @@ class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
-  List<String> friend = []; // 친구 uid 저장
+  List<String> _friend = []; // 친구 uid 저장
 
   UserProvider()
       : _auth = FirebaseAuth.instance,
@@ -28,11 +28,13 @@ class UserProvider extends ChangeNotifier {
   Status get status => _status;
 
   // 유저의 이메일, 이름, 번호 저장
-  String? get uid => _user?.uid;
+  String? get uid => _user?.email;
 
   String get userEmail => _user?.email ?? '알수없음';
 
   String get userName => _user?.displayName ?? '이름을 설정하세요';
+
+  List<String> get friend => _friend;
 
   IconData? get icon => _icon ?? Icons.account_circle;
 
@@ -43,6 +45,8 @@ class UserProvider extends ChangeNotifier {
     } else {
       _status = Status.authenticated;
       _user = user;
+      var docRef = await _firestore.collection('UserInfo').doc(_user!.email).get();
+      _friend = docRef['friendEmail'].cast<String>();
     }
   }
 
@@ -50,17 +54,21 @@ class UserProvider extends ChangeNotifier {
   Future<void> addFriend(String friendEmail) async {
     try {
       friendEmail = friendEmail.trim();
+      print(friendEmail);
       if (_user != null) {
         if (friendEmail.isNotEmpty) {
           DocumentSnapshot userDoc =
               await _firestore.collection('UserInfo').doc(friendEmail).get();
           // 친구 uid확인
           if (userDoc.exists) {
-            await _firestore.collection('UserInfo').doc(_user!.uid).update({
-              'friends': FieldValue.arrayUnion([friendEmail]), // 친구의 UID를 추가
+            await _firestore.collection('UserInfo').doc(_user!.email).update({
+              'friendEmail': FieldValue.arrayUnion([friendEmail])
+            });
+            await _firestore.collection('UserInfo').doc(friendEmail).update({
+              'friendEmail': FieldValue.arrayUnion([_user!.email])
             });
             // 로컬 친구 목록에도 추가
-            friend.add(friendEmail);
+            _friend.add(friendEmail);
             return CustomToast.showToast('친구 추가 완료!');
           } else {
             return CustomToast.showToast('해당하는 이메일로 가입한 유저를 찾을 수 없습니다!');
@@ -71,8 +79,9 @@ class UserProvider extends ChangeNotifier {
       } else {
         CustomToast.showToast('사용자를 찾을 수 없습니다!');
       }
-    } catch (e) {
-      CustomToast.showToast('친구 추가 오류: $e');
+    } catch (err) {
+      CustomToast.showToast('친구 추가 오류: $err');
+      print(err);
     }
   }
 
@@ -103,11 +112,11 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
+      _friend.add(email);
       await _firestore.collection('UserInfo').doc(email).set({
         'credit': 0,
-        'friend_uid': [email]
+        'friendEmail': _friend,
       }); // credit 초기화
-      friend.add(email); // friend 추가
       await _user!.updateDisplayName(email); // 이름 초기값 설정
       await _user!.reload(); // 변경사항 적용
       _user = FirebaseAuth.instance.currentUser; // 변경된 객체 다시 적용]
@@ -123,8 +132,9 @@ class UserProvider extends ChangeNotifier {
   Future<String> signIn(
       String email, String password, String buttonText) async {
     try {
+      var docRef = await _firestore.collection('UserInfo').doc(email).get();
+      _friend = docRef['friendEmail'].cast<String>();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      // print('$buttonText 성공');
       CustomToast.showToast('$buttonText 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
@@ -137,6 +147,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> signOut(String buttonText) async {
     await _auth.signOut();
     _user = null;
+    _friend.clear();
     // print('$buttonText 성공');
     CustomToast.showToast('$buttonText 성공');
   }

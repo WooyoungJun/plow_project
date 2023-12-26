@@ -242,7 +242,7 @@ class _PostReadViewState extends State<PostReadView> {
             child: Column(
               children: [
                 CustomTextField(
-                  hintText: userProvider.userName,
+                  hintText: post.uid,
                   icon: Icon(Icons.person),
                   isReadOnly: true,
                 ),

@@ -110,6 +110,14 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
               isReadOnly: true,
             ),
             SizedBox(height: 20), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
+            if (userProvider.friend.isEmpty)
+              Text("친구가 없습니다.")
+            else
+              Text(
+                userProvider.friend.join('\n'),
+                textAlign: TextAlign.center, // 필요에 따라 정렬 설정
+                style: TextStyle(fontSize: 16.0), // 필요에 따라 폰트 크기 설정
+              ),
             ListTile(
               title: Row(
                 children: [
