@@ -11,7 +11,8 @@ class Logo extends StatelessWidget {
       height: height,
       width: width,
       child: IconButton(
-        onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+        onPressed: () =>
+            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false),
         icon: SizedBox(
           height: height,
           width: width,

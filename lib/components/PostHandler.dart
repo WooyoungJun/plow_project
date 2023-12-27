@@ -24,18 +24,26 @@ class PostHandler {
     return totalCount;
   }
 
+  static Future<void> setUserPostCount(String userEmail) async {
+    await FirebaseFirestore.instance
+        .collection('TotalPostCount')
+        .doc(userEmail)
+        .set({'count': 0});
+  }
+
   // uid에 해당하는 유저의 게시글 가져오기
-  static Future<List<Post>> readPost({required String collection,
-    List<String>? uids,
-    required int start,
-    required int end,
-    required int limit}) async {
+  static Future<List<Post>> readPost(
+      {required String collection,
+      List<String>? uids,
+      required int start,
+      required int end,
+      required int limit}) async {
     try {
       var postsRef = FirebaseFirestore.instance.collection(collection);
       Query query = postsRef;
       if (uids != null) query = query.where('uid', whereIn: uids);
       QuerySnapshot querySnapshot = await query
-          .orderBy('timeStamp', descending: true) // 내림차 순(최근 글 위로)
+          .orderBy('postId')
           .startAt([start])
           .endBefore([end])
           .limit(limit)
@@ -65,20 +73,25 @@ class PostHandler {
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
     post.createdDate = formattedTime;
     post.timeStamp = Timestamp.now();
-
-    var posts = FirebaseFirestore.instance.collection(collection);
-    var docRef = await posts.add(post.toMap()); // document ID 반환
-
-    post.postId = docRef.id;
-    await posts.doc(docRef.id).update({'postId': docRef.id}); // postId update
+    late int postIndex;
+    // 트랜잭션 실행 -> 데이터 경합 방지 및 자동 트랜잭션 재 실행 활용
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      postIndex = (await transaction.get(FirebaseFirestore.instance
+              .collection('TotalPostCount')
+              .doc('count')))
+          .data()!['count'];
+      transaction.update(
+          FirebaseFirestore.instance.collection('TotalPostCount').doc('count'),
+          {'count': postIndex + 1});
+      transaction.update(
+          FirebaseFirestore.instance.collection('TotalPostCount').doc(post.uid),
+          {'count': FieldValue.increment(1)});
+    });
+    post.postId = postIndex;
     await FirebaseFirestore.instance
-        .collection('TotalPostCount')
-        .doc('count')
-        .update({'count': FieldValue.increment(1)});
-    await FirebaseFirestore.instance
-        .collection('TotalPostCount')
-        .doc(post.uid)
-        .set({'count': FieldValue.increment(1)}, SetOptions(merge: true));
+        .collection(collection)
+        .doc(postIndex.toString())
+        .set(post.toMap());
     CustomToast.showToast('Post add 완료');
     return post;
   }
@@ -90,14 +103,14 @@ class PostHandler {
     post.modifyDate = formattedTime;
 
     var posts = FirebaseFirestore.instance.collection(collection);
-    await posts.doc(post.postId).update(post.toMap());
+    await posts.doc(post.postId.toString()).update(post.toMap());
     CustomToast.showToast('Post update 완료');
   }
 
   // post 삭제
   static Future<void> deletePost(String collection, Post post) async {
     var docRef =
-    FirebaseFirestore.instance.collection(collection).doc(post.postId);
+        FirebaseFirestore.instance.collection(collection).doc(post.postId.toString());
     await docRef.delete();
     await FirebaseFirestore.instance
         .collection('TotalPostCount')
@@ -106,7 +119,7 @@ class PostHandler {
     await FirebaseFirestore.instance
         .collection('TotalPostCount')
         .doc(post.uid)
-        .set({'count': FieldValue.increment(-1)});
+        .update({'count': FieldValue.increment(-1)});
     CustomToast.showToast('Post delete 완료');
   }
 }
@@ -114,7 +127,7 @@ class PostHandler {
 class Post {
   Post({
     required this.uid,
-    this.postId = '',
+    this.postId = -1,
     this.title = '',
     this.content = '',
     this.createdDate,
@@ -126,7 +139,7 @@ class Post {
   });
 
   final String uid;
-  String postId;
+  int postId;
   String title;
   String content;
   String? translateContent;
@@ -136,8 +149,7 @@ class Post {
   String? fileName;
   Timestamp? timeStamp;
 
-  Map<String, dynamic> toMap() =>
-      {
+  Map<String, dynamic> toMap() => {
         'postId': postId,
         'uid': uid,
         'title': title,

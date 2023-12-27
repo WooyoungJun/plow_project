@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/PostHandler.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/CustomClass/CustomTextField.dart';
@@ -80,12 +81,15 @@ class _SignUpViewState extends State<SignUpView> {
             SizedBox(height: largeGap),
             CustomTextField(
               controller: emailController,
+              fontSize: 16.0,
               labelText: 'Email',
               iconData: Icons.email,
+              maxLines: 1,
             ), // 컨트롤러 포함 텍스트 폼 위젯
             SizedBox(height: largeGap),
             CustomTextField(
               controller: passwordController,
+              fontSize: 16.0,
               labelText: 'Password',
               iconData: Icons.lock,
               maxLines: 1,
@@ -106,6 +110,7 @@ class _SignUpViewState extends State<SignUpView> {
                 );
                 CustomLoadingDialog.pop(context);
                 if (result == '성공') {
+                  PostHandler.setUserPostCount(emailController.text);
                   Navigator.pushNamedAndRemoveUntil(
                     context, '/HomeView',
                     (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동

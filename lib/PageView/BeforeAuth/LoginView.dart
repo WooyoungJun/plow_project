@@ -80,12 +80,15 @@ class _LoginViewState extends State<LoginView> {
             SizedBox(height: largeGap),
             CustomTextField(
               controller: emailController,
+              fontSize: 16.0,
               labelText: 'Email',
               iconData: Icons.email,
+              maxLines: 1,
             ), // 컨트롤러 포함 텍스트 폼 위젯
             SizedBox(height: largeGap),
             CustomTextField(
               controller: passwordController,
+              fontSize: 16.0,
               labelText: 'Password',
               iconData: Icons.lock,
               maxLines: 1,
