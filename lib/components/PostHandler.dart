@@ -81,12 +81,12 @@ class PostHandler {
       for (int pageIndex = startPage; pageIndex <= endPage; pageIndex++) {
         if (pageIndex == 1) {
           postPageIndex[0] = count + 1;
-          continue;
+        } else {
+          String postId = postPageIndex[pageIndex - 1].toString();
+          postPageIndex[pageIndex - 1] =
+              (await transaction.get(_boardList.doc(postId)))['next'];
+          // 첫번째 페이지 첫번째 글 제외 모든 글은 next 존재하므로 null X
         }
-        String postId = postPageIndex[pageIndex - 1].toString();
-        int nextPostId =
-            (await transaction.get(_boardList.doc(postId)))['next'];
-        postPageIndex[pageIndex - 1] = nextPostId;
       }
 
       // countDoc, userCountDoc 값 증가
@@ -125,9 +125,13 @@ class PostHandler {
       postPageIndex = (await transaction.get(countDoc))['postPageIndex'];
       for (int pageIndex = startPage; pageIndex <= endPage; pageIndex++) {
         String postId = postPageIndex[pageIndex - 1].toString();
-        int prevPostId =
-            (await transaction.get(_boardList.doc(postId)))['prev'];
-        postPageIndex[pageIndex - 1] = prevPostId;
+        int? prevPostId =
+            (await transaction.get(_boardList.doc(postId)))['prev']; // 마지막 글 제외 prev 항상 존재
+        if (prevPostId != null) {
+          postPageIndex[pageIndex - 1] = prevPostId;
+        } else {
+          postPageIndex.removeLast();
+        }
       }
       if (post.next != null && post.prev != null) {
         // 앞 뒤 존재
