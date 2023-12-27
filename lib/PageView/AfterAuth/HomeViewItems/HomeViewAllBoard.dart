@@ -20,22 +20,17 @@ class HomeViewAllBoard extends StatefulWidget {
 
 class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   late int _totalPages;
+  late int _totalPosts;
   int _curPage = 1;
-  late int _start;
-  late int _end;
+  int _startPage = 1;
   List<Post> posts = [];
   bool _isInitComplete = false;
 
-  Future<void> getData(
-      {List<String>? uids,
-      required int start,
-      required int end}) async {
-    posts = await PostHandler.readPost(
-      collection: 'BoardList',
-      uids: uids,
+  Future<void> getData({required int page}) async {
+    posts = await PostHandler.readPostAll(
+      totalPosts: _totalPosts,
       limit: widget.visibleCount - 2,
-      start: start,
-      end: end,
+      page: _curPage,
     ); // 모든 글 중 10개 읽어오기
   }
 
@@ -51,11 +46,9 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    _totalPages =
-        (await PostHandler.totalPostCount / widget.visibleCount).ceil();
-    _start = (_curPage - 1) * (widget.visibleCount - 2);
-    _end = min((_curPage) * (widget.visibleCount - 2), _totalPages);
-    await getData(start: 0, end: 10);
+    _totalPosts = await PostHandler.totalPostCount;
+    _totalPages = (_totalPosts / (widget.visibleCount - 2)).ceil();
+    await getData(page: _curPage);
     setState(() => _isInitComplete = true);
   }
 
@@ -82,11 +75,13 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/PostUploadView').then((result) {
+              Navigator.pushNamed(context, '/PostUploadView',
+                      arguments: {'curPage': _curPage, 'endPage': _totalPages})
+                  .then((result) async {
                 result = result as Map<String, Post>?;
                 if (result != null) {
-                  Post newPost = result['post']!; // post add 완료 했으면 post 존재
-                  setState(() => posts.add(newPost)); // post 추가 하고 setState
+                  await getData(page: _curPage);
+                  setState(() {}); // post 추가 하고 setState
                 }
               });
             },
@@ -95,7 +90,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
             icon: Icon(Icons.sync, color: Colors.white),
             onPressed: () async {
               CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
-              await getData(start: _start, end: _end);
+              await getData(page: _curPage);
               CustomLoadingDialog.pop(context);
               setState(() => CustomToast.showToast('새로고침 완료'));
             },
@@ -112,18 +107,15 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                 final post = posts[index];
                 return InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, '/PostReadView',
-                        arguments: {'post': post}).then((result) {
-                      result = result as Map<String, Post?>?;
+                    Navigator.pushNamed(context, '/PostReadView', arguments: {
+                      'curPage': _curPage,
+                      'endPage': _totalPages,
+                      'post': post
+                    }).then((result) async {
+                      result = result as Map<String, bool?>?;
                       if (result != null) {
-                        Post? post = result['post'];
-                        setState(() {
-                          if (post != null) {
-                            posts[index] = post;
-                          } else {
-                            posts.removeAt(index);
-                          }
-                        });
+                        await getData(page: _curPage);
+                        setState(() {});
                       }
                     });
                   },
@@ -168,17 +160,16 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                min(_totalPages, _curPage + 5), // 최대 10페이지까지 표시
-                (pageIndex) {
-                  _curPage = pageIndex + 1;
-                  _start = (_curPage - 1) * (widget.visibleCount - 2);
-                  _end =
-                      min((_curPage) * (widget.visibleCount - 2), _totalPages);
+                min(_totalPages, 10), // 최대 10페이지까지 표시
+                (index) {
                   return GestureDetector(
                     onTap: () async {
                       CustomLoadingDialog.showLoadingDialog(
                           context, '로딩 중입니다.');
-                      await getData(start: _start, end: _end);
+                      _curPage = index + 1;
+                      _startPage = _curPage - 5;
+                      if (_startPage < 1) _startPage = 1;
+                      await getData(page: _curPage);
                       CustomLoadingDialog.pop(context);
                       setState(() {});
                     },
@@ -193,8 +184,13 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
-                        _curPage.toString(),
-                        style: TextStyle(fontSize: 16),
+                        '${_startPage + index}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: (_startPage + index) == _curPage
+                              ? Colors.blue
+                              : null,
+                        ),
                       ),
                     ),
                   );

@@ -146,7 +146,6 @@ class UserProvider extends ChangeNotifier {
       String email, String password, String buttonText) async {
     try {
       var docRef = await _userInfo.doc(email).get();
-      print(docRef.data());
       _friend = docRef['friendEmail'].cast<String>();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       CustomToast.showToast('$buttonText 성공');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/PostHandler.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
@@ -17,6 +18,7 @@ class HomeViewMyInfo extends StatefulWidget {
 class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   final TextEditingController nameController = TextEditingController();
   late UserProvider userProvider;
+  late int count;
   bool _isInitComplete = false;
   bool isEditing = false;
 
@@ -33,6 +35,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     nameController.text = userProvider.userName;
+    count = await PostHandler.totalFriendPostCount([userProvider.userEmail]);
     setState(() => _isInitComplete = true);
   }
 
@@ -109,6 +112,11 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
             CustomTextField(
               hintText: userProvider.userEmail,
               icon: Icon(Icons.email, size: 25.0),
+              isReadOnly: true,
+            ),
+            CustomTextField(
+              hintText: '$count',
+              icon: Icon(Icons.numbers_rounded, size: 20.0),
               isReadOnly: true,
             ),
             SizedBox(height: largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절

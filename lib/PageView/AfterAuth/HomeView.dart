@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendMangae.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewAllBoard.dart';
-import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
+// import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewMyInfo.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/PostHandler.dart';
@@ -36,11 +36,12 @@ class _HomeViewState extends State<HomeView> {
     double screenHeight = MediaQuery.of(context).size.height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
-    int visibleCount = 12;
+    int visibleCount = 5;
     double itemHeight = screenHeight / visibleCount;
     homeViewItems = [
       HomeViewAllBoard(itemHeight: itemHeight, visibleCount: visibleCount),
-      HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
+      // HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
+      Text('3'),
       HomeViewFriendManage(),
       HomeViewMyInfo()
     ];
