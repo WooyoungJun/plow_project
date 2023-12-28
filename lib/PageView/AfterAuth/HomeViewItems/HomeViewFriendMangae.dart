@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
@@ -14,7 +15,6 @@ class HomeViewFriendManage extends StatefulWidget {
 class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
   late UserProvider userProvider;
   final TextEditingController _emailController1 = TextEditingController();
-  final TextEditingController _emailController2 = TextEditingController();
   bool _isInitComplete = false;
 
   @override
@@ -45,7 +45,6 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
   @override
   void dispose() {
     _emailController1.dispose();
-    _emailController2.dispose();
     super.dispose();
   }
 
@@ -76,10 +75,12 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
                     CustomTextField(controller: _emailController1),
                     SizedBox(height: mediumGap),
                     ElevatedButton(
-                      onPressed: () async {
+                      onPressed: () {
                         FocusScope.of(context).unfocus(); // 키보드를 내림
-                        await userProvider.addFriend(_emailController1.text);
-                        _emailController1.clear();
+                        _showFriendCheck(
+                            context: context,
+                            text: '추가',
+                            controller: _emailController1);
                       },
                       child: Text('친구 추가 버튼'),
                     ),
@@ -88,33 +89,84 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
               ),
             ),
             SizedBox(height: largeGap),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text('삭제하고자 하는 친구의 이메일을 입력하세요'),
-                    CustomTextField(controller: _emailController2),
-                    SizedBox(height: mediumGap),
-                    ElevatedButton(
-                      onPressed: () async {
-                        FocusScope.of(context).unfocus(); // 키보드를 내림
-                        await userProvider.deleteFriend(_emailController2.text);
-                        _emailController2.clear();
-                      },
-                      child: Text('친구 삭제 버튼'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            friend(),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showFriendCheck(
+      {required BuildContext context,
+      required String text,
+      TextEditingController? controller,
+      String? friendEmail}) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('정말 $text하시겠습니까?', textAlign: TextAlign.center),
+          titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  child: Text('취소'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: Text('확인'),
+                  onPressed: () async {
+                    CustomLoadingDialog.showLoadingDialog(
+                        context, '$text중입니다. \n잠시만 기다리세요');
+                    if (text == '삭제') {
+                      await userProvider.deleteFriend(friendEmail!);
+                    } else {
+                      await userProvider.addFriend(controller!.text);
+                      controller.clear();
+                    }
+                    await userProvider.getFriend();
+                    CustomLoadingDialog.pop(context);
+                    Navigator.pop(context); // 다이얼로그 닫기
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget friend() {
+    List<String> friend = userProvider.friend;
+    return Container(
+      alignment: Alignment.center,
+      child: friend.length == 1
+          ? Text("친구가 없습니다.")
+          : Column(
+              children: [
+                for (int i = 1; i < friend.length; i++)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        friend[i],
+                        style: TextStyle(fontSize: 15.0),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () => _showFriendCheck(
+                            context: context,
+                            text: '삭제',
+                            friendEmail: friend[i]),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
     );
   }
 }

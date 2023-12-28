@@ -6,22 +6,12 @@ import 'CustomClass/CustomToast.dart';
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
 class UserProvider extends ChangeNotifier {
-  final CollectionReference _userInfo =
-      FirebaseFirestore.instance.collection('UserInfo');
+  static final FirebaseFirestore _store = FirebaseFirestore.instance;
+  static final CollectionReference _userInfo = _store.collection('UserInfo');
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
   List<String> _friend = []; // 친구 uid 저장
-
-  UserProvider()
-      : _auth = FirebaseAuth.instance,
-        _user = FirebaseAuth.instance.currentUser,
-        _status = FirebaseAuth.instance.currentUser != null
-            ? Status.authenticated
-            : Status.unauthenticated {
-    // 사용자 정보 변경시 이벤트 발생 메소드 -> 해당 event listen
-    _auth.authStateChanges().listen(_onStateChanged);
-  }
 
   IconData? _icon;
 
@@ -39,6 +29,16 @@ class UserProvider extends ChangeNotifier {
 
   IconData? get icon => _icon ?? Icons.account_circle;
 
+  UserProvider()
+      : _auth = FirebaseAuth.instance,
+        _user = FirebaseAuth.instance.currentUser,
+        _status = FirebaseAuth.instance.currentUser != null
+            ? Status.authenticated
+            : Status.unauthenticated {
+    // 사용자 정보 변경시 이벤트 발생 메소드 -> 해당 event listen
+    _auth.authStateChanges().listen(_onStateChanged);
+  }
+
   // 상태 변경 시 user 객체가 스트림으로 들어옴
   Future<void> _onStateChanged(User? user) async {
     if (user == null) {
@@ -46,9 +46,13 @@ class UserProvider extends ChangeNotifier {
     } else {
       _status = Status.authenticated;
       _user = user;
-      var docRef = await _userInfo.doc(_user!.email).get();
-      _friend = docRef['friendEmail'].cast<String>();
+      await getFriend();
     }
+  }
+
+  Future<void> getFriend() async{
+    var docRef = await _userInfo.doc(_user!.email).get();
+    _friend = docRef['friendEmail'].cast<String>();
   }
 
   Future<void> addFriend(String friendEmail) async {
@@ -68,7 +72,6 @@ class UserProvider extends ChangeNotifier {
       await _userInfo.doc(friendEmail).update({
         'friendEmail': FieldValue.arrayUnion([_user!.email])
       });
-      _friend.add(friendEmail);
       return CustomToast.showToast('친구 추가 완료!');
     } catch (err) {
       CustomToast.showToast('친구 추가 오류: $err');
@@ -90,7 +93,6 @@ class UserProvider extends ChangeNotifier {
       await _userInfo.doc(friendEmail).update({
         'friendEmail': FieldValue.arrayRemove([_user!.email])
       });
-      _friend.remove(friendEmail);
       return CustomToast.showToast('친구 삭제 완료!');
     } catch (err) {
       CustomToast.showToast('친구 삭제 오류: $err');
