@@ -19,19 +19,21 @@ class HomeViewAllBoard extends StatefulWidget {
 }
 
 class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
-  late int _totalPages;
   late int _totalPosts;
+  late int _totalPages;
   int _curPage = 1;
   int _startPage = 1;
   List<Post> posts = [];
   bool _isInitComplete = false;
 
   Future<void> getData({required int page}) async {
-    posts = await PostHandler.readPostAll(
-      totalPosts: _totalPosts,
+    Map<String, dynamic> results = await PostHandler.readPostAll(
       limit: widget.visibleCount - 2,
       page: _curPage,
-    ); // 모든 글 중 10개 읽어오기
+    );
+    posts = results['posts'].cast<Post>();// 모든 글 중 10개 읽어오기
+    _totalPosts = results['totalPosts'] as int;
+    _totalPages = (_totalPosts / (widget.visibleCount - 2)).ceil();
   }
 
   @override
@@ -46,8 +48,6 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
   // post 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
-    _totalPosts = await PostHandler.totalPostCount;
-    _totalPages = (_totalPosts / (widget.visibleCount - 2)).ceil();
     await getData(page: _curPage);
     setState(() => _isInitComplete = true);
   }
@@ -75,10 +75,11 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/PostUploadView',
-                      arguments: {'curPage': _curPage, 'endPage': _totalPages})
-                  .then((result) async {
-                result = result as Map<String, Post>?;
+              Navigator.pushNamed(context, '/PostUploadView', arguments: {
+                'curPage': _curPage,
+                'vc': widget.visibleCount - 2,
+              }).then((result) async {
+                result = result as Map<String, dynamic>?;
                 if (result != null) {
                   await getData(page: _curPage);
                   setState(() {}); // post 추가 하고 setState
@@ -109,10 +110,10 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                   onTap: () {
                     Navigator.pushNamed(context, '/PostReadView', arguments: {
                       'curPage': _curPage,
-                      'endPage': _totalPages,
-                      'post': post
+                      'post': post,
+                      'vc': widget.visibleCount - 2,
                     }).then((result) async {
-                      result = result as Map<String, bool?>?;
+                      result = result as Map<String, dynamic>?;
                       if (result != null) {
                         await getData(page: _curPage);
                         setState(() {});

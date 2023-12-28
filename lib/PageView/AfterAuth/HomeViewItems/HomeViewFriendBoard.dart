@@ -33,12 +33,11 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
 
   Future<void> getData(
       {List<String>? uids, required int start, required int end}) async {
-    print('$start, $end');
-    posts = await PostHandler.readPostAll(
-      totalPosts: _totalFriendPosts,
+    Map<String, dynamic> results = await PostHandler.readPostAll(
       limit: widget.visibleCount - 2,
       page: _curPage,
     );
+    posts = results['posts'];
   }
 
   @override

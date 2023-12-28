@@ -22,7 +22,7 @@ class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
   late int curPage;
-  late int endPage;
+  late int vc;
   late double contentHeight;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
@@ -52,7 +52,7 @@ class _PostReadViewState extends State<PostReadView> {
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     curPage = argRef['curPage'] as int;
-    endPage = argRef['endPage'] as int;
+    vc = argRef['vc'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
     translateController.text = post.translateContent ?? '';
@@ -150,7 +150,7 @@ class _PostReadViewState extends State<PostReadView> {
                     CustomLoadingDialog.showLoadingDialog(
                         context, '삭제중입니다. \n잠시만 기다리세요');
                     await FileProcessing.deleteFile(post.relativePath);
-                    await PostHandler.deletePost(curPage, endPage, post);
+                    await PostHandler.deletePost(curPage, post, vc);
                     CustomLoadingDialog.pop(context);
                     Navigator.pop(context); // 다이얼로그 닫기
                     Navigator.pop(context, {'post': null});

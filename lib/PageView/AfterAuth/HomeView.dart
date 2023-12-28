@@ -36,12 +36,12 @@ class _HomeViewState extends State<HomeView> {
     double screenHeight = MediaQuery.of(context).size.height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
-    int visibleCount = 5;
+    int visibleCount = 12;
     double itemHeight = screenHeight / visibleCount;
     homeViewItems = [
       HomeViewAllBoard(itemHeight: itemHeight, visibleCount: visibleCount),
       // HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
-      Text('3'),
+      Text('2'),
       HomeViewFriendManage(),
       HomeViewMyInfo()
     ];
