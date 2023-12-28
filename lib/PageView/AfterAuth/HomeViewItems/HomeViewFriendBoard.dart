@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
@@ -22,23 +20,26 @@ class HomeViewFriendBoard extends StatefulWidget {
 
 class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   late UserProvider userProvider;
-  late int _totalFriendPages;
-  late int _totalFriendPosts;
-  int _curPage = 1;
-  int _startPage = 1;
-  late int _start;
-  late int _end;
+  late int _last;
+  int refreshGetPost = 5;
   List<Post> posts = [];
   bool _isInitComplete = false;
 
-  Future<void> getData(
-      {List<String>? uids, required int start, required int end}) async {
-    Map<String, dynamic> results = await PostHandler.readPostAll(
-      limit: widget.visibleCount - 2,
-      page: _curPage,
-    );
-    posts = results['posts'];
-  }
+  // 추가 데이터 가져올때 하단 인디케이터 표시용
+  bool isMoreRequesting = false;
+
+  // 다음 데이터 위치를 파악하기 위함
+  int nextPage = 0;
+
+  // 서버에 저장되어 있는 데이터들(가상으로 사용하기 위해)
+  List<String> serverItems = [];
+
+  // 실제 데이터를 서버에 가져와 저장되는 데이터(리스트에 표시할때 사용)
+  List<String> items = [];
+
+  // 드레그 거리를 체크하기 위함
+  // 해당 값을 평균내서 50%이상 움직였을때 데이터 불러오는 작업을 하게됨.
+  double _dragDistance = 0;
 
   @override
   void initState() {
@@ -53,12 +54,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    _totalFriendPosts =
-        await PostHandler.totalFriendPostCount(userProvider.friend);
-    _totalFriendPages = (_totalFriendPosts / widget.visibleCount).ceil();
-    _start = (_curPage - 1) * (widget.visibleCount - 2);
-    _end = (_curPage) * (widget.visibleCount - 2);
-    await getData(uids: userProvider.friend, start: _start, end: _end);
+    await getData();
     setState(() => _isInitComplete = true);
   }
 
@@ -86,139 +82,172 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/PostUploadView').then((result) {
-                result = result as Map<String, Post>?;
+              Navigator.pushNamed(context, '/PostUploadView', arguments: {
+                'vc': widget.visibleCount - 2,
+              }).then((result) async {
+                result = result as Map<String, dynamic>?;
                 if (result != null) {
-                  Post newPost = result['post']!; // post add 완료 했으면 post 존재
-                  setState(() => posts.add(newPost)); // post 추가 하고 setState
+                  await getData();
+                  setState(() {}); // post 추가 하고 setState
                 }
               });
             },
           ),
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white),
-            onPressed: () async {
-              CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
-              await getData(
-                  uids: userProvider.friend, start: _start, end: _end);
-              CustomLoadingDialog.pop(context);
-              setState(() => CustomToast.showToast('새로고침 완료'));
-            },
+            onPressed: refresh,
           )
         ],
       ),
       body: Column(
         children: [
-          Flexible(
-            child: ListView.builder(
-              itemCount: posts.length,
-              itemExtent: widget.itemHeight,
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                return InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/PostReadView',
-                        arguments: {'post': post}).then((result) {
-                      result = result as Map<String, Post?>?;
-                      if (result != null) {
-                        Post? post = result['post'];
-                        setState(() {
-                          if (post != null) {
-                            posts[index] = post;
-                          } else {
-                            posts.removeAt(index);
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification notification) {
+                scrollNotification(notification);
+                return false;
+              },
+              child: RefreshIndicator(
+                onRefresh: refresh,
+                child: ListView.builder(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  itemCount: posts.length,
+                  itemExtent: widget.itemHeight,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/PostReadView',
+                            arguments: {
+                              'post': post,
+                              'vc': widget.visibleCount - 2,
+                            }).then((result) async {
+                          result = result as Map<String, dynamic>?;
+                          if (result != null) {
+                            await getData();
+                            setState(() {});
                           }
                         });
-                      }
-                    });
-                  },
-                  child: Container(
-                    margin: EdgeInsets.only(left: 6, right: 6, top: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey, width: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            spreadRadius: 1,
-                            blurRadius: 2,
-                            offset: Offset(0, 2)),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
-                          child: CircleAvatar(
-                            backgroundColor: Colors.blueAccent,
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(left: 6, right: 6, top: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey, width: 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                spreadRadius: 1,
+                                blurRadius: 2,
+                                offset: Offset(0, 2)),
+                          ],
                         ),
-                        SizedBox(width: mediumGap),
-                        Text(post.title, overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
+                              child: CircleAvatar(
+                                backgroundColor: Colors.blueAccent,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: mediumGap),
+                            Text(post.title, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
           ),
-          // 페이지네이션 링크 표시
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                min(_totalFriendPages, 10), // 최대 10페이지까지 표시
-                (index) {
-                  int vc = widget.visibleCount;
-                  int start = (_startPage - 1 + index) * (vc - 2);
-                  int end = (_startPage + index) * (vc - 2);
-
-                  return GestureDetector(
-                    onTap: () async {
-                      CustomLoadingDialog.showLoadingDialog(
-                          context, '로딩 중입니다.');
-                      _curPage = index + 1;
-                      _startPage = _curPage - 5;
-                      if (_startPage < 1) _startPage = 1;
-                      _start = start;
-                      _end = end;
-                      await getData(start: _start, end: _end);
-                      CustomLoadingDialog.pop(context);
-                      setState(() {});
-                    },
-                    child: Container(
-                      margin: EdgeInsets.all(5),
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey,
-                          width: 1.0,
-                        ),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        '${_startPage + index}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: (_startPage + index) == _curPage
-                              ? Colors.blue
-                              : null,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+          Container(
+            height: isMoreRequesting ? 50.0 : 0,
+            color: Colors.white,
+            child: Center(
+              child: CircularProgressIndicator(),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> getData({int? last}) async {
+    Map<String, dynamic> results = await PostHandler.readPostFriend(
+      friend: userProvider.friend,
+      limit: widget.visibleCount - 2,
+      last: last,
+      refreshGetPost: last == null ? null : refreshGetPost,
+    );
+    var tmp = results['posts'].cast<Post>();
+    if (last == null) {
+      posts = tmp;
+    } else {
+      posts.addAll(tmp);
+    }
+    _last = posts.last.postId;
+    print(_last);
+  }
+
+  //스크롤 이벤트 처리
+  scrollNotification(notification) async {
+    // 스크롤 최대 범위
+    var containerExtent = notification.metrics.viewportDimension;
+    var bottom = notification.metrics.maxScrollExtent;
+
+    if (notification is ScrollStartNotification) {
+      // 스크롤을 시작하면 발생(손가락으로 리스트를 누르고 움직이려고 할때)
+      // 스크롤 거리값을 0으로 초기화함
+      _dragDistance = 0;
+    } else if (notification is OverscrollNotification) {
+      // 안드로이드에서 동작
+      // 스크롤을 시작후 움직일때 발생(손가락으로 리스트를 누르고 움직이고 있을때 계속 발생)
+      // 스크롤 움직인 만큼 빼준다.(notification.overscroll)
+      _dragDistance -= notification.overscroll;
+    } else if (notification is ScrollUpdateNotification) {
+      // ios에서 동작
+      // 스크롤을 시작후 움직일때 발생(손가락으로 리스트를 누르고 움직이고 있을때 계속 발생)
+      // 스크롤 움직인 만큼 빼준다.(notification.scrollDelta)
+      _dragDistance -= notification.scrollDelta!;
+    } else if (notification is ScrollEndNotification) {
+      // 스크롤이 끝났을때 발생(손가락을 리스트에서 움직이다가 뗐을때 발생)
+
+      // 지금까지 움직인 거리를 최대 거리로 나눈다.
+      var percent = _dragDistance / (containerExtent);
+      // 해당 값이 -0.4(40프로 이상) 아래서 위로 움직였다면
+      if (percent <= -0.4) {
+        // bottom 리스트 가장 아래 위치 값
+        // pixels는 현재 위치 값
+        // 두 같이 같다면(스크롤이 가장 아래에 있다)
+        if (bottom == notification.metrics.pixels) {
+          setState(() {
+            // 서버에서 데이터를 더 가져오는 효과를 주기 위함
+            // 하단에 프로그레스 서클 표시용
+            isMoreRequesting = true;
+          });
+
+          // 서버에서 데이터 가져온다.
+          await getData(last: _last).then((value) {
+            setState(() {
+              // 다 가져오면 하단 표시 서클 제거
+              isMoreRequesting = false;
+            });
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> refresh() async {
+    CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
+    await getData();
+    CustomLoadingDialog.pop(context);
+    setState(() => CustomToast.showToast('새로고침 완료'));
   }
 }

@@ -22,7 +22,6 @@ class _PostScreenViewState extends State<PostUploadView> {
   late UserProvider userProvider;
   late Post post;
   late double contentHeight;
-  late int curPage;
   late int vc;
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
@@ -47,7 +46,6 @@ class _PostScreenViewState extends State<PostUploadView> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     var argRef =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    curPage = argRef['curPage'] as int;
     vc = argRef['vc'] as int;
     post = Post(uid: userProvider.uid!); // 새로운 post 작성
     contentHeight = MediaQuery.of(context).size.height -
@@ -111,7 +109,7 @@ class _PostScreenViewState extends State<PostUploadView> {
       relativePath: relativePath,
       fileName: fileName,
     );
-    await PostHandler.addPost(curPage, newPost, vc);
+    await PostHandler.addPost(newPost, vc);
     CustomLoadingDialog.pop(context);
     Navigator.pop(context, {'upload': true});
   }

@@ -21,7 +21,6 @@ class PostReadView extends StatefulWidget {
 class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
-  late int curPage;
   late int vc;
   late double contentHeight;
   final TextEditingController titleController = TextEditingController();
@@ -51,7 +50,6 @@ class _PostReadViewState extends State<PostReadView> {
     var argRef =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
-    curPage = argRef['curPage'] as int;
     vc = argRef['vc'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
@@ -150,7 +148,7 @@ class _PostReadViewState extends State<PostReadView> {
                     CustomLoadingDialog.showLoadingDialog(
                         context, '삭제중입니다. \n잠시만 기다리세요');
                     await FileProcessing.deleteFile(post.relativePath);
-                    await PostHandler.deletePost(curPage, post, vc);
+                    await PostHandler.deletePost(post, vc);
                     CustomLoadingDialog.pop(context);
                     Navigator.pop(context); // 다이얼로그 닫기
                     Navigator.pop(context, {'post': null});

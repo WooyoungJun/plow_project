@@ -76,83 +76,74 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
               Navigator.pushNamed(context, '/PostUploadView', arguments: {
-                'curPage': _curPage,
                 'vc': widget.visibleCount - 2,
               }).then((result) async {
                 result = result as Map<String, dynamic>?;
-                if (result != null) {
-                  await getData(page: _curPage);
-                  setState(() {}); // post 추가 하고 setState
-                }
+                if (result != null) refresh();
               });
             },
           ),
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white),
-            onPressed: () async {
-              CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
-              await getData(page: _curPage);
-              CustomLoadingDialog.pop(context);
-              setState(() => CustomToast.showToast('새로고침 완료'));
-            },
+            onPressed: refresh,
           )
         ],
       ),
       body: Column(
         children: [
-          Flexible(
-            child: ListView.builder(
-              itemCount: posts.length,
-              itemExtent: widget.itemHeight,
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                return InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/PostReadView', arguments: {
-                      'curPage': _curPage,
-                      'post': post,
-                      'vc': widget.visibleCount - 2,
-                    }).then((result) async {
-                      result = result as Map<String, dynamic>?;
-                      if (result != null) {
-                        await getData(page: _curPage);
-                        setState(() {});
-                      }
-                    });
-                  },
-                  child: Container(
-                    margin: EdgeInsets.only(left: 6, right: 6, top: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey, width: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            spreadRadius: 1,
-                            blurRadius: 2,
-                            offset: Offset(0, 2)),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
-                          child: CircleAvatar(
-                            backgroundColor: Colors.blueAccent,
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(color: Colors.white),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: refresh,
+              child: ListView.builder(
+                physics: AlwaysScrollableScrollPhysics(),
+                itemCount: posts.length,
+                itemExtent: widget.itemHeight,
+                itemBuilder: (context, index) {
+                  final post = posts[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/PostReadView', arguments: {
+                        'post': post,
+                        'vc': widget.visibleCount - 2,
+                      }).then((result) async {
+                        result = result as Map<String, dynamic>?;
+                        if (result != null) refresh();
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(left: 6, right: 6, top: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey, width: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              spreadRadius: 1,
+                              blurRadius: 2,
+                              offset: Offset(0, 2)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(4, 4, 0, 4),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.blueAccent,
+                              child: Text(
+                                '${index + 1}',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: mediumGap),
-                        Text(post.title, overflow: TextOverflow.ellipsis),
-                      ],
+                          SizedBox(width: mediumGap),
+                          Text(post.title, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
           // 페이지네이션 링크 표시
@@ -202,5 +193,12 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
         ],
       ),
     );
+  }
+
+  Future<void> refresh() async {
+    CustomLoadingDialog.showLoadingDialog(context, '새로고침 중입니다.');
+    await getData(page: _curPage);
+    CustomLoadingDialog.pop(context);
+    setState(() => CustomToast.showToast('새로고침 완료'));
   }
 }
