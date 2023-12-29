@@ -20,7 +20,7 @@ class HomeViewFriendBoard extends StatefulWidget {
 
 class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   late UserProvider userProvider;
-  late int _last;
+  int? _last;
   int refreshGetPost = 5;
   List<Post> posts = [];
   bool _isInitComplete = false;
@@ -66,6 +66,24 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   @override
   void setState(VoidCallback fn) {
     if (mounted) super.setState(fn);
+  }
+
+  Future<void> getData({int? last}) async {
+    Map<String, dynamic> results = await PostHandler.readPostFriend(
+      friend: userProvider.friend,
+      limit: widget.visibleCount - 2,
+      last: last,
+      refreshGetPost: last == null ? null : refreshGetPost,
+    );
+    var tmp = results['posts'].cast<Post>();
+    if (tmp.length != 0) {
+      if (last == null) {
+        posts = tmp;
+      } else {
+        posts.addAll(tmp);
+      }
+      _last = posts.last.postId;
+    }
   }
 
   @override
@@ -176,23 +194,6 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
         ],
       ),
     );
-  }
-
-  Future<void> getData({int? last}) async {
-    Map<String, dynamic> results = await PostHandler.readPostFriend(
-      friend: userProvider.friend,
-      limit: widget.visibleCount - 2,
-      last: last,
-      refreshGetPost: last == null ? null : refreshGetPost,
-    );
-    var tmp = results['posts'].cast<Post>();
-    if (last == null) {
-      posts = tmp;
-    } else {
-      posts.addAll(tmp);
-    }
-    _last = posts.last.postId;
-    print(_last);
   }
 
   //스크롤 이벤트 처리

@@ -41,7 +41,6 @@ class _HomeViewState extends State<HomeView> {
     homeViewItems = [
       HomeViewAllBoard(itemHeight: itemHeight, visibleCount: visibleCount),
       HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
-      // Text('2'),
       HomeViewFriendManage(),
       HomeViewMyInfo()
     ];

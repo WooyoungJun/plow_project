@@ -41,21 +41,7 @@ class PostHandler {
             .startAt([postId])
             .limit(limit)
             .get();
-        posts = postList.docs.map((doc) {
-          return Post(
-            postId: doc['postId'],
-            uid: doc['uid'],
-            title: doc['title'],
-            content: doc['content'],
-            createdDate: doc['createdDate'],
-            modifyDate: doc['modifyDate'],
-            translateContent: doc['translateContent'],
-            relativePath: doc['relativePath'],
-            fileName: doc['fileName'],
-            prev: doc['prev'],
-            next: doc['next'],
-          );
-        }).toList();
+        posts = postList.docs.map((doc) => Post.setDoc(doc)).toList();
       });
 
       return {'posts': posts, 'totalPosts': totalPosts};
@@ -78,26 +64,10 @@ class PostHandler {
         var query = _boardList
             .where('uid', whereIn: friend)
             .orderBy('postId', descending: true);
-        print(last);
         if (last != null) query = query.startAfter([last]);
         var postList = await query.limit(refreshGetPost ?? limit).get();
-        posts = postList.docs.map((doc) {
-          return Post(
-            postId: doc['postId'],
-            uid: doc['uid'],
-            title: doc['title'],
-            content: doc['content'],
-            createdDate: doc['createdDate'],
-            modifyDate: doc['modifyDate'],
-            translateContent: doc['translateContent'],
-            relativePath: doc['relativePath'],
-            fileName: doc['fileName'],
-            prev: doc['prev'],
-            next: doc['next'],
-          );
-        }).toList();
+        posts = postList.docs.map((doc) => Post.setDoc(doc)).toList();
       });
-
       return {'posts': posts};
     } catch (err) {
       print(err);
@@ -107,7 +77,6 @@ class PostHandler {
 
   static Future<void> addPost(Post post, int vc) async {
     try {
-      post.setTime(); // addPost 시간 (timeStamp, DateTime 기록)
       DocumentReference countDoc = _totalPostCount.doc('count');
       DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
       await _store.runTransaction((transaction) async {
@@ -119,8 +88,9 @@ class PostHandler {
         if (topPost.docs.isEmpty) {
           newPostId = 1;
           transaction.update(countDoc, {
-            'count': FieldValue.increment(1),
-            'postPageIndex': FieldValue.arrayUnion([newPostId])
+            'count': 1,
+            'last': 1,
+            'postPageIndex': FieldValue.arrayUnion([1]),
           });
         } else {
           int topPostId = topPost.docs.first['postId'];
@@ -154,6 +124,7 @@ class PostHandler {
               _boardList.doc(topPostId.toString()), {'next': newPostId});
         }
 
+        post.setTime(); // addPost 시간 (timeStamp, DateTime 기록)
         post.postId = newPostId;
         transaction.set(_boardList.doc(newPostId.toString()), post.toMap());
         transaction.update(userCountDoc, {'count': FieldValue.increment(1)});
@@ -168,8 +139,11 @@ class PostHandler {
 
   // post update
   static Future<void> updatePost(Post post) async {
+    print(post.timeStamp);
     post.updateTime();
-    await _boardList.doc(post.postId.toString()).update(post.toMap());
+    await _store.runTransaction((transaction) async {
+      transaction.update(_boardList.doc(post.postId.toString()), post.toMap());
+    });
     CustomToast.showToast('Post update 완료');
   }
 
@@ -182,6 +156,7 @@ class PostHandler {
       await _store.runTransaction((transaction) async {
         // postPageIndex 변경 -> 당겨오기
         var doc = (await transaction.get(countDoc));
+        int last = doc['last'];
         int count = doc['count'];
         List<int> postPageIndex = doc['postPageIndex'].cast<int>();
         int endPage = (count / vc).ceil();
@@ -190,7 +165,6 @@ class PostHandler {
           String postId = postPageIndex[page].toString();
           int? prevPostId = (await transaction
               .get(_boardList.doc(postId)))['prev']; // 마지막 글 제외 prev 항상 존재
-          print(prevPostId);
           if (prevPostId != null) {
             postPageIndex[page] = prevPostId;
           } else {
@@ -205,7 +179,6 @@ class PostHandler {
         // prev, next 연결
         int? next = post.next;
         int? prev = post.prev;
-        print(post.toMap());
         if (next != null && prev != null) {
           // 앞 뒤 존재
           transaction.update(_boardList.doc(next.toString()), {'prev': prev});
@@ -217,7 +190,9 @@ class PostHandler {
           // 맨 처음 글
           transaction.update(_boardList.doc(next.toString()), {'prev': null});
         }
-
+        if (post.postId == last) {
+          transaction.update(countDoc, {'last': next});
+        }
         transaction.update(userCountDoc, {'count': FieldValue.increment(-1)});
         transaction.delete(_boardList.doc(post.postId.toString()));
       });
@@ -236,11 +211,12 @@ class Post {
     this.title = '',
     this.content = '',
     this.createdDate,
-    this.relativePath,
+    this.timeStamp,
     this.modifyDate,
     this.translateContent,
+    this.keywordContent,
+    this.relativePath,
     this.fileName,
-    this.timeStamp,
     this.prev,
     this.next,
   });
@@ -249,12 +225,13 @@ class Post {
   int postId;
   String title;
   String content;
-  String? translateContent;
   String? createdDate;
+  Timestamp? timeStamp;
   String? modifyDate;
+  String? translateContent;
+  String? keywordContent;
   String? relativePath;
   String? fileName;
-  Timestamp? timeStamp;
   int? prev;
   int? next;
 
@@ -276,13 +253,32 @@ class Post {
         'uid': uid,
         'title': title,
         'content': content,
-        'translateContent': translateContent,
         'createdDate': createdDate,
-        'modifyDate': modifyDate,
         'timeStamp': timeStamp,
+        'modifyDate': modifyDate,
+        'translateContent': translateContent,
+        'keywordContent': keywordContent,
         'relativePath': relativePath,
         'fileName': fileName,
         'prev': prev,
         'next': next,
       };
+
+  static Post setDoc(DocumentSnapshot doc) {
+    return Post(
+      uid: doc['uid'],
+      postId: doc['postId'],
+      title: doc['title'],
+      content: doc['content'],
+      createdDate: doc['createdDate'],
+      timeStamp: doc['timeStamp'],
+      modifyDate: doc['modifyDate'],
+      translateContent: doc['translateContent'],
+      relativePath: doc['relativePath'],
+      keywordContent: doc['keywordContent'],
+      fileName: doc['fileName'],
+      prev: doc['prev'],
+      next: doc['next'],
+    );
+  }
 }

@@ -1,9 +1,9 @@
 import 'dart:typed_data';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/FileProcessing.dart';
@@ -194,161 +194,56 @@ class _PostScreenViewState extends State<PostUploadView> {
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: contentHeight),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      CustomTextField(
-                        hintText: userProvider.userName,
-                        iconData: Icons.person,
-                        isReadOnly: true,
-                        maxLines: 1,
-                      ),
-                      CustomTextField(
-                        controller: titleController,
-                        iconData: Icons.title,
-                        isReadOnly: false,
-                      ), // 제목
-                      CustomTextField(
-                        controller: contentController,
-                        iconData: Icons.description,
-                        isReadOnly: false,
-                      ), // 본문
-                      SizedBox(height: largeGap),
-                      // Flexible(child:
-                      fileBytes != null
-                          ? ((fileName ?? post.fileName!).endsWith('.pdf')
-                              ? PDFView(
-                                  pdfData: fileBytes!,
-                                  enableSwipe: true,
-                                  swipeHorizontal: true,
-                                  autoSpacing: false,
-                                  pageFling: false,
-                                  fitPolicy: FitPolicy.BOTH,
-                                )
-                              : Image.memory(fileBytes!, fit: BoxFit.cover))
-                          : Text('이미지가 없습니다'),
-                      // ), //
-                      SizedBox(height: largeGap),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () async {
-                              var result = await FileProcessing.getImage(
-                                  _picker, ImageSource.camera);
-                              await setResult(result);
-                            },
-                            icon: Icon(Icons.photo_camera),
-                            iconSize: 30.0,
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              var result = await FileProcessing.getFile();
-                              await setResult(result);
-                            },
-                            icon: Icon(Icons.file_open),
-                            iconSize: 30.0,
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              CustomLoadingDialog.showLoadingDialog(
-                                  context, '텍스트 변환중입니다');
-                              RecognizedText? result =
-                                  await FileProcessing.inputFileToText(
-                                textRecognizer: textRecognizer,
-                                internalPath: internalPath,
-                              );
-                              CustomLoadingDialog.pop(context);
-                              if (result != null) {
-                                translateController.text = result.text;
-                                recognizedText = result;
-                                setState(() => isTranslate = true);
-                              }
-                            },
-                            icon: Icon(Icons.g_translate),
-                            iconSize: 30.0,
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              CustomLoadingDialog.showLoadingDialog(
-                                  context, '텍스트 키워드 추출중입니다.');
-                              String? result =
-                                  await FileProcessing.keyExtraction(
-                                      translateController.text);
-                              CustomLoadingDialog.pop(context);
-                              if (result != null) {
-                                keywordController.text = result;
-                                setState(() => isKeyExtraction = true);
-                              }
-                            },
-                            icon: Icon(Icons.key),
-                            iconSize: 30.0,
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              CustomLoadingDialog.showLoadingDialog(
-                                  context, '강의를 검색중입니다.');
-                              Map<String, dynamic>? result =
-                                  await FileProcessing.searchKmooc(
-                                      keywordController.text);
-                              CustomLoadingDialog.pop(context);
-                              if (result != null) {
-                                setState(() => isSearch = true);
-                              }
-                            },
-                            icon: Icon(Icons.search),
-                            iconSize: 30.0,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: largeGap),
-                      isTranslate
-                          ? ListView.separated(
-                              shrinkWrap: true,
-                              // 리스트 뷰 크기 고정
-                              primary: false,
-                              // 리스트 뷰 내부 스크롤 없음
-                              itemCount: recognizedText!.blocks.length,
-                              itemBuilder: (context, index) {
-                                TextBlock textBlock =
-                                    recognizedText!.blocks[index];
-                                return Card(
-                                  margin: EdgeInsets.all(8.0),
-                                  child: ListTile(
-                                    title: Text('Text Block #$index'),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: textBlock.lines
-                                          .map((line) => Text(line.text))
-                                          .toList(),
-                                    ),
-                                  ),
-                                );
-                              },
-                              separatorBuilder:
-                                  (BuildContext context, int index) =>
-                                      Divider(),
-                            )
-                          : Container(),
-                      CustomTextField(
-                        controller: translateController,
-                        iconData: Icons.g_translate,
-                        isReadOnly: !isTranslate,
-                      ),
-                      CustomTextField(
-                        controller: keywordController,
-                        iconData: Icons.key,
-                        isReadOnly: !isKeyExtraction,
-                      ),
-                      isSearch ? searchResult() : Container(),
-                    ],
+            return RawScrollbar(
+              thumbColor: Colors.grey,
+              thickness: 8,
+              radius: Radius.circular(6),
+              padding: EdgeInsets.only(right: 4.0),
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: contentHeight),
+                  // 최소 길이 제한
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        CustomTextField(
+                          hintText: userProvider.userName,
+                          iconData: Icons.person,
+                          isReadOnly: true,
+                          maxLines: 1,
+                        ),
+                        CustomTextField(
+                          controller: titleController,
+                          iconData: Icons.title,
+                          isReadOnly: false,
+                        ), // 제목
+                        CustomTextField(
+                          controller: contentController,
+                          iconData: Icons.description,
+                          isReadOnly: false,
+                        ), // 본문
+                        SizedBox(height: largeGap),
+                        fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
+                        SizedBox(height: largeGap),
+                        fileSelect(),
+                        SizedBox(height: largeGap),
+                        isTranslate ? translateText() : Container(),
+                        CustomTextField(
+                          controller: translateController,
+                          iconData: Icons.g_translate,
+                          isReadOnly: !isTranslate,
+                        ),
+                        CustomTextField(
+                          controller: keywordController,
+                          iconData: Icons.key,
+                          isReadOnly: !isKeyExtraction,
+                        ),
+                        isSearch ? searchResult() : Container(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -356,6 +251,133 @@ class _PostScreenViewState extends State<PostUploadView> {
           },
         ),
       ),
+    );
+  }
+
+  Widget pdfOrImgView() {
+    return ((fileName ?? post.fileName!).endsWith('.pdf')
+        ? Column(
+            children: [
+              SizedBox(
+                height: 300,
+                child: SfPdfViewer.memory(
+                  fileBytes!,
+                  scrollDirection: PdfScrollDirection.vertical,
+                ),
+              ),
+              pdfToImgButton(),
+            ],
+          )
+        : Image.memory(fileBytes!, fit: BoxFit.cover));
+  }
+
+  Widget pdfToImgButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        CustomLoadingDialog.showLoadingDialog(context, '이미지 변환중입니다');
+        Map<String, dynamic>? result =
+            await FileProcessing.pdfToPng(fileBytes: fileBytes);
+        if (result == null) return;
+        CustomLoadingDialog.pop(context);
+        await setResult(result);
+      },
+      child: Row(
+        children: [Icon(Icons.transform), Text('pdf를 이미지로 변환하기')],
+      ),
+    );
+  }
+
+  Widget fileSelect() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: () async {
+            var result =
+                await FileProcessing.getImage(_picker, ImageSource.camera);
+            await setResult(result);
+          },
+          icon: Icon(Icons.photo_camera),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            var result = await FileProcessing.getFile();
+            await setResult(result);
+          },
+          icon: Icon(Icons.file_open),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
+            RecognizedText? result = await FileProcessing.inputFileToText(
+              textRecognizer: textRecognizer,
+              internalPath: internalPath,
+            );
+            CustomLoadingDialog.pop(context);
+            if (result != null) {
+              translateController.text = result.text;
+              recognizedText = result;
+              setState(() => isTranslate = true);
+            }
+          },
+          icon: Icon(Icons.g_translate),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
+            String? result =
+                await FileProcessing.keyExtraction(translateController.text);
+            CustomLoadingDialog.pop(context);
+            if (result != null) {
+              keywordController.text = result;
+              setState(() => isKeyExtraction = true);
+            }
+          },
+          icon: Icon(Icons.key),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
+            Map<String, dynamic>? result =
+                await FileProcessing.searchKmooc(keywordController.text);
+            CustomLoadingDialog.pop(context);
+            if (result != null) {
+              setState(() => isSearch = true);
+            }
+          },
+          icon: Icon(Icons.search),
+          iconSize: 30.0,
+        ),
+      ],
+    );
+  }
+
+  Widget translateText() {
+    return ListView.separated(
+      shrinkWrap: true,
+      // 리스트 뷰 크기 고정
+      primary: false,
+      // 리스트 뷰 내부 스크롤 없음
+      itemCount: recognizedText!.blocks.length,
+      itemBuilder: (context, index) {
+        TextBlock textBlock = recognizedText!.blocks[index];
+        return Card(
+          margin: EdgeInsets.all(8.0),
+          child: ListTile(
+            title: Text('Text Block #$index'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: textBlock.lines.map((line) => Text(line.text)).toList(),
+            ),
+          ),
+        );
+      },
+      separatorBuilder: (BuildContext context, int index) => Divider(),
     );
   }
 
