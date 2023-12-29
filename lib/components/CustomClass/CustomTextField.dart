@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final TextEditingController? controller; // 부모 위젯에서 활용할 텍스트 컨트롤러
   final String? labelText;
   final String? hintText; // 텍스트 필드에 노출할 텍스트
@@ -8,10 +8,7 @@ class CustomTextField extends StatelessWidget {
   final double? iconSize;
   final bool isReadOnly;
   final int? maxLines;
-  final double height = 25.0;
   final double fontSize;
-  final defaultDesign =
-      OutlineInputBorder(borderRadius: BorderRadius.circular(6));
   final Icon? icon;
   final TextStyle? textStyle;
 
@@ -36,20 +33,33 @@ class CustomTextField extends StatelessWidget {
             );
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  final double height = 25.0;
+
+  final defaultDesign =
+      OutlineInputBorder(borderRadius: BorderRadius.circular(6));
+
+  @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: maxLines != null ? null : height,
       child: TextField(
-        maxLines: maxLines,
-        readOnly: isReadOnly,
-        controller: controller,
-        obscureText: labelText == "Password" ? true : false,
-        style: isReadOnly ? textStyle : TextStyle(fontSize: fontSize),
+        minLines: 1,
+        maxLines: widget.maxLines,
+        readOnly: widget.isReadOnly,
+        controller: widget.controller,
+        obscureText: widget.labelText == "Password" ? true : false,
+        style: widget.isReadOnly
+            ? widget.textStyle
+            : TextStyle(fontSize: widget.fontSize),
+        onChanged: (text) => setState(() {}),
         decoration: InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 8.0),
-          prefixIcon: icon,
-          labelText: labelText,
-          hintText: hintText,
+          prefixIcon: widget.icon,
+          labelText: widget.labelText,
+          hintText: widget.hintText,
           fillColor: Colors.white,
           filled: true,
           border: defaultDesign,

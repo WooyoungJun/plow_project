@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
@@ -38,7 +39,8 @@ class FileProcessing {
       if (fileResult != null && fileResult.files.isNotEmpty) {
         String fileExtension = fileResult.files.first.extension!.toLowerCase();
         Uint8List fileBytes = fileResult.files.first.bytes!;
-        return await uploadFileToTmp(fileExtension, fileBytes);
+        return await uploadFileToTmp(
+            fileResult.files.first.path!, fileExtension, fileBytes);
       } else {
         CustomToast.showToast('파일을 선택해주세요');
       }
@@ -51,15 +53,14 @@ class FileProcessing {
   static Future<Map<String, dynamic>?> getImage(
       ImagePicker picker, ImageSource imageSource) async {
     try {
-      const List<String> imageExtensions = ['jpg', 'jpeg', 'png'];
       XFile? imageFile = await picker.pickImage(source: imageSource);
 
       if (imageFile != null) {
-        // jpg, jpeg, png만 인식
         String fileExtension = imageFile.path.split('.').last.toLowerCase();
-        if (imageExtensions.contains(fileExtension)) {
+        if (allowedExtensions.contains(fileExtension)) {
           Uint8List fileBytes = await imageFile.readAsBytes();
-          return await uploadFileToTmp(fileExtension, fileBytes);
+          return await uploadFileToTmp(
+              imageFile.path, fileExtension, fileBytes);
         } else {
           // 이미지 파일이 아닌 경우 처리
           CustomToast.showToast('선택된 파일은 jpg, jpeg, png 파일이 아닙니다.');
@@ -76,14 +77,16 @@ class FileProcessing {
   }
 
   static Future<Map<String, dynamic>?> uploadFileToTmp(
-      String fileExtension, Uint8List fileBytes) async {
+      String internalPath, String fileExtension, Uint8List fileBytes) async {
     try {
+      InputImage inputImage = InputImage.fromFilePath(internalPath);
       String fileName = randomString(fileExtension);
       String relativePath = 'uploads/tmp/$fileName';
       var storageReference = _storageRef.ref().child(relativePath);
       await storageReference.putData(fileBytes);
       CustomToast.showToast('이미지 업로드 완료');
       return {
+        'internalPath': inputImage.filePath,
         'relativePath': relativePath,
         'fileName': fileName,
         'fileBytes': fileBytes,
@@ -95,13 +98,17 @@ class FileProcessing {
     return null;
   }
 
-  static Future<Map<String, String>?> transitionToStorage(
-      String? relativePath, String? fileName, Uint8List? fileBytes) async {
-    if (relativePath != null) {
+  static Future<Map<String, dynamic>?> transitionToStorage(
+      String? relativePath,
+      String? fileName,
+      Uint8List? fileBytes,) async {
+    if (relativePath != null &&
+        fileName != null &&
+        fileBytes != null ) {
       try {
         String newRelativePath = 'uploads/saved/$fileName';
         Reference destinationReference = _storageRef.ref(newRelativePath);
-        TaskSnapshot copyTask = await destinationReference.putData(fileBytes!);
+        TaskSnapshot copyTask = await destinationReference.putData(fileBytes);
         if (copyTask.state == TaskState.success) {
           await deleteFile(relativePath);
           print('파일 이동 성공');
@@ -111,7 +118,7 @@ class FileProcessing {
         CustomToast.showToast('이미지 업로드 완료');
         return {
           'relativePath': newRelativePath,
-          'fileName': fileName!,
+          'fileName': fileName,
         };
       } catch (err) {
         print('업로드 오류: $err');
@@ -135,6 +142,16 @@ class FileProcessing {
     } else {
       print('deleteFile: 삭제할 파일이 없음');
     }
+  }
+
+  static Future<RecognizedText?> inputFileToText(
+      {required TextRecognizer textRecognizer, String? internalPath}) async {
+    if (internalPath != null) {
+      InputImage inputImage = InputImage.fromFilePath(internalPath);
+      RecognizedText textBlocks = await textRecognizer.processImage(inputImage);
+      return textBlocks;
+    }
+    return null;
   }
 
   static Future<String?> fileToText(

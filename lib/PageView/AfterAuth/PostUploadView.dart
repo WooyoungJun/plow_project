@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,6 +28,8 @@ class _PostScreenViewState extends State<PostUploadView> {
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
   final TextEditingController keywordController = TextEditingController();
+  final TextRecognizer textRecognizer =
+      TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
   bool isSaving = false;
   bool isTranslate = false;
@@ -34,9 +37,11 @@ class _PostScreenViewState extends State<PostUploadView> {
   bool isSearch = false;
 
   final _picker = ImagePicker();
+  String? internalPath;
   String? relativePath;
   String? fileName;
   Uint8List? fileBytes;
+  RecognizedText? recognizedText;
 
   @override
   void initState() {
@@ -70,9 +75,10 @@ class _PostScreenViewState extends State<PostUploadView> {
   Future<void> setResult(Map<String, dynamic>? result) async {
     if (result != null) {
       await FileProcessing.deleteFile(relativePath);
-      relativePath = result['relativePath'];
-      fileName = result['fileName'];
-      fileBytes = result['fileBytes'];
+      internalPath = result['internalPath'] as String;
+      relativePath = result['relativePath'] as String;
+      fileName = result['fileName'] as String;
+      fileBytes = result['fileBytes'] as Uint8List;
       translateController.clear();
       setState(() {});
     }
@@ -85,6 +91,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     contentController.dispose();
     translateController.dispose();
     keywordController.dispose();
+    textRecognizer.close();
     // print('post upload dispose');
     super.dispose();
   }
@@ -99,7 +106,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
     CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
     isSaving = true;
-    Map<String, String>? result = await FileProcessing.transitionToStorage(
+    Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
         relativePath, fileName, fileBytes);
     if (result != null) {
       relativePath = result['relativePath'];
@@ -185,12 +192,12 @@ class _PostScreenViewState extends State<PostUploadView> {
             )
           ],
         ),
-        body: LayoutBuilder(builder: (context, constraints) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: contentHeight),
-              child: IntrinsicHeight(
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: contentHeight),
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Column(
@@ -199,6 +206,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         hintText: userProvider.userName,
                         iconData: Icons.person,
                         isReadOnly: true,
+                        maxLines: 1,
                       ),
                       CustomTextField(
                         controller: titleController,
@@ -211,20 +219,20 @@ class _PostScreenViewState extends State<PostUploadView> {
                         isReadOnly: false,
                       ), // 본문
                       SizedBox(height: largeGap),
-                      Flexible(
-                        child: fileBytes != null
-                            ? ((fileName ?? post.fileName!).endsWith('.pdf')
-                                ? PDFView(
-                                    pdfData: fileBytes!,
-                                    enableSwipe: true,
-                                    swipeHorizontal: true,
-                                    autoSpacing: false,
-                                    pageFling: false,
-                                    fitPolicy: FitPolicy.BOTH,
-                                  )
-                                : Image.memory(fileBytes!, fit: BoxFit.cover))
-                            : Text('이미지가 없습니다'),
-                      ), //
+                      // Flexible(child:
+                      fileBytes != null
+                          ? ((fileName ?? post.fileName!).endsWith('.pdf')
+                              ? PDFView(
+                                  pdfData: fileBytes!,
+                                  enableSwipe: true,
+                                  swipeHorizontal: true,
+                                  autoSpacing: false,
+                                  pageFling: false,
+                                  fitPolicy: FitPolicy.BOTH,
+                                )
+                              : Image.memory(fileBytes!, fit: BoxFit.cover))
+                          : Text('이미지가 없습니다'),
+                      // ), //
                       SizedBox(height: largeGap),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -251,12 +259,16 @@ class _PostScreenViewState extends State<PostUploadView> {
                             onPressed: () async {
                               CustomLoadingDialog.showLoadingDialog(
                                   context, '텍스트 변환중입니다');
-                              String? result = await FileProcessing.fileToText(
-                                  relativePath, fileName);
+                              RecognizedText? result =
+                                  await FileProcessing.inputFileToText(
+                                textRecognizer: textRecognizer,
+                                internalPath: internalPath,
+                              );
                               CustomLoadingDialog.pop(context);
                               if (result != null) {
-                                translateController.text = result;
-                                setState(() => isKeyExtraction = true);
+                                translateController.text = result.text;
+                                recognizedText = result;
+                                setState(() => isTranslate = true);
                               }
                             },
                             icon: Icon(Icons.g_translate),
@@ -272,7 +284,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                               CustomLoadingDialog.pop(context);
                               if (result != null) {
                                 keywordController.text = result;
-                                setState(() => isTranslate = true);
+                                setState(() => isKeyExtraction = true);
                               }
                             },
                             icon: Icon(Icons.key),
@@ -296,6 +308,35 @@ class _PostScreenViewState extends State<PostUploadView> {
                         ],
                       ),
                       SizedBox(height: largeGap),
+                      isTranslate
+                          ? ListView.separated(
+                              shrinkWrap: true,
+                              // 리스트 뷰 크기 고정
+                              primary: false,
+                              // 리스트 뷰 내부 스크롤 없음
+                              itemCount: recognizedText!.blocks.length,
+                              itemBuilder: (context, index) {
+                                TextBlock textBlock =
+                                    recognizedText!.blocks[index];
+                                return Card(
+                                  margin: EdgeInsets.all(8.0),
+                                  child: ListTile(
+                                    title: Text('Text Block #$index'),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: textBlock.lines
+                                          .map((line) => Text(line.text))
+                                          .toList(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              separatorBuilder:
+                                  (BuildContext context, int index) =>
+                                      Divider(),
+                            )
+                          : Container(),
                       CustomTextField(
                         controller: translateController,
                         iconData: Icons.g_translate,
@@ -311,9 +352,9 @@ class _PostScreenViewState extends State<PostUploadView> {
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
       ),
     );
   }
