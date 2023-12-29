@@ -26,9 +26,12 @@ class _PostScreenViewState extends State<PostUploadView> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
-  bool isTranslate = false;
-  bool isSaving = false;
+  final TextEditingController keywordController = TextEditingController();
   bool _isInitComplete = false;
+  bool isSaving = false;
+  bool isTranslate = false;
+  bool isKeyExtraction = false;
+  bool isSearch = false;
 
   final _picker = ImagePicker();
   String? relativePath;
@@ -81,6 +84,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     titleController.dispose();
     contentController.dispose();
     translateController.dispose();
+    keywordController.dispose();
     // print('post upload dispose');
     super.dispose();
   }
@@ -252,12 +256,43 @@ class _PostScreenViewState extends State<PostUploadView> {
                               CustomLoadingDialog.pop(context);
                               if (result != null) {
                                 translateController.text = result;
-                                setState(() => isTranslate = true);
+                                setState(() => isKeyExtraction = true);
                               }
                             },
                             icon: Icon(Icons.g_translate),
                             iconSize: 30.0,
-                          )
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              CustomLoadingDialog.showLoadingDialog(
+                                  context, '텍스트 키워드 추출중입니다.');
+                              String? result =
+                                  await FileProcessing.keyExtraction(
+                                      translateController.text);
+                              CustomLoadingDialog.pop(context);
+                              if (result != null) {
+                                keywordController.text = result;
+                                setState(() => isTranslate = true);
+                              }
+                            },
+                            icon: Icon(Icons.key),
+                            iconSize: 30.0,
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              CustomLoadingDialog.showLoadingDialog(
+                                  context, '강의를 검색중입니다.');
+                              Map<String, dynamic>? result =
+                                  await FileProcessing.searchKmooc(
+                                      keywordController.text);
+                              CustomLoadingDialog.pop(context);
+                              if (result != null) {
+                                setState(() => isSearch = true);
+                              }
+                            },
+                            icon: Icon(Icons.search),
+                            iconSize: 30.0,
+                          ),
                         ],
                       ),
                       SizedBox(height: largeGap),
@@ -265,7 +300,13 @@ class _PostScreenViewState extends State<PostUploadView> {
                         controller: translateController,
                         iconData: Icons.g_translate,
                         isReadOnly: !isTranslate,
-                      ), // 작성일
+                      ),
+                      CustomTextField(
+                        controller: keywordController,
+                        iconData: Icons.key,
+                        isReadOnly: !isKeyExtraction,
+                      ),
+                      isSearch ? searchResult() : Container(),
                     ],
                   ),
                 ),
@@ -276,4 +317,6 @@ class _PostScreenViewState extends State<PostUploadView> {
       ),
     );
   }
+
+  Widget searchResult() => Text('강의 검색 결과가 없습니다');
 }

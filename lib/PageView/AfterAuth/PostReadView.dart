@@ -26,8 +26,9 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final TextEditingController translateController = TextEditingController();
-  bool isEditing = false;
+  final TextEditingController keywordController = TextEditingController();
   bool _isInitComplete = false;
+  bool isEditing = false;
 
   final _picker = ImagePicker();
   String? relativePath;
@@ -84,6 +85,7 @@ class _PostReadViewState extends State<PostReadView> {
     titleController.dispose();
     contentController.dispose();
     translateController.dispose();
+    keywordController.dispose();
     // print('post screen dispose');
     super.dispose();
   }
@@ -194,7 +196,7 @@ class _PostReadViewState extends State<PostReadView> {
           ), // 수정하기 버튼
           IconButton(
             icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context, {'post': post}),
+            onPressed: () => Navigator.pop(context),
           )
         ],
       ),
@@ -288,7 +290,38 @@ class _PostReadViewState extends State<PostReadView> {
                                     },
                                     icon: Icon(Icons.g_translate),
                                     iconSize: 30.0,
-                                  )
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      CustomLoadingDialog.showLoadingDialog(
+                                          context, '텍스트 키워드 추출중입니다.');
+                                      String? result =
+                                          await FileProcessing.keyExtraction(
+                                              translateController.text);
+                                      CustomLoadingDialog.pop(context);
+                                      if (result != null) {
+                                        keywordController.text = result;
+                                        setState(() {});
+                                      }
+                                    },
+                                    icon: Icon(Icons.key),
+                                    iconSize: 30.0,
+                                  ),
+                                  IconButton(
+                                    onPressed: () async {
+                                      CustomLoadingDialog.showLoadingDialog(
+                                          context, '강의를 검색중입니다.');
+                                      Map<String, dynamic>? result =
+                                          await FileProcessing.searchKmooc(
+                                              keywordController.text);
+                                      CustomLoadingDialog.pop(context);
+                                      if (result != null) {
+                                        setState(() {});
+                                      }
+                                    },
+                                    icon: Icon(Icons.search),
+                                    iconSize: 30.0,
+                                  ),
                                 ],
                               ),
                               SizedBox(height: largeGap),
@@ -301,6 +334,11 @@ class _PostReadViewState extends State<PostReadView> {
                     CustomTextField(
                       controller: translateController,
                       iconData: Icons.g_translate,
+                      isReadOnly: !isEditing,
+                    ),
+                    CustomTextField(
+                      controller: keywordController,
+                      iconData: Icons.key,
                       isReadOnly: !isEditing,
                     ),
                   ],

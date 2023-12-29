@@ -137,13 +137,15 @@ class FileProcessing {
     }
   }
 
-  static Future<String?> fileToText(String? relativePath, String? fileName) async {
+  static Future<String?> fileToText(
+      String? relativePath, String? fileName) async {
     if (relativePath != null) {
       try {
         final response = await http.post(
             Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'file_url': relativePath, 'file_name': fileName}));
+            body:
+                jsonEncode({'file_url': relativePath, 'file_name': fileName}));
         if (response.statusCode == 200) {
           String extractedText = response.body;
           print(extractedText);
@@ -160,6 +162,15 @@ class FileProcessing {
     } else {
       CustomToast.showToast('이미지를 업로드 하세요.');
     }
+    return null;
+  }
+
+  static Future<String?> keyExtraction(String? text) async {
+    // 작성 필요
+    return text;
+  }
+
+  static Future<Map<String, dynamic>?> searchKmooc(String? text) async {
     return null;
   }
 
