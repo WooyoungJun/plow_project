@@ -8,7 +8,7 @@ import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http; // flask 통신
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf_render/pdf_render.dart';
@@ -226,6 +226,7 @@ class FileProcessing {
     return null;
   }
 
+  // 이미지에서 텍스트 추출(TextRecognizer) >> Flask서버로 전송하여 keyword추출 / summary / api검색
   static Future<String?> fileToText(
       String? relativePath, String? fileName) async {
     if (relativePath != null) {
@@ -254,14 +255,90 @@ class FileProcessing {
     return null;
   }
 
-  static Future<String?> keyExtraction(String? text) async {
-    // 작성 필요
-    return text;
-  }
+  // flask 서버로 텍스트 전송
+  static Future<String?> sendTextToServer(String extractedText) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://http://192.168.1.5:5000/text-processing'), //로컬ip주소
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': extractedText}),
+      );
 
-  static Future<Map<String, dynamic>?> searchKmooc(String? text) async {
+      if (response.statusCode == 200) {
+        print('서버에서 텍스트 처리 성공');
+        return response.body; // 서버에서 처리된 결과를 반환
+      } else {
+        print('서버에서 텍스트 처리 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('서버와의 통신 오류: $e');
+    }
     return null;
   }
+
+  // keybert이용하여 keyword 추출하기
+  static Future<String?> keyExtraction(String text) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://http://192.168.1.5:5000/extract-keywords'), //로컬 ip주소
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': text}),
+      );
+
+      if (response.statusCode == 200) {
+        print('키워드 추출 연결 성공');
+        return response.body;
+      } else {
+        print('키워드 추출 연결 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('키워드 추출 연결 오류: $e');
+    }
+    return null;
+  }
+
+
+  // kocw api 연동하기
+  static Future<String?> connectToApi() async {
+    try {
+      var response = await http.get(
+        Uri.parse('http://http://192.168.1.5:5000/kocw-api'), //로컬ip주소
+      );
+
+      if (response.statusCode == 200) {
+        print('API 연결 성공');
+        return response.body;
+      } else {
+        print('API 연결 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('API 연결 오류: $e');
+    }
+    return null;
+  }
+
+
+  // summary 부분 : trained GPT-2
+  static Future<String?> Summary(String text, String keywords) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://http://192.168.1.5:5000.com/generate-summary'), //로컬ip주소
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': text, 'keywords': keywords}),
+      );
+
+      if (response.statusCode == 200) {
+        print('Summary 연결 성공');
+        return response.body;
+      } else {
+        print('Summary 연결 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Summary 연결 오류: $e');
+    }
+    return null;
+  }
+
 
   // 랜덤한 문자열 생성
   static String randomString(String fileExtension) {
