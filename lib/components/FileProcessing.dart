@@ -259,7 +259,7 @@ class FileProcessing {
   static Future<String?> sendTextToServer(String extractedText) async {
     try {
       var response = await http.post(
-        Uri.parse('http://플라스크서버.com/text-processing'),
+        Uri.parse('http://http://192.168.1.5:5000/text-processing'), //로컬ip주소
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'text': extractedText}),
       );
@@ -280,7 +280,7 @@ class FileProcessing {
   static Future<String?> keyExtraction(String text) async {
     try {
       var response = await http.post(
-        Uri.parse('http://플라스크 서버.com/extract-keywords'),
+        Uri.parse('http://http://192.168.1.5:5000/extract-keywords'), //로컬 ip주소
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'text': text}),
       );
@@ -302,7 +302,7 @@ class FileProcessing {
   static Future<String?> connectToApi() async {
     try {
       var response = await http.get(
-        Uri.parse('http://플라스크서버.com/kocw-api'),
+        Uri.parse('http://http://192.168.1.5:5000/kocw-api'), //로컬ip주소
       );
 
       if (response.statusCode == 200) {
@@ -322,7 +322,7 @@ class FileProcessing {
   static Future<String?> Summary(String text, String keywords) async {
     try {
       var response = await http.post(
-        Uri.parse('http://플라스크 서버.com/generate-summary'),
+        Uri.parse('http://http://192.168.1.5:5000.com/generate-summary'), //로컬ip주소
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'text': text, 'keywords': keywords}),
       );
