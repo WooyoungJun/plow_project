@@ -74,7 +74,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Future<void> setResult(Map<String, dynamic>? result) async {
     if (result != null) {
-      await FileProcessing.deleteFile(relativePath);
+      await FileProcessing.deleteFile(relativePath: relativePath);
       internalPath = result['internalPath'] as String;
       relativePath = result['relativePath'] as String;
       fileName = result['fileName'] as String;
@@ -107,7 +107,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
     isSaving = true;
     Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
-        relativePath, fileName, fileBytes);
+        relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
     if (result != null) {
       relativePath = result['relativePath'];
       fileName = result['fileName'];
@@ -149,7 +149,7 @@ class _PostScreenViewState extends State<PostUploadView> {
               onPressed: () async {
                 CustomLoadingDialog.showLoadingDialog(
                     context, '취소중입니다. \n잠시만 기다리세요');
-                await FileProcessing.deleteFile(relativePath);
+                await FileProcessing.deleteFile(relativePath: relativePath);
                 CustomLoadingDialog.pop(context);
                 Navigator.pop(context);
                 Navigator.pushReplacementNamed(
@@ -294,8 +294,8 @@ class _PostScreenViewState extends State<PostUploadView> {
       children: [
         IconButton(
           onPressed: () async {
-            var result =
-                await FileProcessing.getImage(_picker, ImageSource.camera);
+            var result = await FileProcessing.getImage(
+                picker: _picker, imageSource: ImageSource.camera);
             await setResult(result);
           },
           icon: Icon(Icons.photo_camera),
@@ -329,8 +329,8 @@ class _PostScreenViewState extends State<PostUploadView> {
         IconButton(
           onPressed: () async {
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
-            String? result =
-                await FileProcessing.keyExtraction(translateController.text);
+            String? result = await FileProcessing.keyExtraction(
+                extractedText: translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
               keywordController.text = result;
@@ -343,11 +343,15 @@ class _PostScreenViewState extends State<PostUploadView> {
         IconButton(
           onPressed: () async {
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
-            Map<String, dynamic>? result =
-                await FileProcessing.searchKmooc(keywordController.text);
+            String? result = await FileProcessing.makeSummary(
+                text: translateController.text,
+                keywords: keywordController.text);
+            // Map<String, dynamic>? result =
+            //     await FileProcessing.searchKmooc(keywordController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              setState(() => isSearch = true);
+              print(result);
+              setState(() {});
             }
           },
           icon: Icon(Icons.search),

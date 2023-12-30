@@ -20,7 +20,7 @@ class FileProcessing {
   static final FirebaseStorage _storageRef = FirebaseStorage.instance;
   static final List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
 
-  static Future<Uint8List?> loadFileFromStorage(String? relativePath) async {
+  static Future<Uint8List?> loadFileFromStorage({String? relativePath}) async {
     if (relativePath != null) {
       try {
         Uint8List? fileBytes =
@@ -47,7 +47,9 @@ class FileProcessing {
         String fileExtension = fileResult.files.first.extension!.toLowerCase();
         Uint8List fileBytes = fileResult.files.first.bytes!;
         return await uploadFileToTmp(
-            fileResult.files.first.path!, fileExtension, fileBytes);
+            internalPath: fileResult.files.first.path!,
+            fileExtension: fileExtension,
+            fileBytes: fileBytes);
       } else {
         CustomToast.showToast('파일을 선택해주세요');
       }
@@ -58,7 +60,7 @@ class FileProcessing {
   }
 
   static Future<Map<String, dynamic>?> getImage(
-      ImagePicker picker, ImageSource imageSource) async {
+      {required ImagePicker picker, required ImageSource imageSource}) async {
     try {
       XFile? imageFile = await picker.pickImage(source: imageSource);
 
@@ -67,7 +69,9 @@ class FileProcessing {
         if (allowedExtensions.contains(fileExtension)) {
           Uint8List fileBytes = await imageFile.readAsBytes();
           return await uploadFileToTmp(
-              imageFile.path, fileExtension, fileBytes);
+              internalPath: imageFile.path,
+              fileExtension: fileExtension,
+              fileBytes: fileBytes);
         } else {
           // 이미지 파일이 아닌 경우 처리
           CustomToast.showToast('선택된 파일은 jpg, jpeg, png 파일이 아닙니다.');
@@ -84,7 +88,9 @@ class FileProcessing {
   }
 
   static Future<Map<String, dynamic>?> uploadFileToTmp(
-      String internalPath, String fileExtension, Uint8List fileBytes) async {
+      {required String internalPath,
+      required String fileExtension,
+      required Uint8List fileBytes}) async {
     try {
       String fileName = randomString(fileExtension);
       String relativePath = 'uploads/tmp/$fileName';
@@ -104,18 +110,18 @@ class FileProcessing {
     return null;
   }
 
-  static Future<Map<String, dynamic>?> transitionToStorage(
+  static Future<Map<String, dynamic>?> transitionToStorage({
     String? relativePath,
     String? fileName,
     Uint8List? fileBytes,
-  ) async {
+  }) async {
     if (relativePath != null && fileName != null && fileBytes != null) {
       try {
         String newRelativePath = 'uploads/saved/$fileName';
         Reference destinationReference = _storageRef.ref(newRelativePath);
         TaskSnapshot copyTask = await destinationReference.putData(fileBytes);
         if (copyTask.state == TaskState.success) {
-          await deleteFile(relativePath);
+          await deleteFile(relativePath: relativePath);
           // print('파일 이동 성공');
         } else {
           // print('파일 이동 실패: 복사 중 문제 발생');
@@ -133,7 +139,7 @@ class FileProcessing {
     return null;
   }
 
-  static Future<void> deleteFile(String? relativePath) async {
+  static Future<void> deleteFile({String? relativePath}) async {
     // Firebase Storage 참조 얻기
     if (relativePath != null) {
       try {
@@ -185,9 +191,7 @@ class FileProcessing {
       // 이미지를 병합
       for (imglib.Image image in imgList) {
         imglib.compositeImage(mergedImage, image,
-            dstX: 0,
-            dstY: mergedHeight,
-            blend: imglib.BlendMode.alpha);
+            dstX: 0, dstY: mergedHeight, blend: imglib.BlendMode.alpha);
 
         mergedHeight += image.height;
       }
@@ -199,11 +203,11 @@ class FileProcessing {
       File file = File(filePath);
       await file.writeAsBytes(mergedBytes);
       print('이미지가 저장되었습니다. 경로: $filePath');
-      Map<String, dynamic>? result =
-          await uploadFileToTmp(filePath, 'png', mergedBytes);
-      if(result != null) {
-         result['mergedBytes'] = mergedBytes;
-         return result;
+      Map<String, dynamic>? result = await uploadFileToTmp(
+          internalPath: filePath, fileExtension: 'png', fileBytes: mergedBytes);
+      if (result != null) {
+        result['mergedBytes'] = mergedBytes;
+        return result;
       }
     } else {
       CustomToast.showToast('파일을 선택하세요');
@@ -226,7 +230,65 @@ class FileProcessing {
     return null;
   }
 
-  // 이미지에서 텍스트 추출(TextRecognizer) >> Flask서버로 전송하여 keyword추출 / summary / api검색
+  // keybert이용하여 keyword 추출하기
+  static Future<String?> keyExtraction({required String extractedText}) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://www.wooyoung-project.kro.kr/extract-keywords'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': extractedText}),
+      );
+      print('${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        CustomToast.showToast('키워드 추출 연결 성공');
+        print('키워드 추출 연결 성공');
+        return response.body;
+      } else {
+        print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
+      }
+    } catch (e) {
+      print('키워드 추출 연결 오류: $e');
+    }
+    return null;
+  }
+
+  // summary 부분 : trained GPT-2
+  static Future<String?> makeSummary(
+      {required String text, required String keywords}) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'text': text, 'keywords': keywords}),
+      );
+
+      if (response.statusCode == 200) {
+        CustomToast.showToast('Summary 연결 성공');
+        print('Summary 연결 성공');
+        return response.body;
+      } else {
+        print('Summary 연결 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Summary 연결 오류: $e');
+    }
+    return null;
+  }
+
+  // 랜덤한 문자열 생성
+  static String randomString(String fileExtension) {
+    String formattedDateTime = DateTime.now().millisecondsSinceEpoch.toString();
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    Random random = Random();
+    String name = String.fromCharCodes(
+      Iterable.generate(
+          10, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
+    );
+    return '${formattedDateTime}_$name.$fileExtension';
+  }
+
+  // 텍스트 추출 -> 사용 안함
   static Future<String?> fileToText(
       String? relativePath, String? fileName) async {
     if (relativePath != null) {
@@ -253,102 +315,5 @@ class FileProcessing {
       CustomToast.showToast('이미지를 업로드 하세요.');
     }
     return null;
-  }
-
-  // flask 서버로 텍스트 전송
-  static Future<String?> sendTextToServer(String extractedText) async {
-    try {
-      var response = await http.post(
-        Uri.parse('http://http://192.168.1.5:5000/text-processing'), //로컬ip주소
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': extractedText}),
-      );
-
-      if (response.statusCode == 200) {
-        print('서버에서 텍스트 처리 성공');
-        return response.body; // 서버에서 처리된 결과를 반환
-      } else {
-        print('서버에서 텍스트 처리 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('서버와의 통신 오류: $e');
-    }
-    return null;
-  }
-
-  // keybert이용하여 keyword 추출하기
-  static Future<String?> keyExtraction(String text) async {
-    try {
-      var response = await http.post(
-        Uri.parse('http://http://192.168.1.5:5000/extract-keywords'), //로컬 ip주소
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': text}),
-      );
-
-      if (response.statusCode == 200) {
-        print('키워드 추출 연결 성공');
-        return response.body;
-      } else {
-        print('키워드 추출 연결 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('키워드 추출 연결 오류: $e');
-    }
-    return null;
-  }
-
-
-  // kocw api 연동하기
-  static Future<String?> connectToApi() async {
-    try {
-      var response = await http.get(
-        Uri.parse('http://http://192.168.1.5:5000/kocw-api'), //로컬ip주소
-      );
-
-      if (response.statusCode == 200) {
-        print('API 연결 성공');
-        return response.body;
-      } else {
-        print('API 연결 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('API 연결 오류: $e');
-    }
-    return null;
-  }
-
-
-  // summary 부분 : trained GPT-2
-  static Future<String?> Summary(String text, String keywords) async {
-    try {
-      var response = await http.post(
-        Uri.parse('http://http://192.168.1.5:5000.com/generate-summary'), //로컬ip주소
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': text, 'keywords': keywords}),
-      );
-
-      if (response.statusCode == 200) {
-        print('Summary 연결 성공');
-        return response.body;
-      } else {
-        print('Summary 연결 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Summary 연결 오류: $e');
-    }
-    return null;
-  }
-
-
-  // 랜덤한 문자열 생성
-  static String randomString(String fileExtension) {
-    String formattedDateTime = DateTime.now().millisecondsSinceEpoch.toString();
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    Random random = Random();
-    String name = String.fromCharCodes(
-      Iterable.generate(
-          10, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
-    );
-    return '${formattedDateTime}_$name.$fileExtension';
   }
 }

@@ -29,7 +29,7 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController translateController = TextEditingController();
   final TextEditingController keywordController = TextEditingController();
   final TextRecognizer textRecognizer =
-      TextRecognizer(script: TextRecognitionScript.korean);
+  TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
   bool isEditing = false;
 
@@ -54,14 +54,21 @@ class _PostReadViewState extends State<PostReadView> {
   Future<void> initPostReadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     var argRef =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    ModalRoute
+        .of(context)!
+        .settings
+        .arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     vc = argRef['vc'] as int;
     titleController.text = post.title;
     contentController.text = post.content;
     translateController.text = post.translateContent ?? '';
-    fileBytes = await FileProcessing.loadFileFromStorage(post.relativePath);
-    contentHeight = MediaQuery.of(context).size.height -
+    fileBytes = await FileProcessing.loadFileFromStorage(
+        relativePath: post.relativePath);
+    contentHeight = MediaQuery
+        .of(context)
+        .size
+        .height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
 
@@ -75,7 +82,7 @@ class _PostReadViewState extends State<PostReadView> {
 
   Future<void> setResult(Map<String, dynamic>? result) async {
     if (result != null) {
-      await FileProcessing.deleteFile(relativePath);
+      await FileProcessing.deleteFile(relativePath: relativePath);
       internalPath = result['internalPath'] as String;
       relativePath = result['relativePath'] as String;
       fileName = result['fileName'] as String;
@@ -96,7 +103,9 @@ class _PostReadViewState extends State<PostReadView> {
   }
 
   Future<void> _handleSaveButton() async {
-    if (titleController.text.trim().isEmpty) {
+    if (titleController.text
+        .trim()
+        .isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
     if ((post.title != titleController.text) ||
@@ -110,9 +119,9 @@ class _PostReadViewState extends State<PostReadView> {
       post.translateContent = translateController.text;
       post.keywordContent = keywordController.text;
       Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
-          relativePath, fileName, fileBytes);
+          relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
       if (result != null) {
-        FileProcessing.deleteFile(post.relativePath);
+        FileProcessing.deleteFile(relativePath: post.relativePath);
         post.relativePath = result['relativePath'];
         post.fileName = result['fileName'];
       }
@@ -148,7 +157,8 @@ class _PostReadViewState extends State<PostReadView> {
                     // 확인 버튼이 눌렸을 때, 게시물 삭제 수행
                     CustomLoadingDialog.showLoadingDialog(
                         context, '삭제중입니다. \n잠시만 기다리세요');
-                    await FileProcessing.deleteFile(post.relativePath);
+                    await FileProcessing.deleteFile(
+                        relativePath: post.relativePath);
                     await PostHandler.deletePost(post, vc);
                     CustomLoadingDialog.pop(context);
                     Navigator.pop(context); // 다이얼로그 닫기
@@ -172,7 +182,10 @@ class _PostReadViewState extends State<PostReadView> {
         // Navigator.push로 인한 leading 버튼 없애기
         title: AppBarTitle(title: '자유 게시판'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: Theme
+            .of(context)
+            .colorScheme
+            .primary,
         actions: [
           Visibility(
             visible: (post.uid == userProvider.uid),
@@ -180,9 +193,9 @@ class _PostReadViewState extends State<PostReadView> {
             child: GestureDetector(
               child: isEditing
                   ? Icon(
-                      Icons.save,
-                      color: Colors.white,
-                    )
+                Icons.save,
+                color: Colors.white,
+              )
                   : Icon(Icons.edit, color: Colors.white),
               onTap: () {
                 if (isEditing) {
@@ -259,12 +272,12 @@ class _PostReadViewState extends State<PostReadView> {
       }),
       floatingActionButton: !isEditing && post.uid == userProvider.uid
           ? FloatingActionButton(
-              onPressed: () => _showDeleteCheck(context),
-              child: Icon(
-                Icons.delete,
-                color: Colors.red,
-              ),
-            )
+        onPressed: () => _showDeleteCheck(context),
+        child: Icon(
+          Icons.delete,
+          color: Colors.red,
+        ),
+      )
           : null,
     );
   }
@@ -272,17 +285,18 @@ class _PostReadViewState extends State<PostReadView> {
   Widget pdfOrImgView() {
     return ((fileName ?? post.fileName!).endsWith('.pdf')
         ? Column(
-            children: [
-              SizedBox(
-                height: 300,
-                child: SfPdfViewer.memory(
-                  fileBytes!,
-                  scrollDirection: PdfScrollDirection.vertical,
-                ),
-              ),
-              if (isEditing) pdfToImgButton() else Container()
-            ],
-          )
+      children: [
+        SizedBox(
+          height: 300,
+          child: SfPdfViewer.memory(
+            fileBytes!,
+            scrollDirection: PdfScrollDirection.vertical,
+          ),
+        ),
+        if (isEditing) pdfToImgButton() else
+          Container()
+      ],
+    )
         : Image.memory(fileBytes!, fit: BoxFit.cover));
   }
 
@@ -291,7 +305,7 @@ class _PostReadViewState extends State<PostReadView> {
       onPressed: () async {
         CustomLoadingDialog.showLoadingDialog(context, '이미지 변환중입니다');
         Map<String, dynamic>? result =
-            await FileProcessing.pdfToPng(fileBytes: fileBytes);
+        await FileProcessing.pdfToPng(fileBytes: fileBytes);
         if (result == null) return;
         CustomLoadingDialog.pop(context);
         await setResult(result);
@@ -310,7 +324,7 @@ class _PostReadViewState extends State<PostReadView> {
         IconButton(
           onPressed: () async {
             var result = await FileProcessing.getImage(
-                _picker, ImageSource.camera);
+                picker: _picker, imageSource: ImageSource.camera);
             await setResult(result);
           },
           icon: Icon(Icons.photo_camera),
@@ -326,10 +340,8 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
-            CustomLoadingDialog.showLoadingDialog(
-                context, '텍스트 변환중입니다');
-            RecognizedText? result =
-                await FileProcessing.inputFileToText(
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
+            RecognizedText? result = await FileProcessing.inputFileToText(
               textRecognizer: textRecognizer,
               internalPath: internalPath,
             );
@@ -345,30 +357,32 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
-            CustomLoadingDialog.showLoadingDialog(
-                context, '텍스트 키워드 추출중입니다.');
-            // String? result = await FileProcessing.keyExtraction(
-            //     translateController.text);
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
+            String? result = await FileProcessing.keyExtraction(
+                extractedText: translateController.text);
             CustomLoadingDialog.pop(context);
-            // if (result != null) {
-            //   keywordController.text = result;
-            //   setState(() {});
-            // }
+            if (result != null) {
+              keywordController.text = result;
+              setState(() {});
+            }
           },
           icon: Icon(Icons.key),
           iconSize: 30.0,
         ),
         IconButton(
           onPressed: () async {
-            CustomLoadingDialog.showLoadingDialog(
-                context, '강의를 검색중입니다.');
+            CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
+            String? result = await FileProcessing.makeSummary(
+                text: translateController.text,
+                keywords: keywordController.text);
             // Map<String, dynamic>? result =
             //     await FileProcessing.searchKmooc(
             //         keywordController.text);
             CustomLoadingDialog.pop(context);
-            // if (result != null) {
-            //   setState(() {});
-            // }
+            if (result != null) {
+              print(result);
+              setState(() {});
+            }
           },
           icon: Icon(Icons.search),
           iconSize: 30.0,
