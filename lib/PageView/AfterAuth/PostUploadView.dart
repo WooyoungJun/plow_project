@@ -230,7 +230,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         SizedBox(height: largeGap),
                         fileSelect(),
                         SizedBox(height: largeGap),
-                        isTranslate ? translateText() : Container(),
+                        // isTranslate ? translateText() : Container(),
                         CustomTextField(
                           controller: translateController,
                           iconData: Icons.g_translate,

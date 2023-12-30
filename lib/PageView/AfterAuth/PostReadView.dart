@@ -239,7 +239,7 @@ class _PostReadViewState extends State<PostReadView> {
                     SizedBox(height: mediumGap),
                     fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
                     isEditing ? fileSelect() : Container(),
-                    if (recognizedText != null) translateText(),
+                    // if (recognizedText != null) translateText(),
                     CustomTextField(
                       controller: translateController,
                       iconData: Icons.g_translate,
