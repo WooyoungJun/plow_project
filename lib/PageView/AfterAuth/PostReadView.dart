@@ -111,7 +111,7 @@ class _PostReadViewState extends State<PostReadView> {
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
     return PopScope(
-      canPop: false,
+      canPop: !isEditing,
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
         await CustomAlertDialog.onBackPressed(context, relativePath);
