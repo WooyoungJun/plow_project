@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -12,7 +13,7 @@ import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/const/Size.dart';
+import 'package:plow_project/components/ConstSet.dart';
 
 class PostReadView extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class PostReadView extends StatefulWidget {
 class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
-  late int vc;
+  late Post newPost;
   late double contentHeight;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -33,6 +34,7 @@ class _PostReadViewState extends State<PostReadView> {
   bool _isInitComplete = false;
   bool isPdf = false;
   bool isEditing = false;
+  bool isSearch = false;
 
   final _picker = ImagePicker();
   String? internalPath;
@@ -57,15 +59,13 @@ class _PostReadViewState extends State<PostReadView> {
     var argRef =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
-    vc = argRef['vc'] as int;
+    newPost = post;
     _titleController.text = post.title;
     _contentController.text = post.content;
     _translateController.text = post.translateContent ?? '';
-    fileBytes = await FileProcessing.loadFileFromStorage(
+    _keywordController.text = post.keywordContent ?? '';
+    newPost.fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: post.relativePath);
-    contentHeight = MediaQuery.of(context).size.height -
-        AppBar().preferredSize.height -
-        kBottomNavigationBarHeight;
     isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
     setState(() => _isInitComplete = true);
   }
@@ -119,7 +119,7 @@ class _PostReadViewState extends State<PostReadView> {
         post.relativePath = result['relativePath'];
         post.fileName = result['fileName'];
       }
-      await PostHandler.updatePost(post); // post 업데이트
+      await PostHandler.updatePost(post: post); // post 업데이트
       CustomLoadingDialog.pop(context);
       Navigator.pop(context, {'update': true});
     } else {
@@ -130,80 +130,6 @@ class _PostReadViewState extends State<PostReadView> {
     });
   }
 
-  Future<void> _showDeleteCheck(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('정말 삭제하시겠습니까?', textAlign: TextAlign.center),
-          titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
-          actions: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  child: Text('취소'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                TextButton(
-                  child: Text('확인'),
-                  onPressed: () async {
-                    // 확인 버튼이 눌렸을 때, 게시물 삭제 수행
-                    CustomLoadingDialog.showLoadingDialog(
-                        context, '삭제중입니다. \n잠시만 기다리세요');
-                    await FileProcessing.deleteFile(
-                        relativePath: post.relativePath);
-                    await PostHandler.deletePost(post, vc);
-                    CustomLoadingDialog.pop(context);
-                    Navigator.pop(context); // 다이얼로그 닫기
-                    Navigator.pop(context, {'post': null});
-                  },
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _onBackPressed(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('경고'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: [
-                Text('정말 뒤로 가시겠습니까?'),
-                Text('저장하지 않은 정보가 삭제될 수 있습니다.'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text('확인'),
-              onPressed: () async {
-                CustomLoadingDialog.showLoadingDialog(
-                    context, '취소중입니다. \n잠시만 기다리세요');
-                await FileProcessing.deleteFile(relativePath: relativePath);
-                CustomLoadingDialog.pop(context);
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(
-                    context, '/HomeView'); // 그냥 홈으로 이동
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
@@ -211,7 +137,7 @@ class _PostReadViewState extends State<PostReadView> {
       canPop: false,
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
-        await _onBackPressed(context);
+        await CustomAlertDialog.onBackPressed(context, relativePath);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -239,7 +165,8 @@ class _PostReadViewState extends State<PostReadView> {
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async {
                 isEditing
-                    ? await _onBackPressed(context)
+                    ? await CustomAlertDialog.onBackPressed(
+                        context, relativePath)
                     : Navigator.pop(context);
               },
             )
@@ -282,7 +209,7 @@ class _PostReadViewState extends State<PostReadView> {
                         isReadOnly: true,
                         maxLines: 1,
                       ),
-                      SizedBox(height: mediumGap),
+                      SizedBox(height: ConstSet.mediumGap),
                       fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
                       isEditing ? fileSelect() : Container(),
                       // if (recognizedText != null) translateText(),
@@ -296,6 +223,7 @@ class _PostReadViewState extends State<PostReadView> {
                         iconData: Icons.key,
                         isReadOnly: !isEditing,
                       ),
+                      isSearch ? searchResult() : Container(),
                     ],
                   ),
                 ),
@@ -305,7 +233,8 @@ class _PostReadViewState extends State<PostReadView> {
         }),
         floatingActionButton: !isEditing && post.uid == userProvider.uid
             ? FloatingActionButton(
-                onPressed: () => _showDeleteCheck(context),
+                onPressed: () =>
+                    CustomAlertDialog.onDeletePressed(context, post),
                 child: Icon(Icons.delete, color: Colors.red),
               )
             : null,
@@ -370,7 +299,7 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
             RecognizedText? result = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
@@ -388,7 +317,7 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
             String? result = await FileProcessing.keyExtraction(
                 extractedText: _translateController.text);
@@ -403,7 +332,7 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
             String? result = await FileProcessing.makeSummary(
                 text: _translateController.text,
@@ -414,7 +343,7 @@ class _PostReadViewState extends State<PostReadView> {
             CustomLoadingDialog.pop(context);
             if (result != null) {
               print(result);
-              setState(() {});
+              setState(() => isSearch = true);
             }
           },
           icon: Icon(Icons.search),
@@ -426,9 +355,11 @@ class _PostReadViewState extends State<PostReadView> {
 
   Widget searchResult() => Text('강의 검색 결과가 없습니다');
 
-  void validateCheck() {
-    if (fileBytes == null) return CustomToast.showToast('파일을 선택하세요');
-    if (isPdf) return CustomToast.showToast('이미지로 변환해주세요');
+  bool validateCheck() {
+    if (fileBytes != null && !isPdf) return false;
+    if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
+    if (isPdf) CustomToast.showToast('이미지로 변환해주세요');
+    return true;
   }
 }
 // Widget translateText() {

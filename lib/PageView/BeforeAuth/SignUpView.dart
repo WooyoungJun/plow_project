@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/ConstSet.dart';
+import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/PostHandler.dart';
-import 'package:provider/provider.dart';
-
-import '../../components/CustomClass/CustomTextField.dart';
-import '../../components/Logo.dart';
-import '../../components/const/Size.dart';
-import '../../components/UserProvider.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
+import 'package:plow_project/components/Logo.dart';
+import 'package:plow_project/components/UserProvider.dart';
 
 class SignUpView extends StatefulWidget {
   @override
@@ -16,38 +15,38 @@ class SignUpView extends StatefulWidget {
 
 // 회원 가입 구성
 class _SignUpViewState extends State<SignUpView> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   late UserProvider userProvider;
   late String msg;
 
-  // init -> didChangeDependencies -> build 호출
   @override
   void initState() {
     super.initState();
-    msg = ''; // 메세지 초기화
+    msg = '';
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await initSignUpView());
+  }
+
+  Future<void> initSignUpView() async {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   // context 접근 가능
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context);
   }
 
   @override
   void setState(VoidCallback fn) {
-    if(mounted) {
-      super.setState(fn);
-    }
+    if (mounted) super.setState(fn);
   }
 
   @override
   void dispose() {
-    // 페이지가 dispose 될 때 controller를 dispose 해줍니다.
-    emailController.dispose();
-    passwordController.dispose();
-    print('sign up dispose');
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -56,6 +55,7 @@ class _SignUpViewState extends State<SignUpView> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
+        leading: Container(),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: AppBarTitle(title: '회원 가입'),
         centerTitle: true,
@@ -66,9 +66,9 @@ class _SignUpViewState extends State<SignUpView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             Logo(),
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             Text(
               'SWeetMe Project 회원 가입',
               textAlign: TextAlign.center,
@@ -78,39 +78,38 @@ class _SignUpViewState extends State<SignUpView> {
                 color: Colors.white,
               ),
             ), // 페이지 설명
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             CustomTextField(
-              controller: emailController,
+              controller: _emailController,
               fontSize: 16.0,
               labelText: 'Email',
               iconData: Icons.email,
               maxLines: 1,
             ), // 컨트롤러 포함 텍스트 폼 위젯
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             CustomTextField(
-              controller: passwordController,
+              controller: _passwordController,
               fontSize: 16.0,
               labelText: 'Password',
               iconData: Icons.lock,
               maxLines: 1,
             ), // 컨트롤러 포함 텍스트 폼 위젯
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             ElevatedButton(
-              child: Text(
-                'Sign Up',
-                style: TextStyle(fontSize: 16),
-              ), // 버튼 텍스트
+              child: Text('Sign Up'), // 버튼 텍스트
               onPressed: () async {
                 FocusScope.of(context).unfocus(); // 키보드를 내림
-                CustomLoadingDialog.showLoadingDialog(context, '회원가입 중입니다. \n잠시만 기다리세요');
+                CustomLoadingDialog.showLoadingDialog(
+                    context, '회원가입 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signUp(
-                  emailController.text,
-                  passwordController.text,
+                  _emailController.text,
+                  _passwordController.text,
                   'signUp',
                 );
                 CustomLoadingDialog.pop(context);
                 if (result == '성공') {
-                  PostHandler.setUserPostCount(emailController.text);
+                  PostHandler.setUserPostCount(
+                      userEmail: _emailController.text);
                   Navigator.pushNamedAndRemoveUntil(
                     context, '/HomeView',
                     (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
@@ -121,14 +120,9 @@ class _SignUpViewState extends State<SignUpView> {
               },
             ),
             SizedBox(
-              child: Text(
-                msg,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text(msg,
+                  style: TextStyle(
+                      color: Colors.redAccent, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

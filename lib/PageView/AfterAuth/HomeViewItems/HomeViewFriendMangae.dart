@@ -4,7 +4,7 @@ import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:plow_project/components/const/Size.dart';
+import 'package:plow_project/components/ConstSet.dart';
 import 'package:provider/provider.dart';
 
 class HomeViewFriendManage extends StatefulWidget {
@@ -73,7 +73,7 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
                   children: [
                     Text('추가하고자 하는 친구의 이메일을 입력하세요'),
                     CustomTextField(controller: _emailController1),
-                    SizedBox(height: mediumGap),
+                    SizedBox(height: ConstSet.mediumGap),
                     ElevatedButton(
                       onPressed: () {
                         FocusScope.of(context).unfocus(); // 키보드를 내림
@@ -88,7 +88,7 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
                 ),
               ),
             ),
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             friend(),
           ],
         ),

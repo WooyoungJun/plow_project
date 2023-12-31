@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/const/Size.dart';
+import 'package:plow_project/components/ConstSet.dart';
 import 'package:provider/provider.dart';
-
-import '../../components/AppBarTitle.dart';
-import '../../components/CustomClass/CustomTextField.dart';
-import '../../components/Logo.dart';
-import '../../components/UserProvider.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
+import 'package:plow_project/components/Logo.dart';
+import 'package:plow_project/components/UserProvider.dart';
 
 class PasswordResetView extends StatefulWidget {
   @override
@@ -14,36 +13,36 @@ class PasswordResetView extends StatefulWidget {
 }
 
 class _PasswordResetViewState extends State<PasswordResetView> {
-  final TextEditingController emailController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   late UserProvider userProvider;
   late String msg;
 
-  // init -> didChangeDependencies -> build 호출
   @override
   void initState() {
     super.initState();
     msg = ''; // 메세지 초기화
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await initPasswordResetView());
+  }
+
+  Future<void> initPasswordResetView() async {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   // context 접근 가능
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    userProvider = Provider.of<UserProvider>(context);
   }
 
   @override
   void setState(VoidCallback fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
+    if (mounted) super.setState(fn);
   }
 
   @override
   void dispose() {
-    // 페이지가 dispose 될 때 controller를 dispose 해줍니다.
-    emailController.dispose();
-    print('reset password dispose');
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -52,6 +51,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
+        leading: Container(),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: AppBarTitle(title: '비밀번호 찾기'),
         centerTitle: true,
@@ -62,9 +62,9 @@ class _PasswordResetViewState extends State<PasswordResetView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             Logo(), // 비밀번호 재설정 페이지 설명
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             Text(
               'SWeetMe Project 비밀번호 변경',
               textAlign: TextAlign.center,
@@ -74,24 +74,22 @@ class _PasswordResetViewState extends State<PasswordResetView> {
                 color: Colors.white,
               ),
             ), // 페이지 설명
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             CustomTextField(
-              controller: emailController,
+              controller: _emailController,
               fontSize: 16.0,
               labelText: 'Email',
               iconData: Icons.email,
               maxLines: 1,
             ),
-            SizedBox(height: largeGap),
+            SizedBox(height: ConstSet.largeGap),
             ElevatedButton(
-              child: Text(
-                'Reset Password',
-                style: TextStyle(fontSize: 16),
-              ), // 버튼 텍스트
+              child: Text('Reset Password'), // 버튼 텍스트
               onPressed: () async {
                 FocusScope.of(context).unfocus(); // 키보드를 내림
-                CustomLoadingDialog.showLoadingDialog(context, '비밀번호 변경중입니다. \n잠시만 기다리세요');
-                await userProvider.resetPassword(emailController.text);
+                CustomLoadingDialog.showLoadingDialog(
+                    context, '비밀번호 변경중입니다. \n잠시만 기다리세요');
+                await userProvider.resetPassword(_emailController.text);
                 CustomLoadingDialog.pop(context);
                 Navigator.pushReplacementNamed(context, '/LoginView');
               },

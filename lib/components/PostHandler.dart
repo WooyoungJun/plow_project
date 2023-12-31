@@ -1,6 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
-import 'CustomClass/CustomToast.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
 
 class PostHandler {
   static final FirebaseFirestore _store = FirebaseFirestore.instance;
@@ -11,7 +14,8 @@ class PostHandler {
   static Future<DocumentSnapshot> get totalPostCount async =>
       (await _totalPostCount.doc('count').get());
 
-  static Future<int> totalFriendPostCount(List<String> friend) async {
+  static Future<int> totalFriendPostCount(
+      {required List<String> friend}) async {
     int totalCount = 0;
     for (String friendEmail in friend) {
       DocumentSnapshot friendSnapshot =
@@ -21,11 +25,10 @@ class PostHandler {
     return totalCount;
   }
 
-  static Future<void> setUserPostCount(String userEmail) async =>
+  static Future<void> setUserPostCount({required String userEmail}) async =>
       await _totalPostCount.doc(userEmail).set({'count': 0});
 
-  static Future<Map<String, dynamic>> readPostAll(
-      {required int page, required int limit}) async {
+  static Future<Map<String, dynamic>> readPostAll({required int page}) async {
     try {
       List<Post> posts = [];
       int totalPosts = 0;
@@ -39,7 +42,7 @@ class PostHandler {
         var postList = await _boardList
             .orderBy('postId', descending: true)
             .startAt([postId])
-            .limit(limit)
+            .limit(ConstSet.limit)
             .get();
         posts = postList.docs.map((doc) => Post.setDoc(doc)).toList();
       });
@@ -54,9 +57,7 @@ class PostHandler {
   // uid에 해당하는 유저의 게시글 가져오기
   static Future<Map<String, dynamic>> readPostFriend({
     required List<String> friend,
-    required int limit,
     int? last,
-    int? refreshGetPost,
   }) async {
     try {
       List<Post> posts = [];
@@ -65,7 +66,7 @@ class PostHandler {
             .where('uid', whereIn: friend)
             .orderBy('postId', descending: true);
         if (last != null) query = query.startAfter([last]);
-        var postList = await query.limit(refreshGetPost ?? limit).get();
+        var postList = await query.limit(ConstSet.limit).get();
         posts = postList.docs.map((doc) => Post.setDoc(doc)).toList();
       });
       return {'posts': posts};
@@ -75,7 +76,7 @@ class PostHandler {
     }
   }
 
-  static Future<void> addPost(Post post, int vc) async {
+  static Future<void> addPost({required Post post}) async {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
       DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
@@ -100,7 +101,7 @@ class PostHandler {
           var doc = (await transaction.get(countDoc));
           int count = doc['count'];
           List<int> postPageIndex = doc['postPageIndex'].cast<int>();
-          int endPage = (count / vc).ceil();
+          int endPage = (count / ConstSet.visibleCount).ceil();
 
           for (int page = 1; page <= endPage; page++) {
             if (page == 1) {
@@ -112,7 +113,7 @@ class PostHandler {
             }
           }
 
-          if (count % vc == 0) postPageIndex.add(lastPostId);
+          if (count % ConstSet.visibleCount == 0) postPageIndex.add(lastPostId);
 
           transaction.update(countDoc, {
             'count': FieldValue.increment(1),
@@ -138,7 +139,7 @@ class PostHandler {
   }
 
   // post update
-  static Future<void> updatePost(Post post) async {
+  static Future<void> updatePost({required Post post}) async {
     print(post.timeStamp);
     post.updateTime();
     await _store.runTransaction((transaction) async {
@@ -148,7 +149,7 @@ class PostHandler {
   }
 
   // post 삭제
-  static Future<void> deletePost(Post post, int vc) async {
+  static Future<void> deletePost({required Post post}) async {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
       DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
@@ -159,7 +160,7 @@ class PostHandler {
         int last = doc['last'];
         int count = doc['count'];
         List<int> postPageIndex = doc['postPageIndex'].cast<int>();
-        int endPage = (count / vc).ceil();
+        int endPage = (count / ConstSet.visibleCount).ceil();
         int start = postPageIndex[1] == post.postId ? 1 : 2;
         for (int page = start; page <= endPage; page++) {
           String postId = postPageIndex[page].toString();
@@ -235,6 +236,8 @@ class Post {
   int? prev;
   int? next;
 
+  set fileBytes(Uint8List? fileBytes) {}
+
   void setTime() {
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
@@ -264,7 +267,7 @@ class Post {
         'next': next,
       };
 
-  bool checkPdf({required bool isPdf, String? anotherFileName}){
+  bool checkPdf({required bool isPdf, String? anotherFileName}) {
     if (fileName != null || anotherFileName != null) {
       // 파일이 존재할 때
       ((anotherFileName ?? fileName!).endsWith('.pdf'))

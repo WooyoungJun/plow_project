@@ -6,7 +6,7 @@ import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:plow_project/components/const/Size.dart';
+import 'package:plow_project/components/ConstSet.dart';
 
 class HomeViewMyInfo extends StatefulWidget {
   const HomeViewMyInfo({super.key});
@@ -35,7 +35,8 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     nameController.text = userProvider.userName;
-    count = await PostHandler.totalFriendPostCount([userProvider.userEmail]);
+    count = await PostHandler.totalFriendPostCount(
+        friend: [userProvider.userEmail]);
     setState(() => _isInitComplete = true);
   }
 
@@ -119,7 +120,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
               icon: Icon(Icons.numbers_rounded, size: 20.0),
               isReadOnly: true,
             ),
-            SizedBox(height: largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
+            SizedBox(height: ConstSet.largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
             ListTile(
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -128,7 +129,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                     padding: EdgeInsets.only(left: 16.0),
                     child: Icon(Icons.exit_to_app, color: Colors.red),
                   ),
-                  SizedBox(width: largeGap),
+                  SizedBox(width: ConstSet.largeGap),
                   Text('로그아웃', style: TextStyle(color: Colors.red)),
                 ],
               ),

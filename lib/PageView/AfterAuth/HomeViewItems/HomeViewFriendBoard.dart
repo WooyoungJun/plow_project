@@ -2,18 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
-import 'package:plow_project/components/const/Size.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/UserProvider.dart';
+import 'package:plow_project/components/ConstSet.dart';
 
 class HomeViewFriendBoard extends StatefulWidget {
-  final double itemHeight;
-  final int visibleCount;
-
-  HomeViewFriendBoard({required this.itemHeight, required this.visibleCount});
-
   @override
   State<HomeViewFriendBoard> createState() => _HomeViewAllBoardState();
 }
@@ -71,9 +66,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   Future<void> getData({int? last}) async {
     Map<String, dynamic> results = await PostHandler.readPostFriend(
       friend: userProvider.friend,
-      limit: widget.visibleCount - 2,
       last: last,
-      refreshGetPost: last == null ? null : refreshGetPost,
     );
     var tmp = results['posts'].cast<Post>();
     if (tmp.length != 0) {
@@ -100,9 +93,8 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/PostUploadView', arguments: {
-                'vc': widget.visibleCount - 2,
-              }).then((result) async {
+              Navigator.pushNamed(context, '/PostUploadView')
+                  .then((result) async {
                 result = result as Map<String, dynamic>?;
                 if (result != null) {
                   await getData();
@@ -130,7 +122,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
                 child: ListView.builder(
                   physics: AlwaysScrollableScrollPhysics(),
                   itemCount: posts.length,
-                  itemExtent: widget.itemHeight,
+                  itemExtent: ConstSet.itemHeight,
                   itemBuilder: (context, index) {
                     final post = posts[index];
                     return InkWell(
@@ -138,7 +130,6 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
                         Navigator.pushNamed(context, '/PostReadView',
                             arguments: {
                               'post': post,
-                              'vc': widget.visibleCount - 2,
                             }).then((result) async {
                           result = result as Map<String, dynamic>?;
                           if (result != null) {
@@ -173,7 +164,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
                                 ),
                               ),
                             ),
-                            SizedBox(width: mediumGap),
+                            SizedBox(width: ConstSet.mediumGap),
                             Text(post.title, overflow: TextOverflow.ellipsis),
                           ],
                         ),

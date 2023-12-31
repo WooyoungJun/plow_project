@@ -3,16 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
-import 'package:plow_project/components/const/Size.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/ConstSet.dart';
 
 class HomeViewAllBoard extends StatefulWidget {
-  final double itemHeight;
-  final int visibleCount;
-
-  HomeViewAllBoard({required this.itemHeight, required this.visibleCount});
-
   @override
   State<HomeViewAllBoard> createState() => _HomeViewAllBoardState();
 }
@@ -27,12 +22,11 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
 
   Future<void> getData({required int page}) async {
     Map<String, dynamic> results = await PostHandler.readPostAll(
-      limit: widget.visibleCount - 2,
       page: _curPage,
     );
-    posts = results['posts'].cast<Post>();// 모든 글 중 10개 읽어오기
+    posts = results['posts'].cast<Post>(); // 모든 글 중 10개 읽어오기
     _totalPosts = results['totalPosts'] as int;
-    _totalPages = (_totalPosts / (widget.visibleCount - 2)).ceil();
+    _totalPages = (_totalPosts / (ConstSet.limit)).ceil();
   }
 
   @override
@@ -74,9 +68,8 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.white),
             onPressed: () {
-              Navigator.pushNamed(context, '/PostUploadView', arguments: {
-                'vc': widget.visibleCount - 2,
-              }).then((result) async {
+              Navigator.pushNamed(context, '/PostUploadView')
+                  .then((result) async {
                 result = result as Map<String, dynamic>?;
                 if (result != null) refresh();
               });
@@ -96,14 +89,13 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
               child: ListView.builder(
                 physics: AlwaysScrollableScrollPhysics(),
                 itemCount: posts.length,
-                itemExtent: widget.itemHeight,
+                itemExtent: ConstSet.itemHeight,
                 itemBuilder: (context, index) {
                   final post = posts[index];
                   return InkWell(
                     onTap: () {
                       Navigator.pushNamed(context, '/PostReadView', arguments: {
                         'post': post,
-                        'vc': widget.visibleCount - 2,
                       }).then((result) async {
                         result = result as Map<String, dynamic>?;
                         if (result != null) refresh();
@@ -135,7 +127,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                               ),
                             ),
                           ),
-                          SizedBox(width: mediumGap),
+                          SizedBox(width: ConstSet.mediumGap),
                           Text(post.title, overflow: TextOverflow.ellipsis),
                         ],
                       ),

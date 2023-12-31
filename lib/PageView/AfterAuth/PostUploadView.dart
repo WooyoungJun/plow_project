@@ -4,15 +4,16 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
+import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
 import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/const/Size.dart';
+import 'package:plow_project/components/ConstSet.dart';
 
 class PostUploadView extends StatefulWidget {
   @override
@@ -22,8 +23,6 @@ class PostUploadView extends StatefulWidget {
 class _PostScreenViewState extends State<PostUploadView> {
   late UserProvider userProvider;
   late Post post;
-  late double contentHeight;
-  late int vc;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _translateController = TextEditingController();
@@ -32,7 +31,6 @@ class _PostScreenViewState extends State<PostUploadView> {
       TextRecognizer(script: TextRecognitionScript.korean);
   bool isInitComplete = false;
   bool isPdf = false;
-  bool isSaving = false;
   bool isTranslate = false;
   bool isKeyExtraction = false;
   bool isSearch = false;
@@ -53,13 +51,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Future<void> _initPostUploadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    var argRef =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    vc = argRef['vc'] as int;
     post = Post(uid: userProvider.uid!); // 새로운 post 작성
-    contentHeight = MediaQuery.of(context).size.height -
-        AppBar().preferredSize.height -
-        kBottomNavigationBarHeight;
     setState(() => isInitComplete = true);
   }
 
@@ -100,15 +92,11 @@ class _PostScreenViewState extends State<PostUploadView> {
   }
 
   Future<void> _handleSaveButton(BuildContext context) async {
-    if (isSaving) {
-      return CustomToast.showToast("처리중입니다");
-    }
     if (_titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
 
     CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
-    isSaving = true;
     Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
         relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
     if (result != null) {
@@ -123,46 +111,9 @@ class _PostScreenViewState extends State<PostUploadView> {
       relativePath: relativePath,
       fileName: fileName,
     );
-    await PostHandler.addPost(newPost, vc);
+    await PostHandler.addPost(post: newPost);
     CustomLoadingDialog.pop(context);
     Navigator.pop(context, {'upload': true});
-  }
-
-  Future<void> _onBackPressed(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('경고'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: [
-                Text('정말 뒤로 가시겠습니까?'),
-                Text('저장하지 않은 정보가 삭제될 수 있습니다.'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('취소'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            TextButton(
-              child: Text('확인'),
-              onPressed: () async {
-                CustomLoadingDialog.showLoadingDialog(
-                    context, '취소중입니다. \n잠시만 기다리세요');
-                await FileProcessing.deleteFile(relativePath: relativePath);
-                CustomLoadingDialog.pop(context);
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(
-                    context, '/HomeView'); // 그냥 홈으로 이동
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -172,7 +123,7 @@ class _PostScreenViewState extends State<PostUploadView> {
       canPop: false,
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
-        await _onBackPressed(context);
+        await CustomAlertDialog.onBackPressed(context, relativePath);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -188,7 +139,8 @@ class _PostScreenViewState extends State<PostUploadView> {
             ), // 포스트 업로드
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () async => await _onBackPressed(context),
+              onPressed: () async =>
+                  await CustomAlertDialog.onBackPressed(context, relativePath),
             )
           ],
         ),
@@ -203,7 +155,7 @@ class _PostScreenViewState extends State<PostUploadView> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.vertical,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: contentHeight),
+                  constraints: BoxConstraints(minHeight: ConstSet.screenHeight),
                   // 최소 길이 제한
                   child: Padding(
                     padding: EdgeInsets.all(16.0),
@@ -225,11 +177,11 @@ class _PostScreenViewState extends State<PostUploadView> {
                           iconData: Icons.description,
                           isReadOnly: false,
                         ), // 본문
-                        SizedBox(height: largeGap),
+                        SizedBox(height: ConstSet.largeGap),
                         fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
-                        SizedBox(height: largeGap),
+                        SizedBox(height: ConstSet.largeGap),
                         fileSelect(),
-                        SizedBox(height: largeGap),
+                        SizedBox(height: ConstSet.largeGap),
                         // isTranslate ? translateText() : Container(),
                         CustomTextField(
                           controller: _translateController,
@@ -311,7 +263,7 @@ class _PostScreenViewState extends State<PostUploadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
             RecognizedText? result = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
@@ -329,7 +281,7 @@ class _PostScreenViewState extends State<PostUploadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
             String? result = await FileProcessing.keyExtraction(
                 extractedText: _translateController.text);
@@ -344,7 +296,7 @@ class _PostScreenViewState extends State<PostUploadView> {
         ),
         IconButton(
           onPressed: () async {
-            validateCheck();
+            if (validateCheck()) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
             String? result = await FileProcessing.makeSummary(
                 text: _translateController.text,
@@ -366,9 +318,11 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Widget searchResult() => Text('강의 검색 결과가 없습니다');
 
-  void validateCheck() {
-    if (fileBytes == null) return CustomToast.showToast('파일을 선택하세요');
-    if (isPdf) return CustomToast.showToast('이미지로 변환해주세요');
+  bool validateCheck() {
+    if (fileBytes != null && !isPdf) return false;
+    if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
+    if (isPdf) CustomToast.showToast('이미지로 변환해주세요');
+    return true;
   }
 }
 // Widget translateText() {

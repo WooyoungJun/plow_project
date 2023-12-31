@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendMangae.dart';
+import 'package:plow_project/components/ConstSet.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewAllBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
@@ -36,11 +37,10 @@ class _HomeViewState extends State<HomeView> {
     double screenHeight = MediaQuery.of(context).size.height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
-    int visibleCount = 12;
-    double itemHeight = screenHeight / visibleCount;
+    ConstSet.setHeights(screenHeight);
     homeViewItems = [
-      HomeViewAllBoard(itemHeight: itemHeight, visibleCount: visibleCount),
-      HomeViewFriendBoard(itemHeight: itemHeight, visibleCount: visibleCount),
+      HomeViewAllBoard(),
+      HomeViewFriendBoard(),
       HomeViewFriendManage(),
       HomeViewMyInfo()
     ];
