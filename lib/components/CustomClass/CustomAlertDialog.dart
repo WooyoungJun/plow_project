@@ -26,6 +26,7 @@ class CustomAlertDialog {
         newPost.relativePath = result['relativePath'];
         newPost.fileName = result['fileName'];
       }
+
       if (post == null) {
         // post add
         await PostHandler.addPost(post: newPost);
@@ -36,6 +37,8 @@ class CustomAlertDialog {
       CustomLoadingDialog.pop(context);
       Navigator.pop(context, {'save': true});
     } else {
+      print(post?.keywordContent);
+      print(newPost.keywordContent);
       CustomToast.showToast('변경 사항이 없습니다!');
     }
   }

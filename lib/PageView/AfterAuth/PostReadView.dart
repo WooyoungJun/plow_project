@@ -58,14 +58,15 @@ class _PostReadViewState extends State<PostReadView> {
     var argRef =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
-    newPost = post;
-    _titleController.text = post.title;
-    _contentController.text = post.content;
-    _translateController.text = post.translateContent;
-    _keywordController.text = post.keywordContent;
+    newPost = Post.copy(post);
+    _titleController.text = newPost.title;
+    _contentController.text = newPost.content;
+    _translateController.text = newPost.translateContent;
+    _keywordController.text = newPost.keywordContent;
+    print(newPost.keywordContent);
     fileBytes = await FileProcessing.loadFileFromStorage(
-        relativePath: post.relativePath);
-    isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+        relativePath: newPost.relativePath);
+    isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
     setState(() => _isInitComplete = true);
   }
 
@@ -91,7 +92,7 @@ class _PostReadViewState extends State<PostReadView> {
       relativePath = result['relativePath'] as String;
       fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
-      isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+      isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
       _translateController.clear();
       setState(() {});
     }
@@ -102,7 +103,8 @@ class _PostReadViewState extends State<PostReadView> {
     newPost.content = _contentController.text;
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
-    newPost.relativePath = relativePath;
+    if (relativePath == null) return;
+    newPost.relativePath = relativePath; // 갱신
     newPost.fileName = fileName;
   }
 
@@ -117,14 +119,17 @@ class _PostReadViewState extends State<PostReadView> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: Container(),
+          leading: IconButton(
+            onPressed: () => setState(() {}),
+            icon: Icon(Icons.refresh, color: Colors.white),
+          ),
           // Navigator.push로 인한 leading 버튼 없애기
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
           actions: [
             Visibility(
-              visible: (post.uid == userProvider.uid),
+              visible: (newPost.uid == userProvider.uid),
               // 작성자 id와 같아야 함
               child: GestureDetector(
                 child: isEditing
@@ -171,7 +176,7 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Column(
                     children: [
                       CustomTextField(
-                        hintText: post.uid,
+                        hintText: newPost.uid,
                         iconData: Icons.person,
                         isReadOnly: true,
                         maxLines: 1,
@@ -187,7 +192,7 @@ class _PostReadViewState extends State<PostReadView> {
                         isReadOnly: !isEditing,
                       ), // 본문
                       CustomTextField(
-                        hintText: post.modifyDate ?? post.createdDate,
+                        hintText: newPost.modifyDate ?? newPost.createdDate,
                         iconData: Icons.calendar_month,
                         isReadOnly: true,
                         maxLines: 1,
@@ -214,7 +219,7 @@ class _PostReadViewState extends State<PostReadView> {
             ),
           );
         }),
-        floatingActionButton: !isEditing && post.uid == userProvider.uid
+        floatingActionButton: !isEditing && newPost.uid == userProvider.uid
             ? FloatingActionButton(
                 onPressed: () =>
                     CustomAlertDialog.onDeletePressed(context, newPost),
@@ -339,9 +344,10 @@ class _PostReadViewState extends State<PostReadView> {
   Widget searchResult() => Text('강의 검색 결과가 없습니다');
 
   bool validateCheck() {
-    if (fileBytes != null && !isPdf) return false;
+    if (fileBytes != null && !isPdf && internalPath != null) return false;
     if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
     if (isPdf) CustomToast.showToast('이미지로 변환해주세요');
+    if (internalPath == null) CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
     return true;
   }
 }

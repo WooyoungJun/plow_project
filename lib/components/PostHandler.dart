@@ -256,6 +256,22 @@ class Post {
       relativePath.hashCode ^
       fileName.hashCode;
 
+  // 복사 생성자
+  Post.copy(Post original)
+      : uid = original.uid,
+        postId = original.postId,
+        title = original.title,
+        content = original.content,
+        createdDate = original.createdDate,
+        timeStamp = original.timeStamp,
+        modifyDate = original.modifyDate,
+        translateContent = original.translateContent,
+        keywordContent = original.keywordContent,
+        relativePath = original.relativePath,
+        fileName = original.fileName,
+        prev = original.prev,
+        next = original.next;
+
   void setTime() {
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
@@ -305,8 +321,8 @@ class Post {
       timeStamp: doc['timeStamp'],
       modifyDate: doc['modifyDate'],
       translateContent: doc['translateContent'],
-      relativePath: doc['relativePath'],
       keywordContent: doc['keywordContent'],
+      relativePath: doc['relativePath'],
       fileName: doc['fileName'],
       prev: doc['prev'],
       next: doc['next'],
