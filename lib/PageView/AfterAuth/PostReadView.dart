@@ -24,13 +24,14 @@ class _PostReadViewState extends State<PostReadView> {
   late Post post;
   late int vc;
   late double contentHeight;
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
-  final TextEditingController translateController = TextEditingController();
-  final TextEditingController keywordController = TextEditingController();
-  final TextRecognizer textRecognizer =
-  TextRecognizer(script: TextRecognitionScript.korean);
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _translateController = TextEditingController();
+  final TextEditingController _keywordController = TextEditingController();
+  final TextRecognizer _textRecognizer =
+      TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
+  bool isPdf = false;
   bool isEditing = false;
 
   final _picker = ImagePicker();
@@ -44,34 +45,28 @@ class _PostReadViewState extends State<PostReadView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance
-        .addPostFrameCallback((_) async => await initPostReadView());
+        .addPostFrameCallback((_) async => await _initPostReadView());
   }
 
   // 초기 설정
   // userProvider -> 사용자 정보
   // Home에서 가져온 post 정보 기반으로 title, content, 변환Text, 이미지 읽어오기
   // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
-  Future<void> initPostReadView() async {
+  Future<void> _initPostReadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     var argRef =
-    ModalRoute
-        .of(context)!
-        .settings
-        .arguments as Map<String, dynamic>;
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     vc = argRef['vc'] as int;
-    titleController.text = post.title;
-    contentController.text = post.content;
-    translateController.text = post.translateContent ?? '';
+    _titleController.text = post.title;
+    _contentController.text = post.content;
+    _translateController.text = post.translateContent ?? '';
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: post.relativePath);
-    contentHeight = MediaQuery
-        .of(context)
-        .size
-        .height -
+    contentHeight = MediaQuery.of(context).size.height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
-
+    isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
     setState(() => _isInitComplete = true);
   }
 
@@ -80,44 +75,43 @@ class _PostReadViewState extends State<PostReadView> {
     if (mounted) super.setState(fn);
   }
 
-  Future<void> setResult(Map<String, dynamic>? result) async {
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    _translateController.dispose();
+    _keywordController.dispose();
+    _textRecognizer.close();
+    super.dispose();
+  }
+
+  Future<void> _setResult(Map<String, dynamic>? result) async {
     if (result != null) {
       await FileProcessing.deleteFile(relativePath: relativePath);
       internalPath = result['internalPath'] as String;
       relativePath = result['relativePath'] as String;
       fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
-      translateController.clear();
+      isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+      _translateController.clear();
       setState(() {});
     }
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    contentController.dispose();
-    translateController.dispose();
-    keywordController.dispose();
-    textRecognizer.close();
-    super.dispose();
-  }
-
   Future<void> _handleSaveButton() async {
-    if (titleController.text
-        .trim()
-        .isEmpty) {
+    if (_titleController.text.trim().isEmpty) {
       return CustomToast.showToast('제목은 비어질 수 없습니다');
     }
-    if ((post.title != titleController.text) ||
-        (post.content != contentController.text) ||
+    if ((post.title != _titleController.text) ||
+        (post.content != _contentController.text) ||
         (relativePath != null) ||
-        (translateController.text != post.translateContent) ||
-        (keywordController.text != post.keywordContent)) {
+        (_translateController.text != post.translateContent) ||
+        (_keywordController.text != post.keywordContent)) {
       CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. \n잠시만 기다리세요');
-      post.title = titleController.text;
-      post.content = contentController.text;
-      post.translateContent = translateController.text;
-      post.keywordContent = keywordController.text;
+      post.title = _titleController.text;
+      post.content = _contentController.text;
+      post.translateContent = _translateController.text;
+      post.keywordContent = _keywordController.text;
       Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
           relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
       if (result != null) {
@@ -173,131 +167,167 @@ class _PostReadViewState extends State<PostReadView> {
     );
   }
 
+  Future<void> _onBackPressed(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('경고'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: [
+                Text('정말 뒤로 가시겠습니까?'),
+                Text('저장하지 않은 정보가 삭제될 수 있습니다.'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('취소'),
+              onPressed: () => Navigator.pop(context),
+            ),
+            TextButton(
+              child: Text('확인'),
+              onPressed: () async {
+                CustomLoadingDialog.showLoadingDialog(
+                    context, '취소중입니다. \n잠시만 기다리세요');
+                await FileProcessing.deleteFile(relativePath: relativePath);
+                CustomLoadingDialog.pop(context);
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(
+                    context, '/HomeView'); // 그냥 홈으로 이동
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
-    return Scaffold(
-      appBar: AppBar(
-        leading: Container(),
-        // Navigator.push로 인한 leading 버튼 없애기
-        title: AppBarTitle(title: '자유 게시판'),
-        centerTitle: true,
-        backgroundColor: Theme
-            .of(context)
-            .colorScheme
-            .primary,
-        actions: [
-          Visibility(
-            visible: (post.uid == userProvider.uid),
-            // 작성자 id와 같아야 함
-            child: GestureDetector(
-              child: isEditing
-                  ? Icon(
-                Icons.save,
-                color: Colors.white,
-              )
-                  : Icon(Icons.edit, color: Colors.white),
-              onTap: () {
-                if (isEditing) {
-                  _handleSaveButton();
-                } else {
-                  setState(() => isEditing = !isEditing);
-                }
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async {
+        if (didPop) return;
+        await _onBackPressed(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: Container(),
+          // Navigator.push로 인한 leading 버튼 없애기
+          title: AppBarTitle(title: '자유 게시판'),
+          centerTitle: true,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          actions: [
+            Visibility(
+              visible: (post.uid == userProvider.uid),
+              // 작성자 id와 같아야 함
+              child: GestureDetector(
+                child: isEditing
+                    ? Icon(Icons.save, color: Colors.white)
+                    : Icon(Icons.edit, color: Colors.white),
+                onTap: () {
+                  isEditing
+                      ? _handleSaveButton()
+                      : setState(() => isEditing = !isEditing);
+                },
+              ),
+            ), // 수정하기 버튼
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () async {
+                isEditing
+                    ? await _onBackPressed(context)
+                    : Navigator.pop(context);
               },
-            ),
-          ), // 수정하기 버튼
-          IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          )
-        ],
-      ),
-      body: LayoutBuilder(builder: (context, constraints) {
-        return RawScrollbar(
-          thumbColor: Colors.grey,
-          thickness: 8,
-          radius: Radius.circular(6),
-          padding: EdgeInsets.only(right: 4.0),
-          thumbVisibility: true,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: contentHeight),
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      hintText: post.uid,
-                      iconData: Icons.person,
-                      isReadOnly: true,
-                      maxLines: 1,
-                    ),
-                    CustomTextField(
-                      controller: titleController,
-                      iconData: Icons.title,
-                      isReadOnly: !isEditing,
-                    ), // 제목
-                    CustomTextField(
-                      controller: contentController,
-                      iconData: Icons.description,
-                      isReadOnly: !isEditing,
-                    ), // 본문
-                    CustomTextField(
-                      hintText: post.modifyDate ?? post.createdDate,
-                      iconData: Icons.calendar_month,
-                      isReadOnly: true,
-                      maxLines: 1,
-                    ),
-                    SizedBox(height: mediumGap),
-                    fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
-                    isEditing ? fileSelect() : Container(),
-                    // if (recognizedText != null) translateText(),
-                    CustomTextField(
-                      controller: translateController,
-                      iconData: Icons.g_translate,
-                      isReadOnly: !isEditing,
-                    ),
-                    CustomTextField(
-                      controller: keywordController,
-                      iconData: Icons.key,
-                      isReadOnly: !isEditing,
-                    ),
-                  ],
+            )
+          ],
+        ),
+        body: LayoutBuilder(builder: (context, constraints) {
+          return RawScrollbar(
+            thumbColor: Colors.grey,
+            thickness: 8,
+            radius: Radius.circular(6),
+            padding: EdgeInsets.only(right: 4.0),
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: contentHeight),
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      CustomTextField(
+                        hintText: post.uid,
+                        iconData: Icons.person,
+                        isReadOnly: true,
+                        maxLines: 1,
+                      ),
+                      CustomTextField(
+                        controller: _titleController,
+                        iconData: Icons.title,
+                        isReadOnly: !isEditing,
+                      ), // 제목
+                      CustomTextField(
+                        controller: _contentController,
+                        iconData: Icons.description,
+                        isReadOnly: !isEditing,
+                      ), // 본문
+                      CustomTextField(
+                        hintText: post.modifyDate ?? post.createdDate,
+                        iconData: Icons.calendar_month,
+                        isReadOnly: true,
+                        maxLines: 1,
+                      ),
+                      SizedBox(height: mediumGap),
+                      fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
+                      isEditing ? fileSelect() : Container(),
+                      // if (recognizedText != null) translateText(),
+                      CustomTextField(
+                        controller: _translateController,
+                        iconData: Icons.g_translate,
+                        isReadOnly: !isEditing,
+                      ),
+                      CustomTextField(
+                        controller: _keywordController,
+                        iconData: Icons.key,
+                        isReadOnly: !isEditing,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      }),
-      floatingActionButton: !isEditing && post.uid == userProvider.uid
-          ? FloatingActionButton(
-        onPressed: () => _showDeleteCheck(context),
-        child: Icon(
-          Icons.delete,
-          color: Colors.red,
-        ),
-      )
-          : null,
+          );
+        }),
+        floatingActionButton: !isEditing && post.uid == userProvider.uid
+            ? FloatingActionButton(
+                onPressed: () => _showDeleteCheck(context),
+                child: Icon(Icons.delete, color: Colors.red),
+              )
+            : null,
+      ),
     );
   }
 
   Widget pdfOrImgView() {
-    return ((fileName ?? post.fileName!).endsWith('.pdf')
+    return isPdf
         ? Column(
-      children: [
-        SizedBox(
-          height: 300,
-          child: SfPdfViewer.memory(
-            fileBytes!,
-            scrollDirection: PdfScrollDirection.vertical,
-          ),
-        ),
-        if (isEditing) pdfToImgButton() else
-          Container()
-      ],
-    )
-        : Image.memory(fileBytes!, fit: BoxFit.cover));
+            children: [
+              SizedBox(
+                height: 300,
+                child: SfPdfViewer.memory(
+                  fileBytes!,
+                  scrollDirection: PdfScrollDirection.vertical,
+                ),
+              ),
+              if (isEditing) pdfToImgButton() else Container()
+            ],
+          )
+        : Image.memory(fileBytes!, fit: BoxFit.cover);
   }
 
   Widget pdfToImgButton() {
@@ -305,10 +335,10 @@ class _PostReadViewState extends State<PostReadView> {
       onPressed: () async {
         CustomLoadingDialog.showLoadingDialog(context, '이미지 변환중입니다');
         Map<String, dynamic>? result =
-        await FileProcessing.pdfToPng(fileBytes: fileBytes);
+            await FileProcessing.pdfToPng(fileBytes: fileBytes);
         if (result == null) return;
         CustomLoadingDialog.pop(context);
-        await setResult(result);
+        await _setResult(result);
       },
       child: Row(
         children: [Icon(Icons.transform), Text('pdf를 이미지로 변환하기')],
@@ -325,7 +355,7 @@ class _PostReadViewState extends State<PostReadView> {
           onPressed: () async {
             var result = await FileProcessing.getImage(
                 picker: _picker, imageSource: ImageSource.camera);
-            await setResult(result);
+            await _setResult(result);
           },
           icon: Icon(Icons.photo_camera),
           iconSize: 30.0,
@@ -333,21 +363,22 @@ class _PostReadViewState extends State<PostReadView> {
         IconButton(
           onPressed: () async {
             var result = await FileProcessing.getFile();
-            await setResult(result);
+            await _setResult(result);
           },
           icon: Icon(Icons.file_open),
           iconSize: 30.0,
         ),
         IconButton(
           onPressed: () async {
+            validateCheck();
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
             RecognizedText? result = await FileProcessing.inputFileToText(
-              textRecognizer: textRecognizer,
+              textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              translateController.text = result.text;
+              _translateController.text = result.text;
               recognizedText = result;
               setState(() {});
             }
@@ -357,12 +388,13 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
+            validateCheck();
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
             String? result = await FileProcessing.keyExtraction(
-                extractedText: translateController.text);
+                extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              keywordController.text = result;
+              _keywordController.text = result;
               setState(() {});
             }
           },
@@ -371,10 +403,11 @@ class _PostReadViewState extends State<PostReadView> {
         ),
         IconButton(
           onPressed: () async {
+            validateCheck();
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
             String? result = await FileProcessing.makeSummary(
-                text: translateController.text,
-                keywords: keywordController.text);
+                text: _translateController.text,
+                keywords: _keywordController.text);
             // Map<String, dynamic>? result =
             //     await FileProcessing.searchKmooc(
             //         keywordController.text);
@@ -391,27 +424,33 @@ class _PostReadViewState extends State<PostReadView> {
     );
   }
 
-  Widget translateText() {
-    return ListView.separated(
-      shrinkWrap: true,
-      // 리스트 뷰 크기 고정
-      primary: false,
-      // 리스트 뷰 내부 스크롤 없음
-      itemCount: recognizedText!.blocks.length,
-      itemBuilder: (context, index) {
-        TextBlock textBlock = recognizedText!.blocks[index];
-        return Card(
-          margin: EdgeInsets.all(8.0),
-          child: ListTile(
-            title: Text('Text Block #$index'),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: textBlock.lines.map((line) => Text(line.text)).toList(),
-            ),
-          ),
-        );
-      },
-      separatorBuilder: (BuildContext context, int index) => Divider(),
-    );
+  Widget searchResult() => Text('강의 검색 결과가 없습니다');
+
+  void validateCheck() {
+    if (fileBytes == null) return CustomToast.showToast('파일을 선택하세요');
+    if (isPdf) return CustomToast.showToast('이미지로 변환해주세요');
   }
 }
+// Widget translateText() {
+//   return ListView.separated(
+//     shrinkWrap: true,
+//     // 리스트 뷰 크기 고정
+//     primary: false,
+//     // 리스트 뷰 내부 스크롤 없음
+//     itemCount: recognizedText!.blocks.length,
+//     itemBuilder: (context, index) {
+//       TextBlock textBlock = recognizedText!.blocks[index];
+//       return Card(
+//         margin: EdgeInsets.all(8.0),
+//         child: ListTile(
+//           title: Text('Text Block #$index'),
+//           subtitle: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: textBlock.lines.map((line) => Text(line.text)).toList(),
+//           ),
+//         ),
+//       );
+//     },
+//     separatorBuilder: (BuildContext context, int index) => Divider(),
+//   );
+// }

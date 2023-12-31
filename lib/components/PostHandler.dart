@@ -264,6 +264,16 @@ class Post {
         'next': next,
       };
 
+  bool checkPdf({required bool isPdf, String? anotherFileName}){
+    if (fileName != null || anotherFileName != null) {
+      // 파일이 존재할 때
+      ((anotherFileName ?? fileName!).endsWith('.pdf'))
+          ? isPdf = true
+          : isPdf = false;
+    }
+    return isPdf;
+  }
+
   static Post setDoc(DocumentSnapshot doc) {
     return Post(
       uid: doc['uid'],
