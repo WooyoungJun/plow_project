@@ -63,7 +63,6 @@ class _PostReadViewState extends State<PostReadView> {
     _contentController.text = newPost.content;
     _translateController.text = newPost.translateContent;
     _keywordController.text = newPost.keywordContent;
-    print(newPost.keywordContent);
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: newPost.relativePath);
     isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
