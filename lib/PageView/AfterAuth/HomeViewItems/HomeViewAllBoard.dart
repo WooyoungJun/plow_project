@@ -160,16 +160,12 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                       margin: EdgeInsets.all(5),
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey,
-                          width: 1.0,
-                        ),
+                        border: Border.all(color: Colors.grey, width: 1.0),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
                         '${_startPage + index}',
                         style: TextStyle(
-                          fontSize: 16,
                           color: (_startPage + index) == _curPage
                               ? Colors.blue
                               : null,

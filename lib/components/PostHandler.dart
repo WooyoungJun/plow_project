@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:plow_project/components/ConstSet.dart';
@@ -214,8 +212,8 @@ class Post {
     this.createdDate,
     this.timeStamp,
     this.modifyDate,
-    this.translateContent,
-    this.keywordContent,
+    this.translateContent = '',
+    this.keywordContent = '',
     this.relativePath,
     this.fileName,
     this.prev,
@@ -229,14 +227,34 @@ class Post {
   String? createdDate;
   Timestamp? timeStamp;
   String? modifyDate;
-  String? translateContent;
-  String? keywordContent;
+  String translateContent;
+  String keywordContent;
   String? relativePath;
   String? fileName;
   int? prev;
   int? next;
 
-  set fileBytes(Uint8List? fileBytes) {}
+  @override
+  bool operator ==(Object other) =>
+  // title, content, translate, keyword, relativePath, fileName 비교
+      identical(this, other) ||
+      other is Post &&
+          runtimeType == other.runtimeType &&
+          title == other.title &&
+          content == other.content &&
+          translateContent == other.translateContent &&
+          keywordContent == other.keywordContent &&
+          relativePath == other.relativePath &&
+          fileName == other.fileName;
+
+  @override
+  int get hashCode =>
+      title.hashCode ^
+      content.hashCode ^
+      translateContent.hashCode ^
+      keywordContent.hashCode ^
+      relativePath.hashCode ^
+      fileName.hashCode;
 
   void setTime() {
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));

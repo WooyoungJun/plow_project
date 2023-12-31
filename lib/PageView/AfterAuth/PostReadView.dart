@@ -24,7 +24,6 @@ class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
   late Post newPost;
-  late double contentHeight;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _translateController = TextEditingController();
@@ -62,9 +61,9 @@ class _PostReadViewState extends State<PostReadView> {
     newPost = post;
     _titleController.text = post.title;
     _contentController.text = post.content;
-    _translateController.text = post.translateContent ?? '';
-    _keywordController.text = post.keywordContent ?? '';
-    newPost.fileBytes = await FileProcessing.loadFileFromStorage(
+    _translateController.text = post.translateContent;
+    _keywordController.text = post.keywordContent;
+    fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: post.relativePath);
     isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
     setState(() => _isInitComplete = true);
@@ -98,36 +97,13 @@ class _PostReadViewState extends State<PostReadView> {
     }
   }
 
-  Future<void> _handleSaveButton() async {
-    if (_titleController.text.trim().isEmpty) {
-      return CustomToast.showToast('제목은 비어질 수 없습니다');
-    }
-    if ((post.title != _titleController.text) ||
-        (post.content != _contentController.text) ||
-        (relativePath != null) ||
-        (_translateController.text != post.translateContent) ||
-        (_keywordController.text != post.keywordContent)) {
-      CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. \n잠시만 기다리세요');
-      post.title = _titleController.text;
-      post.content = _contentController.text;
-      post.translateContent = _translateController.text;
-      post.keywordContent = _keywordController.text;
-      Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
-          relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
-      if (result != null) {
-        FileProcessing.deleteFile(relativePath: post.relativePath);
-        post.relativePath = result['relativePath'];
-        post.fileName = result['fileName'];
-      }
-      await PostHandler.updatePost(post: post); // post 업데이트
-      CustomLoadingDialog.pop(context);
-      Navigator.pop(context, {'update': true});
-    } else {
-      CustomToast.showToast('변경 사항이 없습니다!');
-    }
-    setState(() {
-      isEditing = !isEditing;
-    });
+  void setNewPost() {
+    newPost.title = _titleController.text;
+    newPost.content = _contentController.text;
+    newPost.translateContent = _translateController.text;
+    newPost.keywordContent = _keywordController.text;
+    newPost.relativePath = relativePath;
+    newPost.fileName = fileName;
   }
 
   @override
@@ -155,9 +131,16 @@ class _PostReadViewState extends State<PostReadView> {
                     ? Icon(Icons.save, color: Colors.white)
                     : Icon(Icons.edit, color: Colors.white),
                 onTap: () {
-                  isEditing
-                      ? _handleSaveButton()
-                      : setState(() => isEditing = !isEditing);
+                  if (isEditing) {
+                    setNewPost();
+                    CustomAlertDialog.onSavePressed(
+                      context: context,
+                      post: post,
+                      newPost: newPost,
+                      fileBytes: fileBytes,
+                    );
+                  }
+                  setState(() => isEditing = !isEditing);
                 },
               ),
             ), // 수정하기 버튼
@@ -182,7 +165,7 @@ class _PostReadViewState extends State<PostReadView> {
             child: SingleChildScrollView(
               scrollDirection: Axis.vertical,
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: contentHeight),
+                constraints: BoxConstraints(minHeight: ConstSet.screenHeight),
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Column(
@@ -234,7 +217,7 @@ class _PostReadViewState extends State<PostReadView> {
         floatingActionButton: !isEditing && post.uid == userProvider.uid
             ? FloatingActionButton(
                 onPressed: () =>
-                    CustomAlertDialog.onDeletePressed(context, post),
+                    CustomAlertDialog.onDeletePressed(context, newPost),
                 child: Icon(Icons.delete, color: Colors.red),
               )
             : null,

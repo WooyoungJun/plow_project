@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
@@ -5,29 +6,38 @@ import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/PostHandler.dart';
 
 class CustomAlertDialog {
-  static Future<void> onSavePressed(BuildContext context, TextEditingController titleController, ) async {
-    if (titleController.text.trim().isEmpty) {
-      return CustomToast.showToast('제목은 비어질 수 없습니다');
+  static Future<void> onSavePressed({
+    required BuildContext context,
+    required Post? post,
+    required Post newPost,
+    required Uint8List? fileBytes,
+  }) async {
+    if (newPost.title.trim().isEmpty) return CustomToast.showToast('제목을 채워주세요');
+    if (post != newPost) {
+      // title, content, translate, keyword, relativePath, fileName 비교
+      CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
+      Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
+        relativePath: newPost.relativePath,
+        fileName: newPost.fileName,
+        fileBytes: fileBytes,
+      );
+      if (result != null) {
+        FileProcessing.deleteFile(relativePath: post?.relativePath);
+        newPost.relativePath = result['relativePath'];
+        newPost.fileName = result['fileName'];
+      }
+      if (post == null) {
+        // post add
+        await PostHandler.addPost(post: newPost);
+      } else {
+        // post update
+        await PostHandler.updatePost(post: newPost);
+      }
+      CustomLoadingDialog.pop(context);
+      Navigator.pop(context, {'save': true});
+    } else {
+      CustomToast.showToast('변경 사항이 없습니다!');
     }
-
-    CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
-    // Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
-    //     relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
-    // if (result != null) {
-    //   relativePath = result['relativePath'];
-    //   fileName = result['fileName'];
-    // }
-    // Post newPost = Post(
-    //   uid: userProvider.uid!,
-    //   title: _titleController.text,
-    //   content: _contentController.text,
-    //   translateContent: _translateController.text,
-    //   relativePath: relativePath,
-    //   fileName: fileName,
-    // );
-    // await PostHandler.addPost(post: newPost);
-    CustomLoadingDialog.pop(context);
-    Navigator.pop(context, {'upload': true});
   }
 
   static Future<void> onDeletePressed(BuildContext context, Post post) {
@@ -37,12 +47,15 @@ class CustomAlertDialog {
         return AlertDialog(
           title: Text('경고', textAlign: TextAlign.center),
           titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
-          content: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('정말 삭제하시겠습니까?'),
-              Text('삭제한 정보는 복구 불가능합니다.'),
-            ],
+          content: SizedBox(
+            height: 100,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('정말 삭제하시겠습니까?'),
+                Text('삭제한 정보는 복구 불가능합니다.'),
+              ],
+            ),
           ),
           actions: [
             Row(
@@ -82,12 +95,15 @@ class CustomAlertDialog {
         return AlertDialog(
           title: Text('경고', textAlign: TextAlign.center),
           titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
-          content: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('정말 뒤로 가시겠습니까?'),
-              Text('저장하지 않은 정보가 삭제될 수 있습니다.'),
-            ],
+          content: SizedBox(
+            height: 100,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('정말 뒤로 가시겠습니까?'),
+                Text('저장하지 않은 정보가 삭제될 수 있습니다.'),
+              ],
+            ),
           ),
           actions: [
             TextButton(

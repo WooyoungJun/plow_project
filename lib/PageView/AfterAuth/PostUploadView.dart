@@ -22,7 +22,7 @@ class PostUploadView extends StatefulWidget {
 
 class _PostScreenViewState extends State<PostUploadView> {
   late UserProvider userProvider;
-  late Post post;
+  late Post newPost;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _translateController = TextEditingController();
@@ -51,7 +51,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Future<void> _initPostUploadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    post = Post(uid: userProvider.uid!); // 새로운 post 작성
+    newPost = Post(uid: userProvider.uid!); // 새로운 post 작성
     setState(() => isInitComplete = true);
   }
 
@@ -67,13 +67,11 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   @override
   void dispose() {
-    // 페이지가 dispose 될 때 controller를 dispose 해줍니다.
     _titleController.dispose();
     _contentController.dispose();
     _translateController.dispose();
     _keywordController.dispose();
     _textRecognizer.close();
-    // print('post upload dispose');
     super.dispose();
   }
 
@@ -84,36 +82,19 @@ class _PostScreenViewState extends State<PostUploadView> {
       relativePath = result['relativePath'] as String;
       fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
-      isPdf = post.checkPdf(isPdf: isPdf, anotherFileName: fileName);
-      // _isPdf
+      isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
       _translateController.clear();
       setState(() {});
     }
   }
 
-  Future<void> _handleSaveButton(BuildContext context) async {
-    if (_titleController.text.trim().isEmpty) {
-      return CustomToast.showToast('제목은 비어질 수 없습니다');
-    }
-
-    CustomLoadingDialog.showLoadingDialog(context, '업로드 중입니다. 잠시만 기다리세요');
-    Map<String, dynamic>? result = await FileProcessing.transitionToStorage(
-        relativePath: relativePath, fileName: fileName, fileBytes: fileBytes);
-    if (result != null) {
-      relativePath = result['relativePath'];
-      fileName = result['fileName'];
-    }
-    Post newPost = Post(
-      uid: userProvider.uid!,
-      title: _titleController.text,
-      content: _contentController.text,
-      translateContent: _translateController.text,
-      relativePath: relativePath,
-      fileName: fileName,
-    );
-    await PostHandler.addPost(post: newPost);
-    CustomLoadingDialog.pop(context);
-    Navigator.pop(context, {'upload': true});
+  void setNewPost() {
+    newPost.title = _titleController.text;
+    newPost.content = _contentController.text;
+    newPost.translateContent = _translateController.text;
+    newPost.keywordContent = _keywordController.text;
+    newPost.relativePath = relativePath;
+    newPost.fileName = fileName;
   }
 
   @override
@@ -135,7 +116,15 @@ class _PostScreenViewState extends State<PostUploadView> {
           actions: [
             GestureDetector(
               child: Icon(Icons.save, color: Colors.white),
-              onTap: () async => await _handleSaveButton(context),
+              onTap: () async {
+                setNewPost();
+                CustomAlertDialog.onSavePressed(
+                  context: context,
+                  post: null,
+                  newPost: newPost,
+                  fileBytes: fileBytes,
+                );
+              },
             ), // 포스트 업로드
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
