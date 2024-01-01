@@ -4,6 +4,7 @@ import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/UserProvider.dart';
 
 class CustomAlertDialog {
   static Future<void> onSavePressed({
@@ -124,6 +125,51 @@ class CustomAlertDialog {
                 Navigator.pushReplacementNamed(
                     context, '/HomeView'); // 그냥 홈으로 이동
               },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static Future<void> showFriendCheck({
+    required BuildContext context,
+    required UserProvider userProvider,
+    required String text,
+    TextEditingController? controller,
+    String? friendEmail,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('정말 $text하시겠습니까?', textAlign: TextAlign.center),
+          titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  child: Text('취소'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                TextButton(
+                  child: Text('확인'),
+                  onPressed: () async {
+                    CustomLoadingDialog.showLoadingDialog(
+                        context, '$text중입니다. \n잠시만 기다리세요');
+                    if (text == '삭제') {
+                      await userProvider.deleteFriend(friendEmail!);
+                    } else {
+                      await userProvider.addFriend(controller!.text);
+                      controller.clear();
+                    }
+                    await userProvider.getFriend();
+                    CustomLoadingDialog.pop(context);
+                    Navigator.pop(context); // 다이얼로그 닫기
+                  },
+                ),
+              ],
             ),
           ],
         );

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/AppBarTitle.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomTextStyle.dart';
 import 'package:provider/provider.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/ConstSet.dart';
 import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 
 class HomeViewFriendBoard extends StatefulWidget {
   @override
@@ -19,22 +20,8 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   int refreshGetPost = 5;
   List<Post> posts = [];
   bool _isInitComplete = false;
-
-  // 추가 데이터 가져올때 하단 인디케이터 표시용
-  bool isMoreRequesting = false;
-
-  // 다음 데이터 위치를 파악하기 위함
-  int nextPage = 0;
-
-  // 서버에 저장되어 있는 데이터들(가상으로 사용하기 위해)
-  List<String> serverItems = [];
-
-  // 실제 데이터를 서버에 가져와 저장되는 데이터(리스트에 표시할때 사용)
-  List<String> items = [];
-
-  // 드레그 거리를 체크하기 위함
-  // 해당 값을 평균내서 50%이상 움직였을때 데이터 불러오는 작업을 하게됨.
-  double _dragDistance = 0;
+  bool isMoreRequesting = false; // 추가 데이터 가져올때 하단 인디케이터 표시용
+  double _dragDistance = 0; // Drag 거리 체크
 
   @override
   void initState() {
@@ -43,33 +30,20 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
         .addPostFrameCallback((_) async => await initHomeView());
   }
 
-  // 초기 설정
-  // userProvider -> 사용자 정보
-  // post 읽어오기
-  // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     await getData();
     setState(() => _isInitComplete = true);
   }
 
-  @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
-  }
-
   Future<void> getData({int? last}) async {
-    Map<String, dynamic> results = await PostHandler.readPostFriend(
+    Map<String, dynamic>? results = await PostHandler.readPostFriend(
       friend: userProvider.friend,
       last: last,
     );
-    var tmp = results['posts'].cast<Post>();
-    if (tmp.length != 0) {
+    if (results == null) return;
+    List<Post> tmp = results['posts'].cast<Post>();
+    if (tmp.isNotEmpty) {
       if (last == null) {
         posts = tmp;
       } else {
@@ -152,7 +126,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
                                 backgroundColor: Colors.blueAccent,
                                 child: Text(
                                   '${index + 1}',
-                                  style: TextStyle(color: Colors.white),
+                                  style: CustomTextStyle.style(16),
                                 ),
                               ),
                             ),

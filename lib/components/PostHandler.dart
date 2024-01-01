@@ -12,16 +12,8 @@ class PostHandler {
   static Future<DocumentSnapshot> get totalPostCount async =>
       (await _totalPostCount.doc('count').get());
 
-  static Future<int> totalFriendPostCount(
-      {required List<String> friend}) async {
-    int totalCount = 0;
-    for (String friendEmail in friend) {
-      DocumentSnapshot friendSnapshot =
-          await _totalPostCount.doc(friendEmail).get();
-      if (friendSnapshot.exists) totalCount += friendSnapshot['count'] as int;
-    }
-    return totalCount;
-  }
+  static Future<int> myTotalPostCount({required String email}) async =>
+      (await _totalPostCount.doc(email).get())['count'];
 
   static Future<void> setUserPostCount({required String userEmail}) async =>
       await _totalPostCount.doc(userEmail).set({'count': 0});
@@ -33,10 +25,11 @@ class PostHandler {
       await _store.runTransaction((transaction) async {
         var doc = (await transaction.get(_totalPostCount.doc('count')));
         List<int> postPageIndex = doc['postPageIndex'].cast<int>();
-        totalPosts = doc['count'];
         if (postPageIndex.length == 1) return {'posts': [], 'totalPosts': 0};
+        totalPosts = doc['count'];
         page = page < postPageIndex.length ? page : 1;
-        int postId = postPageIndex[postPageIndex.length <= page ? 0 : page];
+        // 글 삭제 후 돌아올 때 현재 페이지가 존재하지 않으면 1페이지로 돌아가기
+        int postId = postPageIndex[page];
         var postList = await _boardList
             .orderBy('postId', descending: true)
             .startAt([postId])
@@ -52,25 +45,27 @@ class PostHandler {
     }
   }
 
-  // uid에 해당하는 유저의 게시글 가져오기
-  static Future<Map<String, dynamic>> readPostFriend({
+  static Future<Map<String, dynamic>?> readPostFriend({
     required List<String> friend,
     int? last,
   }) async {
     try {
       List<Post> posts = [];
+      int docLast = (await totalPostCount)['last'];
+      if (last == docLast) return null;
       await _store.runTransaction((transaction) async {
         var query = _boardList
             .where('uid', whereIn: friend)
             .orderBy('postId', descending: true);
         if (last != null) query = query.startAfter([last]);
+        // 포스트 더 불러오는 경우
         var postList = await query.limit(ConstSet.limit).get();
         posts = postList.docs.map((doc) => Post.setDoc(doc)).toList();
       });
       return {'posts': posts};
     } catch (err) {
       print(err);
-      return {'posts': []};
+      return null;
     }
   }
 
@@ -78,6 +73,7 @@ class PostHandler {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
       DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
+      // 트랜잭션 실행 -> 데이터 경합 방지 및 자동 트랜잭션 재실행
       await _store.runTransaction((transaction) async {
         var topPost =
             await _boardList.orderBy('postId', descending: true).limit(1).get();
@@ -89,29 +85,28 @@ class PostHandler {
           transaction.update(countDoc, {
             'count': 1,
             'last': 1,
-            'postPageIndex': FieldValue.arrayUnion([1]),
+            'postPageIndex': [-1, 1],
           });
         } else {
           int topPostId = topPost.docs.first['postId'];
           int lastPostId = lastPost.docs.first['postId'];
           newPostId = topPostId + 1;
+          // 새 PostId = 가장 최근 postId + 1
 
           var doc = (await transaction.get(countDoc));
           int count = doc['count'];
           List<int> postPageIndex = doc['postPageIndex'].cast<int>();
           int endPage = (count / ConstSet.visibleCount).ceil();
-
-          for (int page = 1; page <= endPage; page++) {
-            if (page == 1) {
-              postPageIndex[1] = newPostId;
-            } else {
-              String postId = postPageIndex[page].toString();
-              postPageIndex[page] =
-                  (await transaction.get(_boardList.doc(postId)))['next'];
-            }
+          postPageIndex[1] = newPostId;
+          for (int page = 2; page <= endPage; page++) {
+            String postId = postPageIndex[page].toString();
+            postPageIndex[page] =
+                (await transaction.get(_boardList.doc(postId)))['next'];
           }
+          // 각 페이지마다 최상위 글 postId 업데이트 -> 이전 post들의 다음 postId
 
           if (count % ConstSet.visibleCount == 0) postPageIndex.add(lastPostId);
+          // visibleCount마다 새로운 페이지 인덱스 추가
 
           transaction.update(countDoc, {
             'count': FieldValue.increment(1),
@@ -121,10 +116,11 @@ class PostHandler {
           post.prev = topPostId;
           transaction.update(
               _boardList.doc(topPostId.toString()), {'next': newPostId});
+          // 가장 최근 post와 새로 추가하는 post 연결
         }
 
-        post.setTime(); // addPost 시간 (timeStamp, DateTime 기록)
-        post.postId = newPostId;
+        post.setTime(); // post 추가 시간 (timeStamp, DateTime 기록)
+        post.postId = newPostId; // postId 설정
         transaction.set(_boardList.doc(newPostId.toString()), post.toMap());
         transaction.update(userCountDoc, {'count': FieldValue.increment(1)});
       });
@@ -136,17 +132,14 @@ class PostHandler {
     }
   }
 
-  // post update
   static Future<void> updatePost({required Post post}) async {
-    print(post.timeStamp);
-    post.updateTime();
     await _store.runTransaction((transaction) async {
+      post.updateTime();
       transaction.update(_boardList.doc(post.postId.toString()), post.toMap());
     });
     CustomToast.showToast('Post update 완료');
   }
 
-  // post 삭제
   static Future<void> deletePost({required Post post}) async {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
@@ -159,8 +152,10 @@ class PostHandler {
         int count = doc['count'];
         List<int> postPageIndex = doc['postPageIndex'].cast<int>();
         int endPage = (count / ConstSet.visibleCount).ceil();
-        int start = postPageIndex[1] == post.postId ? 1 : 2;
-        for (int page = start; page <= endPage; page++) {
+        for (int page = 1; page <= endPage; page++) {
+          if (postPageIndex[page] > post.postId) continue;
+          // 현재 page의 최상위 postId가 더 크면 이번 페이지는 안바꿔도 됨
+
           String postId = postPageIndex[page].toString();
           int? prevPostId = (await transaction
               .get(_boardList.doc(postId)))['prev']; // 마지막 글 제외 prev 항상 존재
@@ -170,10 +165,6 @@ class PostHandler {
             postPageIndex.removeLast();
           }
         }
-        transaction.update(countDoc, {
-          'postPageIndex': postPageIndex,
-          'count': FieldValue.increment(-1)
-        });
 
         // prev, next 연결
         int? next = post.next;
@@ -189,11 +180,18 @@ class PostHandler {
           // 맨 처음 글
           transaction.update(_boardList.doc(next.toString()), {'prev': null});
         }
-        if (post.postId == last) {
-          transaction.update(countDoc, {'last': next});
-        }
+        if (post.postId == last) transaction.update(countDoc, {'last': next});
+        // 마지막 글의 경우, 마지막 글 가리키는 포인터 last 변경 필요 -> next postId로 변경
+
         transaction.update(userCountDoc, {'count': FieldValue.increment(-1)});
+        transaction.update(countDoc, {
+          'postPageIndex': postPageIndex,
+          'count': FieldValue.increment(-1),
+        });
         transaction.delete(_boardList.doc(post.postId.toString()));
+        // user count, total count 수정
+        // postPageIndex 업데이트 반영
+        // post 삭제
       });
       CustomToast.showToast('Post delete 완료');
     } catch (err) {
@@ -236,7 +234,7 @@ class Post {
 
   @override
   bool operator ==(Object other) =>
-  // title, content, translate, keyword, relativePath, fileName 비교
+      // title, content, translate, keyword, relativePath, fileName 비교
       identical(this, other) ||
       other is Post &&
           runtimeType == other.runtimeType &&
@@ -273,6 +271,7 @@ class Post {
         next = original.next;
 
   void setTime() {
+    // DateTime, TimeStamp 기반 createTime Setting
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
     createdDate = formattedTime;
@@ -280,6 +279,7 @@ class Post {
   }
 
   void updateTime() {
+    // DateTime 기반 modifyDate Setting
     DateTime koreaTime = DateTime.now().toUtc().add(Duration(hours: 9));
     String formattedTime = DateFormat.yMd().add_jms().format(koreaTime);
     modifyDate = formattedTime;
@@ -301,6 +301,7 @@ class Post {
         'next': next,
       };
 
+  // post에 업로드한 파일이 pdf인지 확인하는 메소드
   bool checkPdf({required bool isPdf, String? anotherFileName}) {
     if (fileName != null || anotherFileName != null) {
       // 파일이 존재할 때
@@ -311,6 +312,7 @@ class Post {
     return isPdf;
   }
 
+  // doc 가져와서 Post로 만들어주는 메소드
   static Post setDoc(DocumentSnapshot doc) {
     return Post(
       uid: doc['uid'],

@@ -1,11 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/CustomClass/CustomToast.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
-import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomTextStyle.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 
 class HomeViewAllBoard extends StatefulWidget {
   @override
@@ -13,21 +14,11 @@ class HomeViewAllBoard extends StatefulWidget {
 }
 
 class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
-  late int _totalPosts;
   late int _totalPages;
   int _curPage = 1;
   int _startPage = 1;
   List<Post> posts = [];
   bool _isInitComplete = false;
-
-  Future<void> getData({required int page}) async {
-    Map<String, dynamic> results = await PostHandler.readPostAll(
-      page: _curPage,
-    );
-    posts = results['posts'].cast<Post>(); // 모든 글 중 10개 읽어오기
-    _totalPosts = results['totalPosts'] as int;
-    _totalPages = (_totalPosts / (ConstSet.limit)).ceil();
-  }
 
   @override
   void initState() {
@@ -36,23 +27,17 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
         .addPostFrameCallback((_) async => await initHomeView());
   }
 
-  // 초기 설정
-  // userProvider -> 사용자 정보
-  // post 읽어오기
-  // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeView() async {
     await getData(page: _curPage);
     setState(() => _isInitComplete = true);
   }
 
-  @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
+  Future<void> getData({required int page}) async {
+    Map<String, dynamic> results =
+        await PostHandler.readPostAll(page: _curPage);
+    posts = results['posts'].cast<Post>();
+    int totalPosts = results['totalPosts'] as int;
+    _totalPages = (totalPosts / (ConstSet.limit)).ceil();
   }
 
   @override
@@ -108,11 +93,11 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 1,
-                              blurRadius: 2,
-                              offset: Offset(0, 2)),
+                            color: Colors.grey.withOpacity(0.3),
+                            offset: Offset(0, 2),
+                          ),
                         ],
+                        // 입체감을 위해 설정
                       ),
                       child: Row(
                         children: [
@@ -122,7 +107,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                               backgroundColor: Colors.blueAccent,
                               child: Text(
                                 '${index + 1}',
-                                style: TextStyle(color: Colors.white),
+                                style: CustomTextStyle.style(16),
                               ),
                             ),
                           ),
@@ -138,36 +123,39 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
           ),
           // 페이지네이션 링크 표시
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 min(_totalPages, 10), // 최대 10페이지까지 표시
                 (index) {
+                  int page = _startPage + index;
                   return GestureDetector(
                     onTap: () async {
                       CustomLoadingDialog.showLoadingDialog(
                           context, '로딩 중입니다.');
                       _curPage = index + 1;
                       _startPage = _curPage - 5;
+                      if (_curPage > _totalPages - 4) {
+                        // 최종 페이지 기준 중간 이상이면 startPage 조정
+                        _startPage = _totalPages - 9;
+                      }
                       if (_startPage < 1) _startPage = 1;
+
                       await getData(page: _curPage);
                       CustomLoadingDialog.pop(context);
                       setState(() {});
                     },
                     child: Container(
-                      margin: EdgeInsets.all(5),
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey, width: 1.0),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
-                        '${_startPage + index}',
+                        '$page',
                         style: TextStyle(
-                          color: (_startPage + index) == _curPage
-                              ? Colors.blue
-                              : null,
+                          color: page == _curPage ? Colors.blue : null,
                         ),
                       ),
                     ),

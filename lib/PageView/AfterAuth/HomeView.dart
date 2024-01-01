@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendMangae.dart';
 import 'package:plow_project/components/ConstSet.dart';
-import 'package:provider/provider.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendMangae.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewAllBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewFriendBoard.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeViewItems/HomeViewMyInfo.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
-import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/UserProvider.dart';
 
 class HomeView extends StatefulWidget {
   @override
@@ -15,10 +12,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  late UserProvider userProvider;
   late List<Widget> homeViewItems;
   bool _isInitComplete = false;
-  List<Post> posts = [];
   int _currentIndex = 0;
 
   @override
@@ -28,12 +23,8 @@ class _HomeViewState extends State<HomeView> {
         .addPostFrameCallback((_) async => await initHomeView());
   }
 
-  // 초기 설정
-  // userProvider -> 사용자 정보
-  // post 읽어오기
-  // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
+  // AppBar, BottomNavigationBar 제외한 screenHeight 기반 height 상수 설정
   Future<void> initHomeView() async {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     double screenHeight = MediaQuery.of(context).size.height -
         AppBar().preferredSize.height -
         kBottomNavigationBarHeight;
@@ -45,16 +36,6 @@ class _HomeViewState extends State<HomeView> {
       HomeViewMyInfo()
     ];
     setState(() => _isInitComplete = true);
-  }
-
-  @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
   }
 
   @override

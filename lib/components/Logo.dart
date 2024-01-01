@@ -7,19 +7,15 @@ class Logo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      width: width,
-      child: IconButton(
-        onPressed: () => Navigator.pushNamed(context, '/'),
-        icon: SizedBox(
-          height: height,
-          width: width,
-          child: SvgPicture.asset(
-            'assets/images/wave.svg',
-            fit: BoxFit.contain,
-          ),
-        ), // 로고 이미지
+    return IconButton(
+      onPressed: () => Navigator.pushNamed(context, '/'),
+      icon: SizedBox(
+        height: height,
+        width: width,
+        child: SvgPicture.asset(
+          'assets/images/wave.svg',
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

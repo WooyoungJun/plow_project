@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
 
 enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
@@ -15,10 +15,8 @@ class UserProvider extends ChangeNotifier {
 
   IconData? _icon;
 
-  // 유저의 현재 상태 (uninitialized, authenticated, authenticating, unauthenticated)
   Status get status => _status;
 
-  // 유저의 이메일, 이름, 번호 저장
   String? get uid => _user?.email;
 
   String get userEmail => _user?.email ?? '알수없음';
@@ -35,21 +33,17 @@ class UserProvider extends ChangeNotifier {
         _status = FirebaseAuth.instance.currentUser != null
             ? Status.authenticated
             : Status.unauthenticated {
-    // 사용자 정보 변경시 이벤트 발생 메소드 -> 해당 event listen
     _auth.authStateChanges().listen(_onStateChanged);
   }
 
-  // 상태 변경 시 user 객체가 스트림으로 들어옴
   Future<void> _onStateChanged(User? user) async {
     _user = FirebaseAuth.instance.currentUser;
-    _status = FirebaseAuth.instance.currentUser != null
-        ? Status.authenticated
-        : Status.unauthenticated;
-    if (user != null) await getFriend();
+    _status = _user != null ? Status.authenticated : Status.unauthenticated;
+    await getFriend();
   }
 
   Future<void> getFriend() async {
-    var docRef = await _userInfo.doc(_user!.email).get();
+    DocumentSnapshot docRef = await _userInfo.doc(_user!.email).get();
     _friend = docRef['friendEmail'].cast<String>();
   }
 
@@ -98,24 +92,28 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // userName 변경
   Future<void> setName(String name) async {
-    if (_user != null) {
-      var curName = _user!.displayName;
-      if (curName != name) {
-        await _user!.updateDisplayName(name); // 이름 초기값 설정
-        await _user!.reload(); // 변경사항 적용
-        _user = _auth.currentUser; // 변경된 객체 다시 적용
-        if (_user!.displayName == name) {
-          CustomToast.showToast('이름 변경 완료!');
+    try {
+      if (_user != null) {
+        String? curName = _user!.displayName;
+        if (curName != name) {
+          await _user!.updateDisplayName(name); // 이름 초기값 설정
+          await _user!.reload(); // 변경사항 적용
+          _user = _auth.currentUser; // 변경된 객체 다시 적용
+          if (_user!.displayName == name) {
+            CustomToast.showToast('이름 변경 완료!');
+          } else {
+            CustomToast.showToast('이름 변경 실패!');
+          }
         } else {
-          CustomToast.showToast('이름 변경 실패!');
+          CustomToast.showToast('수정된 사항이 없습니다!');
         }
       } else {
-        CustomToast.showToast('수정된 사항이 없습니다!');
+        CustomToast.showToast('변경 사항이 없습니다!');
       }
-    } else {
-      CustomToast.showToast('변경 사항이 없습니다!');
+    } catch (err) {
+      CustomToast.showToast('이름 설정 오류: $err');
+      print(err);
     }
   }
 
@@ -144,9 +142,8 @@ class UserProvider extends ChangeNotifier {
   Future<String> signIn(
       {required String email, required String password}) async {
     try {
-      var docRef = await _userInfo.doc(email).get();
-      _friend = docRef['friendEmail'].cast<String>();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await getFriend();
       CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
@@ -157,8 +154,14 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
-    CustomToast.showToast('Sign Out 성공');
+    try {
+      await _auth.signOut();
+      _user = _auth.currentUser; // 변경된 객체 다시 적용
+      CustomToast.showToast('Sign Out 성공');
+    } catch (err) {
+      CustomToast.showToast('Sign Out 에러: $err');
+      print(err);
+    }
   }
 
   Future<void> resetPassword({required String email}) async {

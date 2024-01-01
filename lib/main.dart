@@ -39,7 +39,7 @@ class _MyAppState extends State<MyApp> {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue), // 테마 색깔 지정
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         ),
         initialRoute: '/',
         routes: {

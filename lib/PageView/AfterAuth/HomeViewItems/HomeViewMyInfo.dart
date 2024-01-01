@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/PostHandler.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
+import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/UserProvider.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
-import 'package:plow_project/components/CustomClass/CustomTextField.dart';
-import 'package:plow_project/components/UserProvider.dart';
-import 'package:plow_project/components/ConstSet.dart';
 
 class HomeViewMyInfo extends StatefulWidget {
   const HomeViewMyInfo({super.key});
@@ -16,7 +17,7 @@ class HomeViewMyInfo extends StatefulWidget {
 }
 
 class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   late UserProvider userProvider;
   late int count;
   bool _isInitComplete = false;
@@ -29,31 +30,17 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
         .addPostFrameCallback((_) async => await initHomeViewMyInfo());
   }
 
-  // 초기 설정
-  // userProvider -> 사용자 정보
-  // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    nameController.text = userProvider.userName;
-    count = await PostHandler.totalFriendPostCount(
-        friend: [userProvider.userEmail]);
+    _nameController.text = userProvider.userName;
+    count = await PostHandler.myTotalPostCount(email: userProvider.userEmail);
     setState(() => _isInitComplete = true);
   }
 
   @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-  }
-
-  @override
   void dispose() {
-    nameController.dispose();
+    _nameController.dispose();
     super.dispose();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
   }
 
   @override
@@ -62,29 +49,33 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
     return Scaffold(
       appBar: AppBar(
         leading: Container(),
-        // Navigator.push로 인한 leading 버튼 없애기
         backgroundColor: Theme.of(context).colorScheme.primary,
-        title: AppBarTitle(title: '나의 정보'),
+        title: AppBarTitle(title: '나의 정보 관리'),
         centerTitle: true,
         actions: [
           Row(
             children: [
               GestureDetector(
                 child: Container(
-                  padding: EdgeInsets.all(10.0), // 아이콘 주변의 간격 조절
-                  child: Icon(isEditing ? Icons.save : Icons.edit,
-                      color: Colors.white),
+                  padding: EdgeInsets.all(10.0),
+                  child: Icon(
+                    isEditing ? Icons.save : Icons.edit,
+                    color: Colors.white,
+                  ),
                 ),
                 onTap: () async {
                   if (isEditing) {
+                    String name = _nameController.text;
+                    if (name.trim().isEmpty)
+                      return CustomToast.showToast('이름을 입력하세요');
                     CustomLoadingDialog.showLoadingDialog(
                         context, '이름을 변경중입니다.');
-                    await userProvider.setName(nameController.text);
+                    await userProvider.setName(_nameController.text);
                     CustomLoadingDialog.pop(context);
                   }
                   setState(() => isEditing = !isEditing);
                 },
-              ), // 수정하기 버튼
+              ),
             ],
           ),
         ],
@@ -96,7 +87,9 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           children: [
             Center(
               child: CircleAvatar(
-                  radius: 60, child: Icon(Icons.account_circle, size: 120)),
+                radius: 60,
+                child: Icon(userProvider.icon, size: 120),
+              ),
             ),
             Divider(
               color: Colors.grey,
@@ -106,7 +99,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
               height: 40,
             ),
             CustomTextField(
-              controller: nameController,
+              controller: _nameController,
               icon: Icon(Icons.badge, size: 25.0),
               isReadOnly: !isEditing,
             ),
