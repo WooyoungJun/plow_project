@@ -49,7 +49,7 @@ def extract_with_textrank(text, window_size=2, num_keywords=25):
 
 # keybert를 사용하여 키워드 순위 재정렬
 def reorder_with_keybert(text, num_keywords=12):
-    keywords = extract_with_textrank(text, num_keywords=num_keywords)
+    keywords = extract_with_textrank(text)
     doc = " ".join(keywords)
     model = KeyBERT("distilbert-base-nli-mean-tokens")
     keybert_keywords = model.extract_keywords(doc, top_n=num_keywords)
