@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyword Extraction Result</title>
+</head>
+<body>
+    <h1>Keyword Extraction Result</h1>
+    
+    <!-- 텍스트 입력란 -->
+    <form method="POST" action="/extract_keywords">
+        <label for="text">Enter your text:</label><br>
+        <textarea id="text" name="text" rows="4" cols="50"></textarea><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <div>
+        {% if keywords %}
+        <h2>Extracted Keywords:</h2>
+        <ul>
+            {% for keyword in keywords %}
+            <li>{{ keyword }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+
+    <!-- 차트 이미지 표시 부분 -->
+    {% if chart %}
+    <img src="data:image/png;base64,{{ chart }}" alt="Keyword Bubble Chart">
+    {% endif %}
+</body>
+</html>
+
