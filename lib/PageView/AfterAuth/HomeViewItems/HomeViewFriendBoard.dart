@@ -96,10 +96,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
               Navigator.pushNamed(context, '/PostUploadView')
                   .then((result) async {
                 result = result as Map<String, dynamic>?;
-                if (result != null) {
-                  await getData();
-                  setState(() {}); // post 추가 하고 setState
-                }
+                if (result != null)  await refresh();
               });
             },
           ),
@@ -128,14 +125,9 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
                     return InkWell(
                       onTap: () {
                         Navigator.pushNamed(context, '/PostReadView',
-                            arguments: {
-                              'post': post,
-                            }).then((result) async {
+                            arguments: {'post': post}).then((result) async {
                           result = result as Map<String, dynamic>?;
-                          if (result != null) {
-                            await getData();
-                            setState(() {});
-                          }
+                          if (result != null) await refresh();
                         });
                       },
                       child: Container(

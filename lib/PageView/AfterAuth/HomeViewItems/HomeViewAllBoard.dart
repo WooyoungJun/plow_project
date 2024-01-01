@@ -71,7 +71,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
               Navigator.pushNamed(context, '/PostUploadView')
                   .then((result) async {
                 result = result as Map<String, dynamic>?;
-                if (result != null) refresh();
+                if (result != null) await refresh();
               });
             },
           ),
@@ -94,11 +94,10 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                   final post = posts[index];
                   return InkWell(
                     onTap: () {
-                      Navigator.pushNamed(context, '/PostReadView', arguments: {
-                        'post': post,
-                      }).then((result) async {
+                      Navigator.pushNamed(context, '/PostReadView',
+                          arguments: {'post': post}).then((result) async {
                         result = result as Map<String, dynamic>?;
-                        if (result != null) refresh();
+                        if (result != null) await refresh();
                       });
                     },
                     child: Container(
