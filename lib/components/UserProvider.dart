@@ -41,16 +41,14 @@ class UserProvider extends ChangeNotifier {
 
   // 상태 변경 시 user 객체가 스트림으로 들어옴
   Future<void> _onStateChanged(User? user) async {
-    if (user == null) {
-      _status = Status.unauthenticated;
-    } else {
-      _status = Status.authenticated;
-      _user = user;
-      await getFriend();
-    }
+    _user = FirebaseAuth.instance.currentUser;
+    _status = FirebaseAuth.instance.currentUser != null
+        ? Status.authenticated
+        : Status.unauthenticated;
+    if (user != null) await getFriend();
   }
 
-  Future<void> getFriend() async{
+  Future<void> getFriend() async {
     var docRef = await _userInfo.doc(_user!.email).get();
     _friend = docRef['friendEmail'].cast<String>();
   }
@@ -121,9 +119,8 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // 회원 가입
   Future<String> signUp(
-      String email, String password, String buttonText) async {
+      {required String email, required String password}) async {
     try {
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
@@ -135,7 +132,7 @@ class UserProvider extends ChangeNotifier {
       await _user!.updateDisplayName(email); // 이름 초기값 설정
       await _user!.reload(); // 변경사항 적용
       _user = _auth.currentUser; // 변경된 객체 다시 적용
-      CustomToast.showToast('$buttonText 성공');
+      CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
       return err.message!;
@@ -145,12 +142,12 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<String> signIn(
-      String email, String password, String buttonText) async {
+      {required String email, required String password}) async {
     try {
       var docRef = await _userInfo.doc(email).get();
       _friend = docRef['friendEmail'].cast<String>();
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      CustomToast.showToast('$buttonText 성공');
+      CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
       return err.message!;
@@ -159,15 +156,12 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signOut(String buttonText) async {
+  Future<void> signOut() async {
     await _auth.signOut();
-    _user = null;
-    _friend.clear();
-    // print('$buttonText 성공');
-    CustomToast.showToast('$buttonText 성공');
+    CustomToast.showToast('Sign Out 성공');
   }
 
-  Future<void> resetPassword(String email) async {
+  Future<void> resetPassword({required String email}) async {
     try {
       // 이메일이 Firebase Authentication에 존재하는지 확인
       try {

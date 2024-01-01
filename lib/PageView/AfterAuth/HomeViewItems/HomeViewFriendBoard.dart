@@ -96,7 +96,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
               Navigator.pushNamed(context, '/PostUploadView')
                   .then((result) async {
                 result = result as Map<String, dynamic>?;
-                if (result != null)  await refresh();
+                if (result != null) await refresh();
               });
             },
           ),
@@ -170,9 +170,7 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
           Container(
             height: isMoreRequesting ? 50.0 : 0,
             color: Colors.white,
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: Center(child: CustomProgressIndicator()),
           ),
         ],
       ),
@@ -180,10 +178,10 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
   }
 
   //스크롤 이벤트 처리
-  scrollNotification(notification) async {
+  scrollNotification(ScrollNotification notification) async {
     // 스크롤 최대 범위
-    var containerExtent = notification.metrics.viewportDimension;
-    var bottom = notification.metrics.maxScrollExtent;
+    double containerExtent = notification.metrics.viewportDimension;
+    double bottom = notification.metrics.maxScrollExtent;
 
     if (notification is ScrollStartNotification) {
       // 스크롤을 시작하면 발생(손가락으로 리스트를 누르고 움직이려고 할때)
@@ -210,18 +208,10 @@ class _HomeViewAllBoardState extends State<HomeViewFriendBoard> {
         // pixels는 현재 위치 값
         // 두 같이 같다면(스크롤이 가장 아래에 있다)
         if (bottom == notification.metrics.pixels) {
-          setState(() {
-            // 서버에서 데이터를 더 가져오는 효과를 주기 위함
-            // 하단에 프로그레스 서클 표시용
-            isMoreRequesting = true;
-          });
+          setState(() => isMoreRequesting = true);
 
-          // 서버에서 데이터 가져온다.
           await getData(last: _last).then((value) {
-            setState(() {
-              // 다 가져오면 하단 표시 서클 제거
-              isMoreRequesting = false;
-            });
+            setState(() => isMoreRequesting = false);
           });
         }
       }

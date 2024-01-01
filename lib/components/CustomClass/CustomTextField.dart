@@ -20,7 +20,7 @@ class CustomTextField extends StatefulWidget {
     this.iconSize = 15.0,
     this.isReadOnly = false,
     this.maxLines,
-    this.fontSize = 12.5,
+    this.fontSize = 16,
     Icon? icon,
     TextStyle? textStyle,
   })  : icon =
@@ -40,7 +40,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   final double height = 25.0;
 
   final defaultDesign =
-      OutlineInputBorder(borderRadius: BorderRadius.circular(6));
+      OutlineInputBorder(borderRadius: BorderRadius.circular(12));
 
   @override
   Widget build(BuildContext context) {

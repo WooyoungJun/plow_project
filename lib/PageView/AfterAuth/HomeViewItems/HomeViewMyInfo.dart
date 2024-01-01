@@ -134,7 +134,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                 ],
               ),
               onTap: () {
-                userProvider.signOut('signOut');
+                userProvider.signOut();
                 Navigator.pushNamedAndRemoveUntil(
                     context, '/LoginView', (route) => false);
               },

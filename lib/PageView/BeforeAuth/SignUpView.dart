@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/ConstSet.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/Logo.dart';
 import 'package:plow_project/components/UserProvider.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/CustomClass/CustomTextStyle.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 
 class SignUpView extends StatefulWidget {
   @override
@@ -19,17 +21,19 @@ class _SignUpViewState extends State<SignUpView> {
   final TextEditingController _passwordController = TextEditingController();
   late UserProvider userProvider;
   late String msg;
+  bool _isInitComplete = false;
 
   @override
   void initState() {
     super.initState();
-    msg = '';
     WidgetsBinding.instance
         .addPostFrameCallback((_) async => await initSignUpView());
   }
 
   Future<void> initSignUpView() async {
+    msg = '';
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    setState(() => _isInitComplete = true);
   }
 
   // context 접근 가능
@@ -52,6 +56,7 @@ class _SignUpViewState extends State<SignUpView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitComplete) return CustomProgressIndicator();
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
@@ -72,57 +77,53 @@ class _SignUpViewState extends State<SignUpView> {
             Text(
               'SWeetMe Project 회원 가입',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ), // 페이지 설명
+              style: CustomTextStyle.style(24),
+            ),
             SizedBox(height: ConstSet.largeGap),
             CustomTextField(
               controller: _emailController,
-              fontSize: 16.0,
               labelText: 'Email',
               iconData: Icons.email,
               maxLines: 1,
-            ), // 컨트롤러 포함 텍스트 폼 위젯
+            ),
             SizedBox(height: ConstSet.largeGap),
             CustomTextField(
               controller: _passwordController,
-              fontSize: 16.0,
               labelText: 'Password',
               iconData: Icons.lock,
               maxLines: 1,
-            ), // 컨트롤러 포함 텍스트 폼 위젯
+            ),
             SizedBox(height: ConstSet.largeGap),
             ElevatedButton(
-              child: Text('Sign Up'), // 버튼 텍스트
+              child: Text('Sign Up'),
               onPressed: () async {
-                FocusScope.of(context).unfocus(); // 키보드를 내림
+                FocusScope.of(context).unfocus();
                 CustomLoadingDialog.showLoadingDialog(
                     context, '회원가입 중입니다. \n잠시만 기다리세요');
                 var result = await userProvider.signUp(
-                  _emailController.text,
-                  _passwordController.text,
-                  'signUp',
+                  email: _emailController.text,
+                  password: _passwordController.text,
                 );
                 CustomLoadingDialog.pop(context);
                 if (result == '성공') {
                   PostHandler.setUserPostCount(
                       userEmail: _emailController.text);
                   Navigator.pushNamedAndRemoveUntil(
-                    context, '/HomeView',
-                    (route) => false, // 모든 스택을 제거하고 '/HomeView'로 이동
-                  );
+                      context, '/HomeView', (route) => false);
                 } else {
                   setState(() => msg = result);
                 }
               },
             ),
+            SizedBox(height: ConstSet.largeGap),
             SizedBox(
-              child: Text(msg,
-                  style: TextStyle(
-                      color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              child: Text(
+                msg,
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
