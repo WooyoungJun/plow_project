@@ -254,27 +254,29 @@ class FileProcessing {
     return null;
   }
 
-  // summary 부분 : trained GPT-2
-  static Future<String?> makeSummary(
-      {required String text, required String keywords}) async {
-    try {
-      var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': text, 'keywords': keywords}),
-      );
+  // summary 부분 : trained KoBART
+  static Future<String?> makeSummary({required String text, required String keywords}) async {
+  try {
+    var response = await http.post(
+      Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
+      headers: {'Content-Type': 'application/json'},
+      // flask에 현재 text만 받아 요약하도록 만들었습니다. 
+      // keyword는 가중치를 더해 요약문을 만드는 로직이 연결이 안되어 수정하고 
+      // keyword에 대한 로직을 flask서버에 추가해야합니다.(~0102 24:00)
+      body: jsonEncode({'text': text, 'keywords': keywords}), 
+    );
 
-      if (response.statusCode == 200) {
-        CustomToast.showToast('Summary 연결 성공');
-        print('Summary 연결 성공');
-        return response.body;
-      } else {
-        print('Summary 연결 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Summary 연결 오류: $e');
+    if (response.statusCode == 200) {
+      CustomToast.showToast('Summary 연결 성공');
+      print('Summary 연결 성공');
+      return response.body;
+    } else {
+      print('Summary 연결 실패: ${response.statusCode}');
     }
-    return null;
+  } catch (e) {
+    print('Summary 연결 오류: $e');
+  }
+  return null;
   }
 
   // 랜덤한 문자열 생성
