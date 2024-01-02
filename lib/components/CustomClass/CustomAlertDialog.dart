@@ -131,12 +131,8 @@ class CustomAlertDialog {
         return AlertDialog(
           title: Text('경고', textAlign: TextAlign.center),
           titleTextStyle: TextStyle(fontSize: 16.0, color: Colors.black),
-          content: SizedBox(
-            height: 100,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [Text(text, textAlign: TextAlign.center)],
-            ),
+          content: IntrinsicHeight(
+            child: Text(text, textAlign: TextAlign.center),
           ),
           actions: [
             Row(

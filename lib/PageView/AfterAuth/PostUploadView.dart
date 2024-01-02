@@ -239,6 +239,9 @@ class _PostScreenViewState extends State<PostUploadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '이미지로부터 텍스트를 추출하시겠습니까?');
+            if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
             RecognizedText? result = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
@@ -257,7 +260,10 @@ class _PostScreenViewState extends State<PostUploadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
-            CustomLoadingDialog.showLoadingDialog(context, '텍스트 키워드 추출중입니다.');
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '키워드 텍스트를 추출하시겠습니까?');
+            if (!isCheck) return;
+            CustomLoadingDialog.showLoadingDialog(context, '키워드 텍스트를 추출중입니다.');
             String? result = await FileProcessing.keyExtraction(
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
@@ -272,6 +278,9 @@ class _PostScreenViewState extends State<PostUploadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '강의를 검색하시겠습니까?');
+            if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
             String? result = await FileProcessing.makeSummary(
                 text: _translateController.text,
