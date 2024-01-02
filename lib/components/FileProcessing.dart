@@ -11,12 +11,32 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:image/image.dart' as imglib;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-
-import 'CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:external_path/external_path.dart';
 
 class FileProcessing {
   static final FirebaseStorage _storageRef = FirebaseStorage.instance;
   static final List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+  static String externalDirectory = '';
+
+  //다운로드 폴더 경로 받아오기
+  static Future<void> getPublicDownloadFolderPath() async {
+    late String downloadDirPath;
+    // 만약 다운로드 폴더가 존재하지 않는다면 앱내 파일 패스를 대신 return
+    if (Platform.isAndroid) {
+      downloadDirPath = await ExternalPath.getExternalStoragePublicDirectory(
+          ExternalPath.DIRECTORY_DOWNLOADS);
+      Directory dir = Directory(downloadDirPath);
+
+      if (!dir.existsSync()) {
+        downloadDirPath = (await getExternalStorageDirectory())!.path;
+      }
+    } else if (Platform.isIOS) {
+      downloadDirPath = (await getApplicationDocumentsDirectory()).path;
+    }
+    externalDirectory = downloadDirPath;
+    print(externalDirectory);
+  }
 
   static Future<Uint8List?> loadFileFromStorage({String? relativePath}) async {
     if (relativePath != null) {
@@ -193,12 +213,9 @@ class FileProcessing {
       }
       Uint8List mergedBytes = imglib.encodePng(mergedImage);
 
-      Directory appDocumentsDirectory =
-          await getApplicationDocumentsDirectory();
-      String filePath = '${appDocumentsDirectory.path}/${randomString("png")}';
+      String filePath = '$externalDirectory/${randomString("png")}';
       File file = File(filePath);
       await file.writeAsBytes(mergedBytes);
-      CustomToast.showToast('이미지가 저장되었습니다. 경로: $filePath');
       print('이미지가 저장되었습니다. 경로: $filePath');
       // 어플리케이션 기본 폴더에 저장
 
@@ -231,19 +248,17 @@ class FileProcessing {
     return null;
   }
 
-  // keybert이용하여 keyword 추출하기
-  static Future<String?> keyExtraction({required String extractedText}) async {
+  static Future<String?> storageFileToText({required String relativePath, required String fileName}) async {
     try {
       var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/extract-keywords'),
+        Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'text': extractedText}),
+        body: jsonEncode({'file_url': relativePath, 'file_name': fileName}),
       );
-      print('${response.statusCode}');
 
       if (response.statusCode == 200) {
-        CustomToast.showToast('키워드 추출 연결 성공');
-        print('키워드 추출 연결 성공');
+        CustomToast.showToast('텍스트 추출 성공');
+        print('텍스트 추출 성공: ${response.body}');
         return response.body;
       } else {
         print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
@@ -254,29 +269,77 @@ class FileProcessing {
     return null;
   }
 
-  // summary 부분 : trained KoBART
-  static Future<String?> makeSummary({required String text, required String keywords}) async {
-  try {
-    var response = await http.post(
-      Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
-      headers: {'Content-Type': 'application/json'},
-      // flask에 현재 text만 받아 요약하도록 만들었습니다. 
-      // keyword는 가중치를 더해 요약문을 만드는 로직이 연결이 안되어 수정하고 
-      // keyword에 대한 로직을 flask서버에 추가해야합니다.(~0102 24:00)
-      body: jsonEncode({'text': text, 'keywords': keywords}), 
-    );
+  // keybert이용하여 keyword 추출하기
+  static Future<String?> keyExtraction({required String extractedText}) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://www.wooyoung-project.kro.kr/extract-keywords'),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+        body: jsonEncode({'text': extractedText}),
+      );
 
-    if (response.statusCode == 200) {
-      CustomToast.showToast('Summary 연결 성공');
-      print('Summary 연결 성공');
-      return response.body;
-    } else {
-      print('Summary 연결 실패: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        CustomToast.showToast('키워드 추출 연결 성공');
+        String result = utf8.decode(response.bodyBytes);
+        print('키워드 추출 연결 성공 : $result');
+        return result;
+      } else {
+        print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
+      }
+    } catch (e) {
+      print('키워드 추출 연결 오류: $e');
     }
-  } catch (e) {
-    print('Summary 연결 오류: $e');
+    return null;
   }
-  return null;
+
+  // keybert이용하여 keyword 추출하기
+  static Future<String?> searchCourse({required String keyword}) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://www.wooyoung-project.kro.kr/search'),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+        body: jsonEncode({'keyword': keyword}),
+      );
+      print('${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        CustomToast.showToast('강의 검색 성공');
+        String result = utf8.decode(response.bodyBytes);
+        print('강의 검색 성공: $result');
+        return response.body;
+      } else {
+        print('강의 검색 실패: ${response.statusCode}, ${response.body}');
+      }
+    } catch (e) {
+      print('강의 검색 연결 오류: $e');
+    }
+    return null;
+  }
+
+  // summary 부분 : trained KoBART
+  static Future<String?> makeSummary(
+      {required String text, required String keywords}) async {
+    try {
+      var response = await http.post(
+        Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
+        headers: {'Content-Type': 'application/json'},
+        // flask에 현재 text만 받아 요약하도록 만들었습니다.
+        // keyword는 가중치를 더해 요약문을 만드는 로직이 연결이 안되어 수정하고
+        // keyword에 대한 로직을 flask서버에 추가해야합니다.(~0102 24:00)
+        body: jsonEncode({'text': text, 'keywords': keywords}),
+      );
+
+      if (response.statusCode == 200) {
+        CustomToast.showToast('Summary 연결 성공');
+        print('Summary 연결 성공');
+        return response.body;
+      } else {
+        print('Summary 연결 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Summary 연결 오류: $e');
+    }
+    return null;
   }
 
   // 랜덤한 문자열 생성
@@ -289,34 +352,5 @@ class FileProcessing {
           10, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
     );
     return '${formattedDateTime}_$name.$fileExtension';
-  }
-
-  // 텍스트 추출 -> 사용 안함
-  static Future<String?> fileToText(
-      String? relativePath, String? fileName) async {
-    if (relativePath != null) {
-      try {
-        final response = await http.post(
-            Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
-            headers: {'Content-Type': 'application/json'},
-            body:
-                jsonEncode({'file_url': relativePath, 'file_name': fileName}));
-        if (response.statusCode == 200) {
-          String extractedText = response.body;
-          print(extractedText);
-          CustomToast.showToast('텍스트 변환 성공');
-          return extractedText;
-        } else {
-          print(
-              '서버 응답 실패. Status code: ${response.statusCode}, Error: ${response.body}');
-          CustomToast.showToast('텍스트 변환 실패');
-        }
-      } catch (err) {
-        print('에러 발생: $err');
-      }
-    } else {
-      CustomToast.showToast('이미지를 업로드 하세요.');
-    }
-    return null;
   }
 }

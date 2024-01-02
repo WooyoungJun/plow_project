@@ -8,6 +8,10 @@ class PostHandler {
   static final CollectionReference _boardList = _store.collection('BoardList');
   static final CollectionReference _totalPostCount =
       _store.collection('TotalPostCount');
+  static final CollectionReference _apiKey = _store.collection('APIKey');
+
+  static Future<String> get openApiKey async =>
+      (await _apiKey.doc('openAI_API_Key').get())['key'];
 
   static Future<DocumentSnapshot> get totalPostCount async =>
       (await _totalPostCount.doc('count').get());

@@ -10,7 +10,6 @@ class ConstSet {
   static const int limit = visibleCount - 2;
   static double screenHeight = 0;
   static double itemHeight = 0;
-
   static void setHeights(double value) {
     screenHeight = value;
     itemHeight = value / visibleCount;

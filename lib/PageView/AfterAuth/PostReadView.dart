@@ -39,6 +39,7 @@ class _PostReadViewState extends State<PostReadView> {
   String? internalPath;
   Uint8List? fileBytes;
   RecognizedText? recognizedText;
+  String? searchResult;
 
   @override
   void initState() {
@@ -101,7 +102,10 @@ class _PostReadViewState extends State<PostReadView> {
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
         await CustomAlertDialog.onBackPressed(
-            context: context, relativePath: newPost.relativePath);
+            context: context,
+            relativePath: post.relativePath == newPost.relativePath
+                ? null
+                : newPost.relativePath);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -138,7 +142,10 @@ class _PostReadViewState extends State<PostReadView> {
               onPressed: () async {
                 isEditing
                     ? await CustomAlertDialog.onBackPressed(
-                        context: context, relativePath: newPost.relativePath)
+                        context: context,
+                        relativePath: post.relativePath == newPost.relativePath
+                            ? null
+                            : newPost.relativePath)
                     : Navigator.pop(context);
               },
             )
@@ -195,7 +202,7 @@ class _PostReadViewState extends State<PostReadView> {
                         iconData: Icons.key,
                         isReadOnly: !isEditing,
                       ),
-                      isSearch ? searchResult() : Container(),
+                      isSearch ? searchResultText() : Container(),
                     ],
                   ),
                 ),
@@ -244,7 +251,12 @@ class _PostReadViewState extends State<PostReadView> {
         await _setResult(result);
       },
       child: Row(
-        children: [Icon(Icons.transform), Text('pdf를 이미지로 변환하기')],
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.transform),
+          SizedBox(width: ConstSet.mediumGap),
+          Text('pdf를 이미지로 변환하기', textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -273,16 +285,29 @@ class _PostReadViewState extends State<PostReadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
-            bool isCheck =
-                await CustomAlertDialog.show(context: context, text: '이미지로부터 텍스트를 추출하시겠습니까?');
+            if (internalPath == null) {
+              return CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
+            }
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '이미지로부터 텍스트를 추출하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
             RecognizedText? result = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
+            String? storageResult = await FileProcessing.storageFileToText(
+              relativePath: newPost.relativePath!,
+              fileName: newPost.fileName!,
+            );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                'fileBytes': fileBytes,
+                'original': result.text,
+                'first': result.text,
+                'second': storageResult ?? '',
+              }).then((result) {});
               _translateController.text = result.text;
               recognizedText = result;
               setState(() {});
@@ -294,14 +319,20 @@ class _PostReadViewState extends State<PostReadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
-            bool isCheck =
-                await CustomAlertDialog.show(context: context, text: '키워드 텍스트를 추출하시겠습니까?');
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '키워드 텍스트를 추출하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '키워드 텍스트를 추출중입니다.');
             String? result = await FileProcessing.keyExtraction(
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                'fileBytes': fileBytes,
+                'original': result,
+                'first': result,
+                'second': result,
+              }).then((result) {});
               _keywordController.text = result;
               setState(() {});
             }
@@ -312,13 +343,13 @@ class _PostReadViewState extends State<PostReadView> {
         IconButton(
           onPressed: () async {
             if (validateCheck()) return;
-            bool isCheck =
-                await CustomAlertDialog.show(context: context, text: '강의를 검색하시겠습니까?');
+            bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '강의를 검색하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
-            String? result = await FileProcessing.makeSummary(
-                text: _translateController.text,
-                keywords: _keywordController.text);
+            String? result = await FileProcessing.searchCourse(
+              keyword: _keywordController.text,
+            );
             // Map<String, dynamic>? result =
             //     await FileProcessing.searchKmooc(
             //         keywordController.text);
@@ -326,6 +357,8 @@ class _PostReadViewState extends State<PostReadView> {
             if (result != null) {
               print(result);
               setState(() => isSearch = true);
+            } else {
+              print('실패');
             }
           },
           icon: Icon(Icons.search),
@@ -335,13 +368,13 @@ class _PostReadViewState extends State<PostReadView> {
     );
   }
 
-  Widget searchResult() => Text('강의 검색 결과가 없습니다');
+  Widget searchResultText() => Text(searchResult ?? '강의 검색 결과가 없습니다');
 
   bool validateCheck() {
-    if (fileBytes != null && !isPdf && internalPath != null) return false;
+    if (fileBytes != null && !isPdf) return false;
     if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
     if (isPdf) CustomToast.showToast('이미지로 변환해주세요');
-    if (internalPath == null) CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
+    // if (internalPath == null) CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
     return true;
   }
 }

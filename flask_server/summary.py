@@ -11,7 +11,6 @@ streamlit==1.26.0
 wandb==0.15.9
 '''
 from flask import request, jsonify
-import torch
 from transformers import PreTrainedTokenizerFast, BartForConditionalGeneration
 
 # 모델과 토크나이저 불러오기

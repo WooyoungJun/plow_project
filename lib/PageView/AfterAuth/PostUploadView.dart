@@ -39,6 +39,7 @@ class _PostScreenViewState extends State<PostUploadView> {
   String? internalPath;
   Uint8List? fileBytes;
   RecognizedText? recognizedText;
+  String? searchResult;
 
   @override
   void initState() {
@@ -167,7 +168,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                           iconData: Icons.key,
                           isReadOnly: !isKeyExtraction,
                         ),
-                        isSearch ? searchResult() : Container(),
+                        isSearch ? searchResultText() : Container(),
                       ],
                     ),
                   ),
@@ -210,7 +211,12 @@ class _PostScreenViewState extends State<PostUploadView> {
         await _setResult(result);
       },
       child: Row(
-        children: [Icon(Icons.transform), Text('pdf를 이미지로 변환하기')],
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.transform),
+          SizedBox(width: ConstSet.mediumGap),
+          Text('pdf를 이미지로 변환하기', textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -247,8 +253,18 @@ class _PostScreenViewState extends State<PostUploadView> {
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
+            String? storageResult = await FileProcessing.storageFileToText(
+              relativePath: newPost.relativePath!,
+              fileName: newPost.fileName!,
+            );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                'fileBytes': fileBytes,
+                'original': result.text,
+                'first': result.text,
+                'second': storageResult ?? '',
+              }).then((result) {});
               _translateController.text = result.text;
               recognizedText = result;
               setState(() => isTranslate = true);
@@ -268,6 +284,12 @@ class _PostScreenViewState extends State<PostUploadView> {
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                'fileBytes': fileBytes,
+                'original': result,
+                'first': result,
+                'second': result,
+              }).then((result) {});
               _keywordController.text = result;
               setState(() => isKeyExtraction = true);
             }
@@ -282,14 +304,15 @@ class _PostScreenViewState extends State<PostUploadView> {
                 context: context, text: '강의를 검색하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
-            String? result = await FileProcessing.makeSummary(
-                text: _translateController.text,
-                keywords: _keywordController.text);
+            String? result = await FileProcessing.searchCourse(
+              keyword: _keywordController.text,
+            );
             // Map<String, dynamic>? result =
             //     await FileProcessing.searchKmooc(keywordController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
               print(result);
+              searchResult = result;
               setState(() => isSearch = true);
             }
           },
@@ -300,7 +323,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     );
   }
 
-  Widget searchResult() => Text('강의 검색 결과가 없습니다');
+  Widget searchResultText() => Text(searchResult ?? '강의 검색 결과가 없습니다');
 
   bool validateCheck() {
     if (fileBytes != null && !isPdf) return false;

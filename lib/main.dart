@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:plow_project/PageView/AfterAuth/ComparisonView.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:plow_project/firebase_options.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeView.dart';
 import 'package:plow_project/PageView/BeforeAuth/LoginView.dart';
@@ -12,7 +15,8 @@ import 'package:plow_project/PageView/AfterAuth/PostUploadView.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // firebase 초기화 기본 코드
+  await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform); // firebase 초기화 기본 코드
   runApp(MyApp());
 }
 
@@ -24,6 +28,20 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final UserProvider userProvider = UserProvider();
+  bool _isInitComplete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) async => await _initMain());
+  }
+
+  Future<void> _initMain() async {
+    // ConstSet.openApiKey = await PostHandler.openApiKey;
+    await FileProcessing.getPublicDownloadFolderPath();
+    setState(() => _isInitComplete = true);
+  }
 
   @override
   void dispose() {
@@ -33,6 +51,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitComplete) return CustomProgressIndicator();
     return ChangeNotifierProvider(
       create: (context) => userProvider,
       child: MaterialApp(
@@ -51,6 +70,7 @@ class _MyAppState extends State<MyApp> {
               SafeArea(child: PasswordResetView()),
           "/PostReadView": (context) => SafeArea(child: PostReadView()),
           "/PostUploadView": (context) => SafeArea(child: PostUploadView()),
+          "/ComparisonView": (context) => SafeArea(child: ComparisonView()),
         },
       ),
     );
