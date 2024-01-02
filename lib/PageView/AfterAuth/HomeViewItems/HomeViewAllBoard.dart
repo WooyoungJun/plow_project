@@ -86,7 +86,7 @@ class _HomeViewAllBoardState extends State<HomeViewAllBoard> {
                       });
                     },
                     child: Container(
-                      margin: EdgeInsets.only(left: 6, right: 6, top: 6),
+                      margin: EdgeInsets.fromLTRB(4, 4, 4, 0),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: Colors.grey, width: 0.5),

@@ -1,19 +1,19 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:plow_project/components/CustomClass/CustomTextField.dart';
-import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
-import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/ConstSet.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/UserProvider.dart';
+import 'package:plow_project/components/CustomClass/CustomToast.dart';
+import 'package:plow_project/components/CustomClass/CustomTextField.dart';
+import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 
 class PostReadView extends StatefulWidget {
   @override
@@ -37,8 +37,6 @@ class _PostReadViewState extends State<PostReadView> {
 
   final _picker = ImagePicker();
   String? internalPath;
-  String? relativePath;
-  String? fileName;
   Uint8List? fileBytes;
   RecognizedText? recognizedText;
 
@@ -49,10 +47,6 @@ class _PostReadViewState extends State<PostReadView> {
         .addPostFrameCallback((_) async => await _initPostReadView());
   }
 
-  // 초기 설정
-  // userProvider -> 사용자 정보
-  // Home에서 가져온 post 정보 기반으로 title, content, 변환Text, 이미지 읽어오기
-  // inInitComplete -> ProgressIndicator 띄울 수 있도록 초기화 상태 체크
   Future<void> _initPostReadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     var argRef =
@@ -65,13 +59,8 @@ class _PostReadViewState extends State<PostReadView> {
     _keywordController.text = newPost.keywordContent;
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: newPost.relativePath);
-    isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+    if (newPost.fileName != null) isPdf = newPost.checkPdf();
     setState(() => _isInitComplete = true);
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
   }
 
   @override
@@ -86,12 +75,12 @@ class _PostReadViewState extends State<PostReadView> {
 
   Future<void> _setResult(Map<String, dynamic>? result) async {
     if (result != null) {
-      await FileProcessing.deleteFile(relativePath: relativePath);
+      await FileProcessing.deleteFile(relativePath: newPost.relativePath);
       internalPath = result['internalPath'] as String;
-      relativePath = result['relativePath'] as String;
-      fileName = result['fileName'] as String;
+      newPost.relativePath = result['relativePath'] as String;
+      newPost.fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
-      isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+      isPdf = newPost.checkPdf();
       _translateController.clear();
       setState(() {});
     }
@@ -102,9 +91,6 @@ class _PostReadViewState extends State<PostReadView> {
     newPost.content = _contentController.text;
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
-    if (relativePath == null) return;
-    newPost.relativePath = relativePath; // 갱신
-    newPost.fileName = fileName;
   }
 
   @override
@@ -114,7 +100,8 @@ class _PostReadViewState extends State<PostReadView> {
       canPop: !isEditing,
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
-        await CustomAlertDialog.onBackPressed(context, relativePath);
+        await CustomAlertDialog.onBackPressed(
+            context: context, relativePath: newPost.relativePath);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -122,22 +109,20 @@ class _PostReadViewState extends State<PostReadView> {
             onPressed: () => setState(() {}),
             icon: Icon(Icons.refresh, color: Colors.white),
           ),
-          // Navigator.push로 인한 leading 버튼 없애기
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
           actions: [
             Visibility(
               visible: (newPost.uid == userProvider.uid),
-              // 작성자 id와 같아야 함
               child: GestureDetector(
                 child: isEditing
                     ? Icon(Icons.save, color: Colors.white)
                     : Icon(Icons.edit, color: Colors.white),
-                onTap: () {
+                onTap: () async {
                   if (isEditing) {
                     setNewPost();
-                    CustomAlertDialog.onSavePressed(
+                    await CustomAlertDialog.onSavePressed(
                       context: context,
                       post: post,
                       newPost: newPost,
@@ -147,13 +132,13 @@ class _PostReadViewState extends State<PostReadView> {
                   setState(() => isEditing = !isEditing);
                 },
               ),
-            ), // 수정하기 버튼
+            ),
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async {
                 isEditing
                     ? await CustomAlertDialog.onBackPressed(
-                        context, relativePath)
+                        context: context, relativePath: newPost.relativePath)
                     : Navigator.pop(context);
               },
             )
@@ -184,12 +169,12 @@ class _PostReadViewState extends State<PostReadView> {
                         controller: _titleController,
                         iconData: Icons.title,
                         isReadOnly: !isEditing,
-                      ), // 제목
+                      ),
                       CustomTextField(
                         controller: _contentController,
                         iconData: Icons.description,
                         isReadOnly: !isEditing,
-                      ), // 본문
+                      ),
                       CustomTextField(
                         hintText: newPost.modifyDate ?? newPost.createdDate,
                         iconData: Icons.calendar_month,
@@ -220,8 +205,8 @@ class _PostReadViewState extends State<PostReadView> {
         }),
         floatingActionButton: !isEditing && newPost.uid == userProvider.uid
             ? FloatingActionButton(
-                onPressed: () =>
-                    CustomAlertDialog.onDeletePressed(context, newPost),
+                onPressed: () async => await CustomAlertDialog.onDeletePressed(
+                    context: context, post: newPost),
                 child: Icon(Icons.delete, color: Colors.red),
               )
             : null,
@@ -249,11 +234,13 @@ class _PostReadViewState extends State<PostReadView> {
   Widget pdfToImgButton() {
     return ElevatedButton(
       onPressed: () async {
-        CustomLoadingDialog.showLoadingDialog(context, '이미지 변환중입니다');
         Map<String, dynamic>? result =
-            await FileProcessing.pdfToPng(fileBytes: fileBytes);
+            await CustomAlertDialog.onPdfToPngPressed(
+          context: context,
+          relativePath: newPost.relativePath!,
+          fileBytes: fileBytes!,
+        );
         if (result == null) return;
-        CustomLoadingDialog.pop(context);
         await _setResult(result);
       },
       child: Row(
@@ -269,8 +256,7 @@ class _PostReadViewState extends State<PostReadView> {
       children: [
         IconButton(
           onPressed: () async {
-            var result = await FileProcessing.getImage(
-                picker: _picker, imageSource: ImageSource.camera);
+            var result = await FileProcessing.getImage(picker: _picker);
             await _setResult(result);
           },
           icon: Icon(Icons.photo_camera),

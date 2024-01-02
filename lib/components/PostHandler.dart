@@ -302,14 +302,9 @@ class Post {
       };
 
   // post에 업로드한 파일이 pdf인지 확인하는 메소드
-  bool checkPdf({required bool isPdf, String? anotherFileName}) {
-    if (fileName != null || anotherFileName != null) {
-      // 파일이 존재할 때
-      ((anotherFileName ?? fileName!).endsWith('.pdf'))
-          ? isPdf = true
-          : isPdf = false;
-    }
-    return isPdf;
+  bool checkPdf() {
+    if (fileName == null) return false;
+    return fileName!.endsWith('.pdf') ? true : false;
   }
 
   // doc 가져와서 Post로 만들어주는 메소드

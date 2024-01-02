@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
 import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/ConstSet.dart';
@@ -64,10 +65,15 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                   ),
                 ),
                 onTap: () async {
+                  String name = _nameController.text;
+                  if (name.trim().isEmpty) {
+                    return CustomToast.showToast('이름을 입력하세요');
+                  }
+
                   if (isEditing) {
-                    String name = _nameController.text;
-                    if (name.trim().isEmpty)
-                      return CustomToast.showToast('이름을 입력하세요');
+                    bool isCheck = await CustomAlertDialog.show(
+                        context: context, text: '이름을 변경하시겠습니까?');
+                    if (!isCheck) return; // 취소했으면 그냥 유지
                     CustomLoadingDialog.showLoadingDialog(
                         context, '이름을 변경중입니다.');
                     await userProvider.setName(_nameController.text);
@@ -98,43 +104,55 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
               endIndent: 20,
               height: 40,
             ),
-            CustomTextField(
-              controller: _nameController,
-              icon: Icon(Icons.badge, size: 25.0),
-              isReadOnly: !isEditing,
-            ),
-            CustomTextField(
-              hintText: userProvider.userEmail,
-              icon: Icon(Icons.email, size: 25.0),
-              isReadOnly: true,
-            ),
-            CustomTextField(
-              hintText: '$count',
-              icon: Icon(Icons.numbers_rounded, size: 20.0),
-              isReadOnly: true,
-            ),
-            SizedBox(height: ConstSet.largeGap), // 로그아웃 버튼과 다른 위젯 간의 간격 조절
-            ListTile(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: 16.0),
-                    child: Icon(Icons.exit_to_app, color: Colors.red),
-                  ),
-                  SizedBox(width: ConstSet.largeGap),
-                  Text('로그아웃', style: TextStyle(color: Colors.red)),
-                ],
+            Expanded(child: myInfo()),
+            SizedBox(height: ConstSet.largeGap),
+            IntrinsicWidth(
+              child: ListTile(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Icon(Icons.exit_to_app, color: Colors.red),
+                    SizedBox(width: ConstSet.mediumGap),
+                    Text('로그아웃', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+                onTap: () async {
+                  bool isSignOut = await CustomAlertDialog.show(
+                      context: context, text: '정말 로그아웃 하시겠습니까?');
+                  if (isSignOut) {
+                    await userProvider.signOut();
+                    Navigator.pushNamedAndRemoveUntil(
+                        context, '/LoginView', (route) => false);
+                  }
+                },
               ),
-              onTap: () {
-                userProvider.signOut();
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/LoginView', (route) => false);
-              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget myInfo() {
+    return ListView(
+      scrollDirection: Axis.vertical,
+      children: [
+        CustomTextField(
+          controller: _nameController,
+          icon: Icon(Icons.badge, size: 25.0),
+          isReadOnly: !isEditing,
+        ),
+        CustomTextField(
+          hintText: userProvider.userEmail,
+          icon: Icon(Icons.email, size: 25.0),
+          isReadOnly: true,
+        ),
+        CustomTextField(
+          hintText: '$count',
+          icon: Icon(Icons.numbers_rounded, size: 20.0),
+          isReadOnly: true,
+        ),
+      ],
     );
   }
 }

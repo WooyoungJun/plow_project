@@ -39,7 +39,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> _onStateChanged(User? user) async {
     _user = FirebaseAuth.instance.currentUser;
     _status = _user != null ? Status.authenticated : Status.unauthenticated;
-    await getFriend();
+    if (_user != null) await getFriend();
   }
 
   Future<void> getFriend() async {

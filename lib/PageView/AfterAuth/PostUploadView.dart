@@ -4,16 +4,16 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:plow_project/components/FileProcessing.dart';
-import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
+import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/FileProcessing.dart';
+import 'package:plow_project/components/PostHandler.dart';
+import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/CustomClass/CustomToast.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
 import 'package:plow_project/components/CustomClass/CustomAlertDialog.dart';
-import 'package:plow_project/components/PostHandler.dart';
-import 'package:plow_project/components/ConstSet.dart';
+import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
+import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 
 class PostUploadView extends StatefulWidget {
   @override
@@ -37,8 +37,6 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   final _picker = ImagePicker();
   String? internalPath;
-  String? relativePath;
-  String? fileName;
   Uint8List? fileBytes;
   RecognizedText? recognizedText;
 
@@ -56,16 +54,6 @@ class _PostScreenViewState extends State<PostUploadView> {
   }
 
   @override
-  Future<void> didChangeDependencies() async {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
-  }
-
-  @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
@@ -77,12 +65,12 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Future<void> _setResult(Map<String, dynamic>? result) async {
     if (result != null) {
-      await FileProcessing.deleteFile(relativePath: relativePath);
+      await FileProcessing.deleteFile(relativePath: newPost.relativePath);
       internalPath = result['internalPath'] as String;
-      relativePath = result['relativePath'] as String;
-      fileName = result['fileName'] as String;
+      newPost.relativePath = result['relativePath'] as String;
+      newPost.fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
-      isPdf = newPost.checkPdf(isPdf: isPdf, anotherFileName: fileName);
+      isPdf = newPost.checkPdf();
       _translateController.clear();
       setState(() {});
     }
@@ -93,8 +81,6 @@ class _PostScreenViewState extends State<PostUploadView> {
     newPost.content = _contentController.text;
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
-    newPost.relativePath = relativePath;
-    newPost.fileName = fileName;
   }
 
   @override
@@ -104,12 +90,12 @@ class _PostScreenViewState extends State<PostUploadView> {
       canPop: false,
       onPopInvoked: (bool didPop) async {
         if (didPop) return;
-        await CustomAlertDialog.onBackPressed(context, relativePath);
+        await CustomAlertDialog.onBackPressed(
+            context: context, relativePath: newPost.relativePath);
       },
       child: Scaffold(
         appBar: AppBar(
           leading: Container(),
-          // Navigator.push로 인한 leading 버튼 없애기
           title: AppBarTitle(title: '자유 게시판'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -118,18 +104,18 @@ class _PostScreenViewState extends State<PostUploadView> {
               child: Icon(Icons.save, color: Colors.white),
               onTap: () async {
                 setNewPost();
-                CustomAlertDialog.onSavePressed(
+                await CustomAlertDialog.onSavePressed(
                   context: context,
                   post: null,
                   newPost: newPost,
                   fileBytes: fileBytes,
                 );
               },
-            ), // 포스트 업로드
+            ),
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () async =>
-                  await CustomAlertDialog.onBackPressed(context, relativePath),
+              onPressed: () async => await CustomAlertDialog.onBackPressed(
+                  context: context, relativePath: newPost.relativePath),
             )
           ],
         ),
@@ -145,7 +131,6 @@ class _PostScreenViewState extends State<PostUploadView> {
                 scrollDirection: Axis.vertical,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: ConstSet.screenHeight),
-                  // 최소 길이 제한
                   child: Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Column(
@@ -160,12 +145,12 @@ class _PostScreenViewState extends State<PostUploadView> {
                           controller: _titleController,
                           iconData: Icons.title,
                           isReadOnly: false,
-                        ), // 제목
+                        ),
                         CustomTextField(
                           controller: _contentController,
                           iconData: Icons.description,
                           isReadOnly: false,
-                        ), // 본문
+                        ),
                         SizedBox(height: ConstSet.largeGap),
                         fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
                         SizedBox(height: ConstSet.largeGap),
@@ -215,11 +200,13 @@ class _PostScreenViewState extends State<PostUploadView> {
   Widget pdfToImgButton() {
     return ElevatedButton(
       onPressed: () async {
-        CustomLoadingDialog.showLoadingDialog(context, '이미지 변환중입니다');
         Map<String, dynamic>? result =
-            await FileProcessing.pdfToPng(fileBytes: fileBytes);
+            await CustomAlertDialog.onPdfToPngPressed(
+          context: context,
+          relativePath: newPost.relativePath!,
+          fileBytes: fileBytes!,
+        );
         if (result == null) return;
-        CustomLoadingDialog.pop(context);
         await _setResult(result);
       },
       child: Row(
@@ -235,8 +222,7 @@ class _PostScreenViewState extends State<PostUploadView> {
       children: [
         IconButton(
           onPressed: () async {
-            var result = await FileProcessing.getImage(
-                picker: _picker, imageSource: ImageSource.camera);
+            var result = await FileProcessing.getImage(picker: _picker);
             await _setResult(result);
           },
           icon: Icon(Icons.photo_camera),

@@ -65,7 +65,7 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(8.0),
                 child: Column(
                   children: [
                     Text('추가하고자 하는 친구의 이메일을 입력하세요'),
@@ -114,22 +114,29 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
   }
 
   Widget friendRow(String friendEmail) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(friendEmail, style: TextStyle(fontSize: 16)),
-        IconButton(
-          icon: Icon(Icons.delete, color: Colors.red),
-          onPressed: () async {
-            await CustomAlertDialog.showFriendCheck(
-                context: context,
-                userProvider: userProvider,
-                text: '삭제',
-                friendEmail: friendEmail);
-            setState(() {});
-          },
-        ),
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          SizedBox(width: ConstSet.smallGap),
+          Text(friendEmail, style: TextStyle(fontSize: 16)),
+          IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () async {
+              await CustomAlertDialog.showFriendCheck(
+                  context: context,
+                  userProvider: userProvider,
+                  text: '삭제',
+                  friendEmail: friendEmail);
+              setState(() {});
+            },
+          ),
+        ],
+      ),
     );
   }
 }

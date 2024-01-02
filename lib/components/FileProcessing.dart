@@ -1,18 +1,16 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
-import 'dart:ui';
-
-// import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:http/http.dart' as http; // flask 통신
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf_render/pdf_render.dart';
+import 'dart:typed_data';
+import 'dart:ui';
+import 'dart:io';
+import 'dart:convert';
 import 'package:image/image.dart' as imglib;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 import 'CustomClass/CustomToast.dart';
 
@@ -33,7 +31,6 @@ class FileProcessing {
     return null;
   }
 
-  // image 가져오기
   static Future<Map<String, dynamic>?> getFile() async {
     try {
       FilePickerResult? fileResult = await FilePicker.platform.pickFiles(
@@ -54,15 +51,16 @@ class FileProcessing {
         CustomToast.showToast('파일을 선택해주세요');
       }
     } catch (err) {
+      CustomToast.showToast('파일 선택 오류: $err');
       print('파일 선택 오류: $err');
     }
     return null;
   }
 
   static Future<Map<String, dynamic>?> getImage(
-      {required ImagePicker picker, required ImageSource imageSource}) async {
+      {required ImagePicker picker}) async {
     try {
-      XFile? imageFile = await picker.pickImage(source: imageSource);
+      XFile? imageFile = await picker.pickImage(source: ImageSource.camera);
 
       if (imageFile != null) {
         String fileExtension = imageFile.path.split('.').last.toLowerCase();
@@ -73,7 +71,6 @@ class FileProcessing {
               fileExtension: fileExtension,
               fileBytes: fileBytes);
         } else {
-          // 이미지 파일이 아닌 경우 처리
           CustomToast.showToast('선택된 파일은 jpg, jpeg, png 파일이 아닙니다.');
           print('선택된 파일은 jpg, jpeg, png 파일이 아닙니다.');
           print(fileExtension);
@@ -82,6 +79,7 @@ class FileProcessing {
         CustomToast.showToast('파일을 선택해주세요');
       }
     } catch (err) {
+      CustomToast.showToast('이미지 선택 오류: $err');
       print('이미지 선택 오류: $err');
     }
     return null;
@@ -104,8 +102,8 @@ class FileProcessing {
         'fileBytes': fileBytes,
       };
     } catch (err) {
-      print('업로드 오류: $err');
-      CustomToast.showToast('이미지 업로드 오류');
+      CustomToast.showToast('이미지 업로드 오류: $err');
+      print('이미지 업로드 오류: $err');
     }
     return null;
   }
@@ -122,43 +120,40 @@ class FileProcessing {
         TaskSnapshot copyTask = await destinationReference.putData(fileBytes);
         if (copyTask.state == TaskState.success) {
           await deleteFile(relativePath: relativePath);
-          // print('파일 이동 성공');
+          CustomToast.showToast('이미지 업로드 완료');
+          return {
+            'relativePath': newRelativePath,
+            'fileName': fileName,
+          };
         } else {
-          // print('파일 이동 실패: 복사 중 문제 발생');
+          CustomToast.showToast('파일 이동 실패: 복사 중 문제 발생');
         }
-        CustomToast.showToast('이미지 업로드 완료');
-        return {
-          'relativePath': newRelativePath,
-          'fileName': fileName,
-        };
       } catch (err) {
-        print('업로드 오류: $err');
         CustomToast.showToast('이미지 업로드 오류');
+        print('업로드 오류: $err');
       }
     }
     return null;
   }
 
   static Future<void> deleteFile({String? relativePath}) async {
-    // Firebase Storage 참조 얻기
     if (relativePath != null) {
       try {
         await _storageRef.ref().child(relativePath).delete();
-        // print('업로드 된 파일이 성공적으로 삭제되었습니다.');
         CustomToast.showToast('Photo delete 완료');
       } catch (e, stackTrace) {
-        // print('파일 삭제 중 오류 발생: $e\n$stackTrace');
         CustomToast.showToast('Photo delete 에러 $e');
+        print('파일 삭제 중 오류 발생: $e\n$stackTrace');
       }
-    } else {
-      // print('deleteFile: 삭제할 파일이 없음');
     }
   }
 
-  static Future<Map<String, dynamic>?> pdfToPng({Uint8List? fileBytes}) async {
-    if (fileBytes != null) {
-      final PdfDocument doc = await PdfDocument.openData(fileBytes);
-      final int pages = doc.pageCount;
+  static Future<Map<String, dynamic>?> pdfToPng({
+    required Uint8List fileBytes,
+  }) async {
+    try {
+      PdfDocument doc = await PdfDocument.openData(fileBytes);
+      int pages = doc.pageCount;
       List<imglib.Image> imgList = [];
 
       for (int i = 1; i <= pages; i++) {
@@ -167,50 +162,56 @@ class FileProcessing {
         Image imgOfPdf = await imgPDF.createImageDetached();
         ByteData? imgByteData =
             await imgOfPdf.toByteData(format: ImageByteFormat.png);
+        // png byte data로 변환
         if (imgByteData == null) continue;
         Uint8List imgIntBytes = imgByteData.buffer
             .asUint8List(imgByteData.offsetInBytes, imgByteData.lengthInBytes);
         imglib.Image? imgOfLib = imglib.decodeImage(imgIntBytes);
+        // Uint8List로 변환 후 image로 변환
         if (imgOfLib == null) continue;
         imgList.add(imgOfLib);
       }
 
-      // stitch images
       int totalHeight = 0;
       int totalWidth = 0;
+      // 새 이미지의 height, width 설정
       for (imglib.Image image in imgList) {
         totalHeight += image.height;
         totalWidth = max(totalWidth, image.width);
       }
 
-      // 새 이미지 생성
       imglib.Image mergedImage =
           imglib.Image(width: totalWidth, height: totalHeight);
-      int mergedHeight = 0;
+      // 새 이미지 생성
 
-      // 이미지를 병합
+      int mergedHeight = 0;
       for (imglib.Image image in imgList) {
+        // 이미지를 병합
         imglib.compositeImage(mergedImage, image,
             dstX: 0, dstY: mergedHeight, blend: imglib.BlendMode.alpha);
-
         mergedHeight += image.height;
       }
       Uint8List mergedBytes = imglib.encodePng(mergedImage);
-      // 어플리케이션 기본 폴더
+
       Directory appDocumentsDirectory =
           await getApplicationDocumentsDirectory();
       String filePath = '${appDocumentsDirectory.path}/${randomString("png")}';
       File file = File(filePath);
       await file.writeAsBytes(mergedBytes);
+      CustomToast.showToast('이미지가 저장되었습니다. 경로: $filePath');
       print('이미지가 저장되었습니다. 경로: $filePath');
+      // 어플리케이션 기본 폴더에 저장
+
       Map<String, dynamic>? result = await uploadFileToTmp(
           internalPath: filePath, fileExtension: 'png', fileBytes: mergedBytes);
+
       if (result != null) {
         result['mergedBytes'] = mergedBytes;
         return result;
       }
-    } else {
-      CustomToast.showToast('파일을 선택하세요');
+    } catch (err) {
+      CustomToast.showToast('pdf to png 오류: $err');
+      print('pdf to png 오류: $err');
     }
     return null;
   }
