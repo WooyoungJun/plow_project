@@ -12,6 +12,7 @@ import base64
 import matplotlib.pyplot as plt
 from io import BytesIO
 
+model = KeyBERT("distiluse-base-multilingual-cased-v1")
 
 # Textrank 알고리즘 class로 구현
 class TextRank:
@@ -64,7 +65,7 @@ def reorder_with_keybert(text, model, num_keywords=12):
     doc = " ".join(keywords)
     # KeyBERT 모델을 사용하여 키워드 순서 재정렬
     # model = KeyBERT("distilbert-base-nli-mean-tokens")
-    keybert_keywords = model.extract_keywords(doc, top_n=num_keywords)
+    keybert_keywords = model.extract_keywords(doc, keyphrase_ngram_range=(1, 1), stop_words=None, top_n=num_keywords)
     return keybert_keywords
 
 
