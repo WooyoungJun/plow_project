@@ -8,6 +8,7 @@ class PostHandler {
   static final CollectionReference _boardList = _store.collection('BoardList');
   static final CollectionReference _totalPostCount =
       _store.collection('TotalPostCount');
+  static final CollectionReference _userInfo = _store.collection('UserInfo');
   static final CollectionReference _apiKey = _store.collection('APIKey');
 
   static Future<String> get openApiKey async =>
@@ -15,12 +16,6 @@ class PostHandler {
 
   static Future<DocumentSnapshot> get totalPostCount async =>
       (await _totalPostCount.doc('count').get());
-
-  static Future<int> myTotalPostCount({required String email}) async =>
-      (await _totalPostCount.doc(email).get())['count'];
-
-  static Future<void> setUserPostCount({required String userEmail}) async =>
-      await _totalPostCount.doc(userEmail).set({'count': 0});
 
   static Future<Map<String, dynamic>> readPostAll({required int page}) async {
     try {
@@ -76,7 +71,8 @@ class PostHandler {
   static Future<void> addPost({required Post post}) async {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
-      DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
+      DocumentReference userDoc = _userInfo.doc(post.uid);
+
       // 트랜잭션 실행 -> 데이터 경합 방지 및 자동 트랜잭션 재실행
       await _store.runTransaction((transaction) async {
         var topPost =
@@ -121,12 +117,17 @@ class PostHandler {
           transaction.update(
               _boardList.doc(topPostId.toString()), {'next': newPostId});
           // 가장 최근 post와 새로 추가하는 post 연결
+
+          doc = await transaction.get(userDoc);
+          var dailyQuestStatus = doc['dailyQuestStatus'];
+          dailyQuestStatus['postCount'] += 1;
+          transaction.update(userDoc, {'dailyQuestStatus': dailyQuestStatus});
         }
 
         post.setTime(); // post 추가 시간 (timeStamp, DateTime 기록)
         post.postId = newPostId; // postId 설정
         transaction.set(_boardList.doc(newPostId.toString()), post.toMap());
-        transaction.update(userCountDoc, {'count': FieldValue.increment(1)});
+        transaction.update(userDoc, {'count': FieldValue.increment(1)});
       });
 
       CustomToast.showToast('Post add 완료');
@@ -147,7 +148,7 @@ class PostHandler {
   static Future<void> deletePost({required Post post}) async {
     try {
       DocumentReference countDoc = _totalPostCount.doc('count');
-      DocumentReference userCountDoc = _totalPostCount.doc(post.uid);
+      DocumentReference userDoc = _userInfo.doc(post.uid);
       // 트랜잭션 실행 -> 데이터 경합 방지 및 자동 트랜잭션 재실행
       await _store.runTransaction((transaction) async {
         // postPageIndex 변경 -> 당겨오기
@@ -187,7 +188,7 @@ class PostHandler {
         if (post.postId == last) transaction.update(countDoc, {'last': next});
         // 마지막 글의 경우, 마지막 글 가리키는 포인터 last 변경 필요 -> next postId로 변경
 
-        transaction.update(userCountDoc, {'count': FieldValue.increment(-1)});
+        transaction.update(userDoc, {'count': FieldValue.increment(-1)});
         transaction.update(countDoc, {
           'postPageIndex': postPageIndex,
           'count': FieldValue.increment(-1),

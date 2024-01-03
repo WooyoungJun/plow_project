@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:plow_project/components/AppBarTitle.dart';
 import 'package:plow_project/components/Logo.dart';
 import 'package:plow_project/components/UserProvider.dart';
-import 'package:plow_project/components/PostHandler.dart';
 import 'package:plow_project/components/ConstSet.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/CustomClass/CustomTextStyle.dart';
@@ -106,8 +105,6 @@ class _SignUpViewState extends State<SignUpView> {
                 );
                 CustomLoadingDialog.pop(context);
                 if (result == '성공') {
-                  PostHandler.setUserPostCount(
-                      userEmail: _emailController.text);
                   Navigator.pushNamedAndRemoveUntil(
                       context, '/HomeView', (route) => false);
                 } else {

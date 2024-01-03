@@ -27,6 +27,7 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
 
   Future<void> initHomeViewFriendManage() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    await userProvider.getStatus();
     setState(() => _isInitComplete = true);
   }
 
@@ -49,7 +50,7 @@ class _HomeViewFriendManageState extends State<HomeViewFriendManage> {
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white),
             onPressed: () async {
-              await userProvider.getFriend();
+              await userProvider.getStatus();
               setState(() {});
             },
           )

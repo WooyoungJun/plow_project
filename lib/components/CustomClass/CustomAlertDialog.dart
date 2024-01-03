@@ -115,7 +115,7 @@ class CustomAlertDialog {
         await userProvider.addFriend(controller!.text);
         controller.clear();
       }
-      await userProvider.getFriend();
+      await userProvider.getStatus();
       CustomLoadingDialog.pop(context);
     }
   }

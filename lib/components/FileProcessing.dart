@@ -259,7 +259,8 @@ class FileProcessing {
       if (response.statusCode == 200) {
         CustomToast.showToast('텍스트 추출 성공');
         print('텍스트 추출 성공: ${response.body}');
-        return response.body;
+        String result = utf8.decode(response.bodyBytes);
+        return result;
       } else {
         print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
       }
