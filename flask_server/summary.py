@@ -32,4 +32,4 @@ def generate_summary():
     summary_ids = model.generate(inputs['input_ids'], max_length=500, min_length=40, length_penalty=2.0, num_beams=4, early_stopping=True)
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-    return jsonify({'summary': summary})
+    return summary

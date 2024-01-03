@@ -167,24 +167,24 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Column(
                     children: [
                       CustomTextField(
-                        hintText: newPost.uid,
-                        iconData: Icons.person,
+                        showText: newPost.uid,
+                        icon: Icon(Icons.person),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
                       CustomTextField(
                         controller: _titleController,
-                        iconData: Icons.title,
+                        icon: Icon(Icons.title),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
                         controller: _contentController,
-                        iconData: Icons.description,
+                        icon: Icon(Icons.description),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
-                        hintText: newPost.modifyDate ?? newPost.createdDate,
-                        iconData: Icons.calendar_month,
+                        showText: newPost.modifyDate ?? newPost.createdDate,
+                        icon: Icon(Icons.calendar_month),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
@@ -193,13 +193,15 @@ class _PostReadViewState extends State<PostReadView> {
                       isEditing ? fileSelect() : Container(),
                       // if (recognizedText != null) translateText(),
                       CustomTextField(
+                        showText: _translateController.text,
                         controller: _translateController,
-                        iconData: Icons.g_translate,
+                        icon: Icon(Icons.g_translate),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
+                        showText: _keywordController.text,
                         controller: _keywordController,
-                        iconData: Icons.key,
+                        icon: Icon(Icons.key),
                         isReadOnly: !isEditing,
                       ),
                       isSearch ? searchResultText() : Container(),

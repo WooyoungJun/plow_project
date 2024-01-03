@@ -143,12 +143,12 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           isReadOnly: !isEditing,
         ),
         CustomTextField(
-          hintText: userProvider.userEmail,
+          showText: userProvider.userEmail,
           icon: Icon(Icons.email, size: 25.0),
           isReadOnly: true,
         ),
         CustomTextField(
-          hintText: '$count',
+          showText: '$count',
           icon: Icon(Icons.numbers_rounded, size: 20.0),
           isReadOnly: true,
         ),

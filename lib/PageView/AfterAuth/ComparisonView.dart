@@ -67,10 +67,7 @@ class _ComparisonViewState extends State<ComparisonView> {
               children: [
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: CustomTextField(
-                    hintText: original,
-                    isReadOnly: true,
-                  ),
+                  child: CustomTextField(showText: original, isReadOnly: true),
                 ),
               ],
             ),
@@ -91,7 +88,7 @@ class _ComparisonViewState extends State<ComparisonView> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
                         child: CustomTextField(
-                          hintText: first,
+                          showText: first,
                           isReadOnly: true,
                         ),
                       ),
@@ -104,7 +101,7 @@ class _ComparisonViewState extends State<ComparisonView> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
                         child: CustomTextField(
-                          hintText: second,
+                          showText: second,
                           isReadOnly: true,
                         ),
                       ),

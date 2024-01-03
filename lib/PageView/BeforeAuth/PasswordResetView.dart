@@ -68,7 +68,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
             CustomTextField(
               controller: _emailController,
               labelText: 'Email',
-              iconData: Icons.email,
+              icon: Icon(Icons.email),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),

@@ -58,11 +58,25 @@ class UserProvider extends ChangeNotifier {
       if (!((await _userInfo.doc(friendEmail).get()).exists)) {
         return CustomToast.showToast('해당하는 이메일로 가입한 유저를 찾을 수 없습니다!');
       }
-      await _userInfo.doc(_user!.email).update({
-        'friendEmail': FieldValue.arrayUnion([friendEmail])
-      });
-      await _userInfo.doc(friendEmail).update({
-        'friendEmail': FieldValue.arrayUnion([_user!.email])
+      _store.runTransaction((transaction) async {
+        DocumentSnapshot userInfo =
+            await transaction.get(_userInfo.doc(_user!.email));
+        Map<String, dynamic> dailyQuestStatus = userInfo['dailyQuestStatus'];
+        // addedFriend 퀘스트 상태 업데이트
+        if (!(dailyQuestStatus['addedFriend'] as bool)) {
+          dailyQuestStatus['addedFriend'] = true;
+
+          // 업데이트된 정보를 Firestore에 저장
+          transaction.update(_userInfo.doc(_user!.email), {
+            'dailyQuestStatus': dailyQuestStatus,
+            'friendEmail': FieldValue.arrayUnion([friendEmail]),
+          });
+
+          transaction.update(_userInfo.doc(friendEmail), {
+            'dailyQuestStatus': dailyQuestStatus,
+            'friendEmail': FieldValue.arrayUnion([_user!.email]),
+          });
+        }
       });
       return CustomToast.showToast('친구 추가 완료!');
     } catch (err) {
@@ -79,11 +93,13 @@ class UserProvider extends ChangeNotifier {
       if (!(_friend.contains(friendEmail))) {
         return CustomToast.showToast('친구상태가 아닙니다!');
       }
-      await _userInfo.doc(_user!.email).update({
-        'friendEmail': FieldValue.arrayRemove([friendEmail])
-      });
-      await _userInfo.doc(friendEmail).update({
-        'friendEmail': FieldValue.arrayRemove([_user!.email])
+      _store.runTransaction((transaction) async {
+        transaction.update(_userInfo.doc(_user!.email), {
+          'friendEmail': FieldValue.arrayRemove([friendEmail])
+        });
+        transaction.update(_userInfo.doc(friendEmail), {
+          'friendEmail': FieldValue.arrayRemove([friendEmail])
+        });
       });
       return CustomToast.showToast('친구 삭제 완료!');
     } catch (err) {
@@ -126,6 +142,13 @@ class UserProvider extends ChangeNotifier {
       await _userInfo.doc(email).set({
         'credit': 0,
         'friendEmail': _friend,
+        'dailyQuestStatus': {
+          'postCount': 0,
+          'addedFriend': false,
+          'loggedIn': false,
+          'creditReceived': false,
+        },
+        'lastQuestReset': FieldValue.serverTimestamp(),
       }); // credit 초기화
       await _user!.updateDisplayName(email); // 이름 초기값 설정
       await _user!.reload(); // 변경사항 적용
@@ -167,11 +190,9 @@ class UserProvider extends ChangeNotifier {
   Future<void> resetPassword({required String email}) async {
     try {
       // 이메일이 Firebase Authentication에 존재하는지 확인
-      try {
-        await _auth.fetchSignInMethodsForEmail(email);
-      } catch (err) {
-        return CustomToast.showToast(err.toString());
-      }
+
+      List<String> result = await _auth.fetchSignInMethodsForEmail(email);
+      if (result.isEmpty) return CustomToast.showToast('계정이 없습니다');
       await _auth.sendPasswordResetEmail(email: email);
       CustomToast.showToast('비밀번호 재설정 이메일이 전송되었습니다.');
     } catch (e) {

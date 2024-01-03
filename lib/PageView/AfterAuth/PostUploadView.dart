@@ -137,19 +137,19 @@ class _PostScreenViewState extends State<PostUploadView> {
                     child: Column(
                       children: [
                         CustomTextField(
-                          hintText: userProvider.userName,
-                          iconData: Icons.person,
+                          showText: userProvider.userName,
+                          icon: Icon(Icons.person),
                           isReadOnly: true,
                           maxLines: 1,
                         ),
                         CustomTextField(
                           controller: _titleController,
-                          iconData: Icons.title,
+                          icon: Icon(Icons.title),
                           isReadOnly: false,
                         ),
                         CustomTextField(
                           controller: _contentController,
-                          iconData: Icons.description,
+                          icon: Icon(Icons.description),
                           isReadOnly: false,
                         ),
                         SizedBox(height: ConstSet.largeGap),
@@ -159,13 +159,15 @@ class _PostScreenViewState extends State<PostUploadView> {
                         SizedBox(height: ConstSet.largeGap),
                         // isTranslate ? translateText() : Container(),
                         CustomTextField(
+                          showText: _translateController.text,
                           controller: _translateController,
-                          iconData: Icons.g_translate,
+                          icon: Icon(Icons.g_translate),
                           isReadOnly: !isTranslate,
                         ),
                         CustomTextField(
+                          showText: _keywordController.text,
                           controller: _keywordController,
-                          iconData: Icons.key,
+                          icon: Icon(Icons.key),
                           isReadOnly: !isKeyExtraction,
                         ),
                         isSearch ? searchResultText() : Container(),

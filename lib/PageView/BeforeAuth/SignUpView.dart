@@ -83,14 +83,14 @@ class _SignUpViewState extends State<SignUpView> {
             CustomTextField(
               controller: _emailController,
               labelText: 'Email',
-              iconData: Icons.email,
+              icon: Icon(Icons.email, size: 15.0),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),
             CustomTextField(
               controller: _passwordController,
               labelText: 'Password',
-              iconData: Icons.lock,
+              icon: Icon(Icons.lock),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),
