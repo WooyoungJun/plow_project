@@ -1,20 +1,18 @@
 from flask import request, jsonify
 import firebase_admin
 from firebase_admin import storage
-from firebase_admin import credentials
 import uuid
 import extractor
 
-# Firebase 앱 초기화
-cred = credentials.Certificate('google-services.json')
-firebase_admin.initialize_app(cred, {'storageBucket': 'gs://sweetmeproject.appspot.com'})
-
-# Storage 클라이언트 생성
-client = storage.Client()
-bucket = client.get_bucket('gs://sweetmeproject.appspot.com')
-
 def extract_keywords():
     try:
+        # 이미 초기화된 Firebase 앱 가져오기
+        app = firebase_admin.get_app()
+        
+        # Storage 클라이언트 생성
+        client = storage.Client(app=app)
+        bucket = client.get_bucket('gs://sweetmeproject.appspot.com')
+        
         # JSON 형식의 데이터를 요청에서 가져옴
         data = request.get_json()
         text = data.get('text', '')
