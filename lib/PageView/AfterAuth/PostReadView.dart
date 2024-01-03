@@ -28,18 +28,19 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _translateController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
+  final TextEditingController _summarizeController = TextEditingController();
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
   bool isPdf = false;
   bool isEditing = false;
-  bool isSearch = false;
 
   final _picker = ImagePicker();
   String? internalPath;
   Uint8List? fileBytes;
-  RecognizedText? recognizedText;
-  String? searchResult;
+
+  String? firstString;
+  String? secondString;
 
   @override
   void initState() {
@@ -66,6 +67,7 @@ class _PostReadViewState extends State<PostReadView> {
     _contentController.dispose();
     _translateController.dispose();
     _keywordController.dispose();
+    _summarizeController.dispose();
     _textRecognizer.close();
     super.dispose();
   }
@@ -88,6 +90,7 @@ class _PostReadViewState extends State<PostReadView> {
     newPost.content = _contentController.text;
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
+    newPost.summarizeContent = _summarizeController.text;
   }
 
   @override
@@ -164,45 +167,74 @@ class _PostReadViewState extends State<PostReadView> {
                     children: [
                       CustomTextField(
                         showText: newPost.uid,
-                        icon: Icon(Icons.person),
+                        prefixIcon: Icon(Icons.person),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
                       CustomTextField(
                         showText: newPost.title,
                         controller: _titleController,
-                        icon: Icon(Icons.title),
+                        prefixIcon: Icon(Icons.title),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
                         showText: newPost.content,
                         controller: _contentController,
-                        icon: Icon(Icons.description),
+                        prefixIcon: Icon(Icons.description),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
                         showText: newPost.modifyDate ?? newPost.createdDate,
-                        icon: Icon(Icons.calendar_month),
+                        prefixIcon: Icon(Icons.calendar_month),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
                       SizedBox(height: ConstSet.mediumGap),
                       fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
+                      SizedBox(height: ConstSet.mediumGap),
                       isEditing ? fileSelect() : Container(),
-                      // if (recognizedText != null) translateText(),
                       CustomTextField(
-                        showText: _translateController.text,
+                        showText: newPost.translateContent,
                         controller: _translateController,
-                        icon: Icon(Icons.g_translate),
-                        isReadOnly: !isEditing,
+                        prefixIcon: Icon(Icons.g_translate),
+                        suffixIconData: Icons.difference,
+                        isReadOnly: true,
+                        maxLines: 1,
+                      ),
+                      firstString != null
+                          ? ElevatedButton(
+                              onPressed: () => Navigator.pushNamed(
+                                  context, '/ComparisonView',
+                                  arguments: {
+                                    'fileBytes': fileBytes,
+                                    'original': firstString,
+                                    'first': firstString,
+                                    'second': secondString ?? '',
+                                  }),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.difference),
+                                  SizedBox(width: ConstSet.mediumGap),
+                                  Text('변환 결과 확인하기',
+                                      textAlign: TextAlign.center),
+                                ],
+                              ),
+                            )
+                          : Container(),
+                      CustomTextField(
+                        showText: newPost.keywordContent,
+                        controller: _keywordController,
+                        prefixIcon: Icon(Icons.key),
+                        isReadOnly: true,
+                        maxLines: 1,
                       ),
                       CustomTextField(
-                        showText: _keywordController.text,
-                        controller: _keywordController,
-                        icon: Icon(Icons.key),
-                        isReadOnly: !isEditing,
+                        showText: newPost.summarizeContent,
+                        controller: _summarizeController,
+                        prefixIcon: Icon(Icons.search),
+                        isReadOnly: true,
                       ),
-                      isSearch ? searchResultText() : Container(),
                     ],
                   ),
                 ),
@@ -232,10 +264,17 @@ class _PostReadViewState extends State<PostReadView> {
                   scrollDirection: PdfScrollDirection.vertical,
                 ),
               ),
-              if (isEditing) pdfToImgButton() else Container()
+              pdfToImgButton(),
             ],
           )
-        : Image.memory(fileBytes!, fit: BoxFit.cover);
+        : SizedBox(
+            height: 300,
+            child: ListView(
+              children: [
+                Image.memory(fileBytes!, fit: BoxFit.cover),
+              ],
+            ),
+          );
   }
 
   Widget pdfToImgButton() {
@@ -302,14 +341,9 @@ class _PostReadViewState extends State<PostReadView> {
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              Navigator.pushNamed(context, '/ComparisonView', arguments: {
-                'fileBytes': fileBytes,
-                'original': result.text,
-                'first': result.text,
-                'second': storageResult ?? '',
-              }).then((result) {});
+              firstString = result.text;
+              secondString = storageResult;
               _translateController.text = result.text;
-              recognizedText = result;
               setState(() {});
             }
           },
@@ -327,12 +361,6 @@ class _PostReadViewState extends State<PostReadView> {
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              // Navigator.pushNamed(context, '/ComparisonView', arguments: {
-              //   'fileBytes': fileBytes,
-              //   'original': result,
-              //   'first': result,
-              //   'second': result,
-              // }).then((result) {});
               _keywordController.text = result;
               setState(() {});
             }
@@ -356,7 +384,7 @@ class _PostReadViewState extends State<PostReadView> {
             CustomLoadingDialog.pop(context);
             if (result != null) {
               print(result);
-              setState(() => isSearch = true);
+              setState(() {});
             } else {
               print('실패');
             }
@@ -368,8 +396,6 @@ class _PostReadViewState extends State<PostReadView> {
     );
   }
 
-  Widget searchResultText() => Text(searchResult ?? '강의 검색 결과가 없습니다');
-
   bool validateCheck() {
     if (fileBytes != null && !isPdf) return false;
     if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
@@ -378,26 +404,3 @@ class _PostReadViewState extends State<PostReadView> {
     return true;
   }
 }
-// Widget translateText() {
-//   return ListView.separated(
-//     shrinkWrap: true,
-//     // 리스트 뷰 크기 고정
-//     primary: false,
-//     // 리스트 뷰 내부 스크롤 없음
-//     itemCount: recognizedText!.blocks.length,
-//     itemBuilder: (context, index) {
-//       TextBlock textBlock = recognizedText!.blocks[index];
-//       return Card(
-//         margin: EdgeInsets.all(8.0),
-//         child: ListTile(
-//           title: Text('Text Block #$index'),
-//           subtitle: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: textBlock.lines.map((line) => Text(line.text)).toList(),
-//           ),
-//         ),
-//       );
-//     },
-//     separatorBuilder: (BuildContext context, int index) => Divider(),
-//   );
-// }

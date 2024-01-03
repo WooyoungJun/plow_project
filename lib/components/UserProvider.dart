@@ -7,17 +7,16 @@ enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 
 class UserProvider extends ChangeNotifier {
   static final FirebaseFirestore _store = FirebaseFirestore.instance;
-  static final CollectionReference _userInfo = _store.collection('UserInfo');
+  static final CollectionReference _userInfoRef = _store.collection('UserInfo');
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
   List<String> _friend = []; // 친구 uid 저장
+  Map<String, dynamic> _userInfo = {};
   Map<String, dynamic> _dailyQuestStatus = {};
 
   IconData? _icon;
 
-
-  Map<String, dynamic> get dailyQuestStatus => _dailyQuestStatus;
 
   Status get status => _status;
 
@@ -31,13 +30,11 @@ class UserProvider extends ChangeNotifier {
 
   IconData? get icon => _icon ?? Icons.account_circle;
 
-  DocumentReference get _userDoc => _userInfo.doc(_user!.email);
+  Map<String, dynamic> get userInfo => _userInfo;
 
-  Future<Map<String, dynamic>?> get userInfo async {
-    if (_user == null) return null;
-    var doc = await _userDoc.get();
-    return doc.data() as Map<String, dynamic>?;
-  }
+  Map<String, dynamic> get dailyQuestStatus => _dailyQuestStatus;
+
+  DocumentReference get _userDoc => _userInfoRef.doc(_user!.email);
 
   UserProvider()
       : _auth = FirebaseAuth.instance,
@@ -55,15 +52,21 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> getStatus({bool? isSign}) async {
-    if(isSign == true){
-      await _store.runTransaction((transaction) async {
-        // var questStatus = await _userDoc.get();
+    _userInfo = (await _userDoc.get()).data() as Map<String, dynamic>;
+    _friend = _userInfo['friendEmail'].cast<String>();
+    _dailyQuestStatus = _userInfo['dailyQuestStatus'] as Map<String, dynamic>;
+  }
+
+  Future<void> getCredit() async {
+    await _store.runTransaction((transaction) async {
+      var userDoc = await transaction.get(_userDoc);
+      _dailyQuestStatus = userDoc['dailyQuestStatus'] as Map<String, dynamic>;
+      _dailyQuestStatus['creditReceived'] = true;
+      transaction.update(_userDoc, {
+        'credit': FieldValue.increment(1),
+        'dailyQuestStatus': _dailyQuestStatus,
       });
-      await _userDoc.update({});
-    }
-    DocumentSnapshot docRef = await _userInfo.doc(_user!.email).get();
-    _friend = docRef['friendEmail'].cast<String>();
-    _dailyQuestStatus = docRef['dailyQuestStatus'] as Map<String, dynamic>;
+    });
   }
 
   Future<void> addFriend(String friendEmail) async {
@@ -74,15 +77,15 @@ class UserProvider extends ChangeNotifier {
       if (_friend.contains(friendEmail)) {
         return CustomToast.showToast('이미 친구상태입니다!');
       }
-      if (!((await _userInfo.doc(friendEmail).get()).exists)) {
+      if (!((await _userInfoRef.doc(friendEmail).get()).exists)) {
         return CustomToast.showToast('해당하는 이메일로 가입한 유저를 찾을 수 없습니다!');
       }
       await _store.runTransaction((transaction) async {
-        transaction.update(_userInfo.doc(_user!.email), {
+        transaction.update(_userDoc, {
           'friendEmail': FieldValue.arrayUnion([friendEmail]),
         });
 
-        transaction.update(_userInfo.doc(friendEmail), {
+        transaction.update(_userInfoRef.doc(friendEmail), {
           'friendEmail': FieldValue.arrayUnion([_user!.email]),
         });
       });
@@ -101,10 +104,10 @@ class UserProvider extends ChangeNotifier {
         return CustomToast.showToast('친구상태가 아닙니다!');
       }
       await _store.runTransaction((transaction) async {
-        transaction.update(_userInfo.doc(_user!.email), {
+        transaction.update(_userDoc, {
           'friendEmail': FieldValue.arrayRemove([friendEmail])
         });
-        transaction.update(_userInfo.doc(friendEmail), {
+        transaction.update(_userInfoRef.doc(friendEmail), {
           'friendEmail': FieldValue.arrayRemove([friendEmail])
         });
       });
@@ -148,7 +151,7 @@ class UserProvider extends ChangeNotifier {
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
       _friend.add(email);
-      await _userInfo.doc(email).set({
+      await _userInfoRef.doc(email).set({
         'count': 0,
         'credit': 0,
         'friendEmail': _friend,
@@ -177,6 +180,10 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       await getStatus();
+      await _store.runTransaction((transaction) async {
+        _dailyQuestStatus['loggedIn'] = true;
+        transaction.update(_userDoc, {'dailyQuestStatus': _dailyQuestStatus});
+      });
       CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {

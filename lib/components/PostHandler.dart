@@ -217,6 +217,7 @@ class Post {
     this.modifyDate,
     this.translateContent = '',
     this.keywordContent = '',
+    this.summarizeContent = '',
     this.relativePath,
     this.fileName,
     this.prev,
@@ -232,6 +233,7 @@ class Post {
   String? modifyDate;
   String translateContent;
   String keywordContent;
+  String summarizeContent;
   String? relativePath;
   String? fileName;
   int? prev;
@@ -247,6 +249,7 @@ class Post {
           content == other.content &&
           translateContent == other.translateContent &&
           keywordContent == other.keywordContent &&
+          summarizeContent == other.summarizeContent &&
           relativePath == other.relativePath &&
           fileName == other.fileName;
 
@@ -256,6 +259,7 @@ class Post {
       content.hashCode ^
       translateContent.hashCode ^
       keywordContent.hashCode ^
+      summarizeContent.hashCode ^
       relativePath.hashCode ^
       fileName.hashCode;
 
@@ -270,6 +274,7 @@ class Post {
         modifyDate = original.modifyDate,
         translateContent = original.translateContent,
         keywordContent = original.keywordContent,
+        summarizeContent = original.summarizeContent,
         relativePath = original.relativePath,
         fileName = original.fileName,
         prev = original.prev,
@@ -300,6 +305,7 @@ class Post {
         'modifyDate': modifyDate,
         'translateContent': translateContent,
         'keywordContent': keywordContent,
+    'summarizeContent': summarizeContent,
         'relativePath': relativePath,
         'fileName': fileName,
         'prev': prev,
@@ -324,6 +330,7 @@ class Post {
       modifyDate: doc['modifyDate'],
       translateContent: doc['translateContent'],
       keywordContent: doc['keywordContent'],
+      summarizeContent: doc['summarizeContent'],
       relativePath: doc['relativePath'],
       fileName: doc['fileName'],
       prev: doc['prev'],

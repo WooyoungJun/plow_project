@@ -70,14 +70,14 @@ class _LoginViewState extends State<LoginView> {
             CustomTextField(
               controller: _emailController,
               labelText: 'Email',
-              icon: Icon(Icons.email),
+              prefixIcon: Icon(Icons.email),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),
             CustomTextField(
               controller: _passwordController,
               labelText: 'Password',
-              icon: Icon(Icons.lock),
+              prefixIcon: Icon(Icons.lock),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),

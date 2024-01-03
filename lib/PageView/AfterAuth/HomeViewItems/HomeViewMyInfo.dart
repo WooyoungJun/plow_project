@@ -19,9 +19,6 @@ class HomeViewMyInfo extends StatefulWidget {
 class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   final TextEditingController _nameController = TextEditingController();
   late UserProvider userProvider;
-  late int count;
-  Map<String, dynamic> userInfo = {};
-  Map<String, dynamic> userQuestStatus = {};
   bool _isInitComplete = false;
   bool isEditing = false;
 
@@ -34,11 +31,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
 
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    var result = await userProvider.userInfo;
-    if (result != null) {
-      userInfo = result;
-      userQuestStatus = userInfo['dailyQuestStatus'] as Map<String, dynamic>;
-    }
+    await userProvider.getStatus();
     setState(() => _isInitComplete = true);
   }
 
@@ -152,11 +145,11 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           isReadOnly: true,
         ),
         CustomTextField(
-          showText: 'count : ${userInfo["count"]}',
+          showText: 'count : ${userProvider.userInfo["count"]}',
           isReadOnly: true,
         ),
         CustomTextField(
-          showText: 'credit : ${userInfo["credit"]}',
+          showText: 'credit : ${userProvider.userInfo["credit"]}',
           isReadOnly: true,
         ),
         // for (MapEntry<String, dynamic> value in userQuestStatus.entries)
@@ -169,6 +162,8 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   }
 
   Widget quest() {
+    Map<String, dynamic> userQuestStatus =
+        userProvider.dailyQuestStatus;
     bool getCredit =
         userQuestStatus['postCount'] >= 3 && userQuestStatus['loggedIn'];
     return ListView(
@@ -191,7 +186,10 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           padding: EdgeInsets.all(16.0),
           child: ElevatedButton(
             onPressed: getCredit && !userQuestStatus['creditReceived']
-                ? () => {}
+                ? () async {
+                    await userProvider.getCredit();
+                    setState(() {});
+                  }
                 : null,
             child: Text('크레딧 받기!'),
           ),
