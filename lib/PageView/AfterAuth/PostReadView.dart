@@ -54,10 +54,6 @@ class _PostReadViewState extends State<PostReadView> {
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     newPost = Post.copy(post);
-    _titleController.text = newPost.title;
-    _contentController.text = newPost.content;
-    _translateController.text = newPost.translateContent;
-    _keywordController.text = newPost.keywordContent;
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: newPost.relativePath);
     if (newPost.fileName != null) isPdf = newPost.checkPdf();
@@ -173,11 +169,13 @@ class _PostReadViewState extends State<PostReadView> {
                         maxLines: 1,
                       ),
                       CustomTextField(
+                        showText: newPost.title,
                         controller: _titleController,
                         icon: Icon(Icons.title),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
+                        showText: newPost.content,
                         controller: _contentController,
                         icon: Icon(Icons.description),
                         isReadOnly: !isEditing,
@@ -329,12 +327,12 @@ class _PostReadViewState extends State<PostReadView> {
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              Navigator.pushNamed(context, '/ComparisonView', arguments: {
-                'fileBytes': fileBytes,
-                'original': result,
-                'first': result,
-                'second': result,
-              }).then((result) {});
+              // Navigator.pushNamed(context, '/ComparisonView', arguments: {
+              //   'fileBytes': fileBytes,
+              //   'original': result,
+              //   'first': result,
+              //   'second': result,
+              // }).then((result) {});
               _keywordController.text = result;
               setState(() {});
             }

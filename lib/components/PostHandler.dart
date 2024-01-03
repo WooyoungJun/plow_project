@@ -93,9 +93,10 @@ class PostHandler {
           newPostId = topPostId + 1;
           // 새 PostId = 가장 최근 postId + 1
 
-          var doc = (await transaction.get(countDoc));
-          int count = doc['count'];
-          List<int> postPageIndex = doc['postPageIndex'].cast<int>();
+          var countDocSnap = await transaction.get(countDoc);
+          var userDocSnap = await transaction.get(userDoc);
+          int count = countDocSnap['count'];
+          List<int> postPageIndex = countDocSnap['postPageIndex'].cast<int>();
           int endPage = (count / ConstSet.visibleCount).ceil();
           postPageIndex[1] = newPostId;
           for (int page = 2; page <= endPage; page++) {
@@ -118,8 +119,7 @@ class PostHandler {
               _boardList.doc(topPostId.toString()), {'next': newPostId});
           // 가장 최근 post와 새로 추가하는 post 연결
 
-          doc = await transaction.get(userDoc);
-          var dailyQuestStatus = doc['dailyQuestStatus'];
+          var dailyQuestStatus = userDocSnap['dailyQuestStatus'];
           dailyQuestStatus['postCount'] += 1;
           transaction.update(userDoc, {'dailyQuestStatus': dailyQuestStatus});
         }

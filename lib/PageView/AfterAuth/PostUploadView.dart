@@ -38,6 +38,7 @@ class _PostScreenViewState extends State<PostUploadView> {
   final _picker = ImagePicker();
   String? internalPath;
   Uint8List? fileBytes;
+  Uint8List? imageBytes;
   RecognizedText? recognizedText;
   String? searchResult;
 
@@ -286,12 +287,12 @@ class _PostScreenViewState extends State<PostUploadView> {
                 extractedText: _translateController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              Navigator.pushNamed(context, '/ComparisonView', arguments: {
-                'fileBytes': fileBytes,
-                'original': result,
-                'first': result,
-                'second': result,
-              }).then((result) {});
+              // Navigator.pushNamed(context, '/ComparisonView', arguments: {
+              //   'fileBytes': fileBytes,
+              //   'original': result,
+              //   'first': result,
+              //   'second': result,
+              // }).then((result) {});
               _keywordController.text = result;
               setState(() => isKeyExtraction = true);
             }

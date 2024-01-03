@@ -304,9 +304,9 @@ class FileProcessing {
 
       if (response.statusCode == 200) {
         CustomToast.showToast('강의 검색 성공');
-        String result = utf8.decode(response.bodyBytes);
+        String result = response.body;
         print('강의 검색 성공: $result');
-        return response.body;
+        return result;
       } else {
         print('강의 검색 실패: ${response.statusCode}, ${response.body}');
       }
