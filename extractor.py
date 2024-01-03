@@ -196,7 +196,7 @@ def create_bubble_chart(keywords):
     buffer = BytesIO()
     plt.savefig(buffer, format="png")
     buffer.seek(0)
-    # 웹에 게시할 수 있도록 base64 형태로 변환
+    # Flutter에 게시할 수 있도록 base64 형태로 변환
     chart_base64 = base64.b64encode(buffer.read()).decode("utf-8")
     
     return chart_base64
