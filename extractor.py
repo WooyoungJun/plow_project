@@ -1,7 +1,6 @@
 # font path 조정 필요
 # font path 조정 필요
-# parameter로 변경
-model = "distiluse-base-multilingual-cased-v1"
+# model -> parameter로 변경
 
 from keybert import KeyBERT
 import networkx as nx
