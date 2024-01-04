@@ -136,6 +136,7 @@ class FileProcessing {
     if (relativePath != null && fileName != null && fileBytes != null) {
       try {
         String newRelativePath = 'uploads/saved/$fileName';
+        if (newRelativePath == relativePath) return null;
         Reference destinationReference = _storageRef.ref(newRelativePath);
         TaskSnapshot copyTask = await destinationReference.putData(fileBytes);
         if (copyTask.state == TaskState.success) {
@@ -248,7 +249,8 @@ class FileProcessing {
     return null;
   }
 
-  static Future<String?> storageFileToText({required String relativePath, required String fileName}) async {
+  static Future<String?> storageFileToText(
+      {required String relativePath, required String fileName}) async {
     try {
       var response = await http.post(
         Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
@@ -304,7 +306,7 @@ class FileProcessing {
 
       if (response.statusCode == 200) {
         CustomToast.showToast('강의 검색 성공');
-        String result = response.body;
+        String result = utf8.decode(response.bodyBytes);
         print('강의 검색 성공: $result');
         return result;
       } else {
@@ -331,8 +333,9 @@ class FileProcessing {
 
       if (response.statusCode == 200) {
         CustomToast.showToast('Summary 연결 성공');
-        print('Summary 연결 성공');
-        return response.body;
+        String result = utf8.decode(response.bodyBytes);
+        print('Summary 연결 성공: $result');
+        return result;
       } else {
         print('Summary 연결 실패: ${response.statusCode}');
       }

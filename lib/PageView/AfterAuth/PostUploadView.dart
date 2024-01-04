@@ -80,6 +80,7 @@ class _PostScreenViewState extends State<PostUploadView> {
       _keywordController.clear();
       _summarizeController.clear();
       _courseController.clear();
+      firstString = null;
       setState(() {});
     }
   }
@@ -203,6 +204,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                           controller: _summarizeController,
                           prefixIcon: Icon(Icons.summarize),
                           isReadOnly: true,
+                          maxLines: 1,
                         ),
                         CustomTextField(
                           controller: _courseController,
@@ -346,6 +348,7 @@ class _PostScreenViewState extends State<PostUploadView> {
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              _summarizeController.text = result;
               print(result);
               setState(() {});
             } else {
@@ -367,8 +370,8 @@ class _PostScreenViewState extends State<PostUploadView> {
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              _courseController.text = result;
               print(result);
-              _summarizeController.text = result;
               setState(() {});
             }
           },

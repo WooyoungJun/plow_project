@@ -11,12 +11,16 @@ class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
+  String? _userName;
   List<String> _friend = []; // 친구 uid 저장
   Map<String, dynamic> _userInfo = {};
   Map<String, dynamic> _dailyQuestStatus = {};
 
   IconData? _icon;
 
+  static Future<String?> getUserName(String email) async {
+    return (await _userInfoRef.doc(email).get())['userName'];
+  }
 
   Status get status => _status;
 
@@ -24,7 +28,7 @@ class UserProvider extends ChangeNotifier {
 
   String get userEmail => _user?.email ?? '알수없음';
 
-  String get userName => _user?.displayName ?? '이름을 설정하세요';
+  String get userName => _userName ?? '이름을 설정하세요';
 
   List<String> get friend => _friend;
 
@@ -55,6 +59,7 @@ class UserProvider extends ChangeNotifier {
     _userInfo = (await _userDoc.get()).data() as Map<String, dynamic>;
     _friend = _userInfo['friendEmail'].cast<String>();
     _dailyQuestStatus = _userInfo['dailyQuestStatus'] as Map<String, dynamic>;
+    _userName = _userInfo['userName'] as String;
   }
 
   Future<void> getCredit() async {
@@ -67,6 +72,8 @@ class UserProvider extends ChangeNotifier {
         'dailyQuestStatus': _dailyQuestStatus,
       });
     });
+    await getStatus();
+    print(_userInfo['credit']);
   }
 
   Future<void> addFriend(String friendEmail) async {
@@ -121,16 +128,10 @@ class UserProvider extends ChangeNotifier {
   Future<void> setName(String name) async {
     try {
       if (_user != null) {
-        String? curName = _user!.displayName;
-        if (curName != name) {
-          await _user!.updateDisplayName(name); // 이름 초기값 설정
-          await _user!.reload(); // 변경사항 적용
-          _user = _auth.currentUser; // 변경된 객체 다시 적용
-          if (_user!.displayName == name) {
-            CustomToast.showToast('이름 변경 완료!');
-          } else {
-            CustomToast.showToast('이름 변경 실패!');
-          }
+        if (_userName != name) {
+          await _userInfoRef.doc(_user!.email).update({'userName': name});
+          _userName = name;
+          CustomToast.showToast('이름 변경 완료!');
         } else {
           CustomToast.showToast('수정된 사항이 없습니다!');
         }
@@ -143,7 +144,16 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> resetDailyQuests() async {}
+  Future<void> resetDailyQuests() async {
+    await _userInfoRef.doc(userEmail).update({
+      'dailyQuestStatus': {
+        'addedFriend': false,
+        'creditReceived': false,
+        'loggedIn': true,
+        'postCount': 0,
+      }
+    });
+  }
 
   Future<String> signUp(
       {required String email, required String password}) async {
@@ -152,20 +162,19 @@ class UserProvider extends ChangeNotifier {
           email: email, password: password);
       _friend.add(email);
       await _userInfoRef.doc(email).set({
+        'userName': email,
         'count': 0,
         'credit': 0,
         'friendEmail': _friend,
         'dailyQuestStatus': {
-          'postCount': 0,
           'addedFriend': false,
-          'loggedIn': false,
           'creditReceived': false,
+          'loggedIn': true,
+          'postCount': 0,
         },
         'lastQuestReset': FieldValue.serverTimestamp(),
       }); // credit 초기화
-      await _user!.updateDisplayName(email); // 이름 초기값 설정
-      await _user!.reload(); // 변경사항 적용
-      _user = _auth.currentUser; // 변경된 객체 다시 적용
+      _userName = email;
       CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
@@ -180,9 +189,18 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       await getStatus();
+      // 이전 접속 날짜와 현재 날짜 비교
+      if ((_userInfo['lastQuestReset'] as Timestamp).toDate().day !=
+          DateTime.now().day) {
+        // 일일 퀘스트 리셋
+        await resetDailyQuests();
+      }
       await _store.runTransaction((transaction) async {
         _dailyQuestStatus['loggedIn'] = true;
-        transaction.update(_userDoc, {'dailyQuestStatus': _dailyQuestStatus});
+        transaction.update(_userDoc, {
+          'dailyQuestStatus': _dailyQuestStatus,
+          'lastQuestReset': FieldValue.serverTimestamp(),
+        });
       });
       CustomToast.showToast('Login 성공');
       return '성공';

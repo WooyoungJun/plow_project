@@ -80,37 +80,50 @@ class _ComparisonViewState extends State<ComparisonView> {
             height: 10,
           ),
           Expanded(
-            child: Row(
+            child: ListView(
               children: [
-                Expanded(
-                  child: ListView(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: CustomTextField(
-                          showText: first,
-                          isReadOnly: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: CustomTextField(
-                          showText: second,
-                          isReadOnly: true,
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: CustomTextField(
+                    showText: second,
+                    isReadOnly: true,
                   ),
                 ),
               ],
             ),
           ),
+          // Expanded(
+          //   child: Row(
+          //     children: [
+          //       Expanded(
+          //         child: ListView(
+          //           children: [
+          //             Padding(
+          //               padding: EdgeInsets.symmetric(horizontal: 8),
+          //               child: CustomTextField(
+          //                 showText: first,
+          //                 isReadOnly: true,
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //       Expanded(
+          //         child: ListView(
+          //           children: [
+          //             Padding(
+          //               padding: EdgeInsets.symmetric(horizontal: 8),
+          //               child: CustomTextField(
+          //                 showText: second,
+          //                 isReadOnly: true,
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
       ),
     );

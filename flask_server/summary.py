@@ -10,8 +10,6 @@ lightning==2.0.8
 streamlit==1.26.0
 wandb==0.15.9
 '''
-from flask import request, jsonify
-import torch
 from transformers import PreTrainedTokenizerFast, BartForConditionalGeneration
 
 # 모델과 토크나이저 불러오기 : 전역변수로 불러와 서버 실행 시 한번만 로드

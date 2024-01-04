@@ -154,12 +154,6 @@ class BubbleChart:
             ax.text(*self.bubbles[i, :2], labels[i],
                     horizontalalignment='center', verticalalignment='center')
             
-from matplotlib import font_manager, rc
-# font path 조정 필요
-font_path = "Font/NanumGothic-Regular.ttf"
-font = font_manager.FontProperties(fname=font_path).get_name()
-
-rc('font', family=font)
 def create_bubble_chart(keywords):
     words, scores = zip(*keywords)
     # 파란색 계열 색깔

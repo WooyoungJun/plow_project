@@ -97,7 +97,7 @@ class PostHandler {
           var userDocSnap = await transaction.get(userDoc);
           int count = countDocSnap['count'];
           List<int> postPageIndex = countDocSnap['postPageIndex'].cast<int>();
-          int endPage = (count / ConstSet.visibleCount).ceil();
+          int endPage = (count / ConstSet.limit).ceil();
           postPageIndex[1] = newPostId;
           for (int page = 2; page <= endPage; page++) {
             String postId = postPageIndex[page].toString();
@@ -106,8 +106,8 @@ class PostHandler {
           }
           // 각 페이지마다 최상위 글 postId 업데이트 -> 이전 post들의 다음 postId
 
-          if (count % ConstSet.visibleCount == 0) postPageIndex.add(lastPostId);
-          // visibleCount마다 새로운 페이지 인덱스 추가
+          if (count % ConstSet.limit == 0) postPageIndex.add(lastPostId);
+          // limit 새로운 페이지 인덱스 추가
 
           transaction.update(countDoc, {
             'count': FieldValue.increment(1),
@@ -156,7 +156,7 @@ class PostHandler {
         int last = doc['last'];
         int count = doc['count'];
         List<int> postPageIndex = doc['postPageIndex'].cast<int>();
-        int endPage = (count / ConstSet.visibleCount).ceil();
+        int endPage = (count / ConstSet.limit).ceil();
         for (int page = 1; page <= endPage; page++) {
           if (postPageIndex[page] > post.postId) continue;
           // 현재 page의 최상위 postId가 더 크면 이번 페이지는 안바꿔도 됨

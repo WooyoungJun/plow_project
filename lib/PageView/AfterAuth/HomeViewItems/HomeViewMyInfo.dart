@@ -18,6 +18,7 @@ class HomeViewMyInfo extends StatefulWidget {
 
 class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _creditController = TextEditingController();
   late UserProvider userProvider;
   bool _isInitComplete = false;
   bool isEditing = false;
@@ -62,20 +63,17 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                   ),
                 ),
                 onTap: () async {
+                  if (!isEditing) return setState(() => isEditing = !isEditing);
                   String name = _nameController.text;
                   if (name.trim().isEmpty) {
                     return CustomToast.showToast('이름을 입력하세요');
                   }
-
-                  if (isEditing) {
-                    bool isCheck = await CustomAlertDialog.show(
-                        context: context, text: '이름을 변경하시겠습니까?');
-                    if (!isCheck) return; // 취소했으면 그냥 유지
-                    CustomLoadingDialog.showLoadingDialog(
-                        context, '이름을 변경중입니다.');
-                    await userProvider.setName(_nameController.text);
-                    CustomLoadingDialog.pop(context);
-                  }
+                  bool isCheck = await CustomAlertDialog.show(
+                      context: context, text: '이름을 변경하시겠습니까?');
+                  if (!isCheck) return; // 취소했으면 그냥 유지
+                  CustomLoadingDialog.showLoadingDialog(context, '이름을 변경중입니다.');
+                  await userProvider.setName(_nameController.text);
+                  CustomLoadingDialog.pop(context);
                   setState(() => isEditing = !isEditing);
                 },
               ),
@@ -137,19 +135,24 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
       children: [
         CustomTextField(
           controller: _nameController,
-          showText: '이름 : ${userProvider.userName}',
+          showText: userProvider.userName,
+          prefixIcon: Icon(Icons.verified_user),
           isReadOnly: !isEditing,
         ),
         CustomTextField(
-          showText: '이메일 : ${userProvider.userEmail}',
+          showText: userProvider.userEmail,
+          prefixIcon: Icon(Icons.email),
           isReadOnly: true,
         ),
         CustomTextField(
-          showText: 'count : ${userProvider.userInfo["count"]}',
+          showText: userProvider.userInfo["count"].toString(),
+          prefixIcon: Icon(Icons.numbers),
           isReadOnly: true,
         ),
         CustomTextField(
-          showText: 'credit : ${userProvider.userInfo["credit"]}',
+          controller: _creditController,
+          showText: userProvider.userInfo["credit"].toString(),
+          prefixIcon: Icon(Icons.money),
           isReadOnly: true,
         ),
         // for (MapEntry<String, dynamic> value in userQuestStatus.entries)
@@ -162,8 +165,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   }
 
   Widget quest() {
-    Map<String, dynamic> userQuestStatus =
-        userProvider.dailyQuestStatus;
+    Map<String, dynamic> userQuestStatus = userProvider.dailyQuestStatus;
     bool getCredit =
         userQuestStatus['postCount'] >= 3 && userQuestStatus['loggedIn'];
     return ListView(
@@ -188,6 +190,8 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
             onPressed: getCredit && !userQuestStatus['creditReceived']
                 ? () async {
                     await userProvider.getCredit();
+                    _creditController.text =
+                        userProvider.userInfo['credit'].toString();
                     setState(() {});
                   }
                 : null,

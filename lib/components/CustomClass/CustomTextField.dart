@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
   final String? labelText;
+  final String? hintText;
   final String? showText;
   final bool isReadOnly;
   final int? maxLines;
@@ -15,6 +16,7 @@ class CustomTextField extends StatefulWidget {
   CustomTextField({
     this.controller,
     this.labelText,
+    this.hintText,
     this.showText,
     this.isReadOnly = false,
     this.maxLines,
@@ -76,6 +78,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           }
         }),
         decoration: InputDecoration(
+          hintText: widget.hintText,
           suffixIcon: widget.isReadOnly
               ? null
               : GestureDetector(

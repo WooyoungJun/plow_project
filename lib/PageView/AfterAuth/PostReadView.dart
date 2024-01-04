@@ -24,6 +24,7 @@ class _PostReadViewState extends State<PostReadView> {
   late UserProvider userProvider;
   late Post post;
   late Post newPost;
+  late String userName;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _translateController = TextEditingController();
@@ -57,6 +58,7 @@ class _PostReadViewState extends State<PostReadView> {
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     newPost = Post.copy(post);
+    userName = (await UserProvider.getUserName(newPost.uid))!;
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: newPost.relativePath);
     if (newPost.fileName != null) isPdf = newPost.checkPdf();
@@ -87,6 +89,7 @@ class _PostReadViewState extends State<PostReadView> {
       _keywordController.clear();
       _summarizeController.clear();
       _courseController.clear();
+      firstString = null;
       setState(() {});
     }
   }
@@ -173,20 +176,20 @@ class _PostReadViewState extends State<PostReadView> {
                   child: Column(
                     children: [
                       CustomTextField(
-                        showText: newPost.uid,
+                        showText: userName,
                         prefixIcon: Icon(Icons.person),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
                       CustomTextField(
-                        showText: newPost.title,
                         controller: _titleController,
+                        showText: newPost.title,
                         prefixIcon: Icon(Icons.title),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
-                        showText: newPost.content,
                         controller: _contentController,
+                        showText: newPost.content,
                         prefixIcon: Icon(Icons.description),
                         isReadOnly: !isEditing,
                       ),
@@ -201,8 +204,8 @@ class _PostReadViewState extends State<PostReadView> {
                       SizedBox(height: ConstSet.mediumGap),
                       isEditing ? fileSelect() : Container(),
                       CustomTextField(
-                        showText: newPost.translateContent,
                         controller: _translateController,
+                        showText: newPost.translateContent,
                         prefixIcon: Icon(Icons.g_translate),
                         suffixIconData: Icons.difference,
                         isReadOnly: true,
@@ -230,19 +233,21 @@ class _PostReadViewState extends State<PostReadView> {
                             )
                           : Container(),
                       CustomTextField(
-                        showText: newPost.keywordContent,
                         controller: _keywordController,
+                        showText: newPost.keywordContent,
                         prefixIcon: Icon(Icons.key),
                         isReadOnly: true,
                         maxLines: 1,
                       ),
                       CustomTextField(
-                        showText: newPost.summarizeContent,
                         controller: _summarizeController,
+                        showText: newPost.summarizeContent,
                         prefixIcon: Icon(Icons.summarize),
                         isReadOnly: true,
+                        maxLines: 1,
                       ),
                       CustomTextField(
+                        controller: _courseController,
                         showText: newPost.courseContent,
                         prefixIcon: Icon(Icons.search),
                         isReadOnly: true,
@@ -393,6 +398,7 @@ class _PostReadViewState extends State<PostReadView> {
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              _summarizeController.text = result;
               print(result);
               setState(() {});
             } else {
@@ -414,6 +420,7 @@ class _PostReadViewState extends State<PostReadView> {
             );
             CustomLoadingDialog.pop(context);
             if (result != null) {
+              _courseController.text = result;
               print(result);
               setState(() {});
             } else {
