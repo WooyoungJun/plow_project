@@ -218,6 +218,7 @@ class Post {
     this.translateContent = '',
     this.keywordContent = '',
     this.summarizeContent = '',
+    this.courseContent = '',
     this.relativePath,
     this.fileName,
     this.prev,
@@ -234,6 +235,7 @@ class Post {
   String translateContent;
   String keywordContent;
   String summarizeContent;
+  String courseContent;
   String? relativePath;
   String? fileName;
   int? prev;
@@ -250,6 +252,7 @@ class Post {
           translateContent == other.translateContent &&
           keywordContent == other.keywordContent &&
           summarizeContent == other.summarizeContent &&
+          courseContent == other.courseContent &&
           relativePath == other.relativePath &&
           fileName == other.fileName;
 
@@ -260,6 +263,7 @@ class Post {
       translateContent.hashCode ^
       keywordContent.hashCode ^
       summarizeContent.hashCode ^
+      courseContent.hashCode ^
       relativePath.hashCode ^
       fileName.hashCode;
 
@@ -275,6 +279,7 @@ class Post {
         translateContent = original.translateContent,
         keywordContent = original.keywordContent,
         summarizeContent = original.summarizeContent,
+        courseContent = original.courseContent,
         relativePath = original.relativePath,
         fileName = original.fileName,
         prev = original.prev,
@@ -305,7 +310,8 @@ class Post {
         'modifyDate': modifyDate,
         'translateContent': translateContent,
         'keywordContent': keywordContent,
-    'summarizeContent': summarizeContent,
+        'summarizeContent': summarizeContent,
+        'courseContent': courseContent,
         'relativePath': relativePath,
         'fileName': fileName,
         'prev': prev,
@@ -331,6 +337,7 @@ class Post {
       translateContent: doc['translateContent'],
       keywordContent: doc['keywordContent'],
       summarizeContent: doc['summarizeContent'],
+      courseContent: doc['courseContent'],
       relativePath: doc['relativePath'],
       fileName: doc['fileName'],
       prev: doc['prev'],

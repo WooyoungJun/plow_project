@@ -28,6 +28,7 @@ class _PostScreenViewState extends State<PostUploadView> {
   final TextEditingController _translateController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
   final TextEditingController _summarizeController = TextEditingController();
+  final TextEditingController _courseController = TextEditingController();
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.korean);
   bool isInitComplete = false;
@@ -40,6 +41,7 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   String? firstString;
   String? secondString;
+  String? courseResult;
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     _translateController.dispose();
     _keywordController.dispose();
     _summarizeController.dispose();
+    _courseController.dispose();
     _textRecognizer.close();
     super.dispose();
   }
@@ -74,6 +77,9 @@ class _PostScreenViewState extends State<PostUploadView> {
       fileBytes = result['fileBytes'] as Uint8List;
       isPdf = newPost.checkPdf();
       _translateController.clear();
+      _keywordController.clear();
+      _summarizeController.clear();
+      _courseController.clear();
       setState(() {});
     }
   }
@@ -84,6 +90,7 @@ class _PostScreenViewState extends State<PostUploadView> {
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
     newPost.summarizeContent = _summarizeController.text;
+    newPost.courseContent = _courseController.text;
   }
 
   @override
@@ -194,6 +201,11 @@ class _PostScreenViewState extends State<PostUploadView> {
                         ),
                         CustomTextField(
                           controller: _summarizeController,
+                          prefixIcon: Icon(Icons.summarize),
+                          isReadOnly: true,
+                        ),
+                        CustomTextField(
+                          controller: _courseController,
                           prefixIcon: Icon(Icons.search),
                           isReadOnly: true,
                         ),
@@ -325,6 +337,28 @@ class _PostScreenViewState extends State<PostUploadView> {
           onPressed: () async {
             if (validateCheck()) return;
             bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '텍스트를 요약하시겠습니까?');
+            if (!isCheck) return;
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트를 요약중입니다.');
+            String? result = await FileProcessing.makeSummary(
+              text: firstString!,
+              keywords: _keywordController.text,
+            );
+            CustomLoadingDialog.pop(context);
+            if (result != null) {
+              print(result);
+              setState(() {});
+            } else {
+              print('실패');
+            }
+          },
+          icon: Icon(Icons.summarize),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            if (validateCheck()) return;
+            bool isCheck = await CustomAlertDialog.show(
                 context: context, text: '강의를 검색하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
@@ -335,7 +369,7 @@ class _PostScreenViewState extends State<PostUploadView> {
             if (result != null) {
               print(result);
               _summarizeController.text = result;
-              setState((){});
+              setState(() {});
             }
           },
           icon: Icon(Icons.search),

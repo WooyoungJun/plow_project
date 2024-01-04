@@ -29,6 +29,7 @@ class _PostReadViewState extends State<PostReadView> {
   final TextEditingController _translateController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
   final TextEditingController _summarizeController = TextEditingController();
+  final TextEditingController _courseController = TextEditingController();
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
@@ -41,6 +42,7 @@ class _PostReadViewState extends State<PostReadView> {
 
   String? firstString;
   String? secondString;
+  String? courseResult;
 
   @override
   void initState() {
@@ -68,6 +70,7 @@ class _PostReadViewState extends State<PostReadView> {
     _translateController.dispose();
     _keywordController.dispose();
     _summarizeController.dispose();
+    _courseController.dispose();
     _textRecognizer.close();
     super.dispose();
   }
@@ -81,6 +84,9 @@ class _PostReadViewState extends State<PostReadView> {
       fileBytes = result['fileBytes'] as Uint8List;
       isPdf = newPost.checkPdf();
       _translateController.clear();
+      _keywordController.clear();
+      _summarizeController.clear();
+      _courseController.clear();
       setState(() {});
     }
   }
@@ -91,6 +97,7 @@ class _PostReadViewState extends State<PostReadView> {
     newPost.translateContent = _translateController.text;
     newPost.keywordContent = _keywordController.text;
     newPost.summarizeContent = _summarizeController.text;
+    newPost.courseContent = _courseController.text;
   }
 
   @override
@@ -232,6 +239,11 @@ class _PostReadViewState extends State<PostReadView> {
                       CustomTextField(
                         showText: newPost.summarizeContent,
                         controller: _summarizeController,
+                        prefixIcon: Icon(Icons.summarize),
+                        isReadOnly: true,
+                      ),
+                      CustomTextField(
+                        showText: newPost.courseContent,
                         prefixIcon: Icon(Icons.search),
                         isReadOnly: true,
                       ),
@@ -372,15 +384,34 @@ class _PostReadViewState extends State<PostReadView> {
           onPressed: () async {
             if (validateCheck()) return;
             bool isCheck = await CustomAlertDialog.show(
+                context: context, text: '텍스트를 요약하시겠습니까?');
+            if (!isCheck) return;
+            CustomLoadingDialog.showLoadingDialog(context, '텍스트를 요약중입니다.');
+            String? result = await FileProcessing.makeSummary(
+              text: firstString!,
+              keywords: _keywordController.text,
+            );
+            CustomLoadingDialog.pop(context);
+            if (result != null) {
+              print(result);
+              setState(() {});
+            } else {
+              print('실패');
+            }
+          },
+          icon: Icon(Icons.summarize),
+          iconSize: 30.0,
+        ),
+        IconButton(
+          onPressed: () async {
+            if (validateCheck()) return;
+            bool isCheck = await CustomAlertDialog.show(
                 context: context, text: '강의를 검색하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
             String? result = await FileProcessing.searchCourse(
               keyword: _keywordController.text,
             );
-            // Map<String, dynamic>? result =
-            //     await FileProcessing.searchKmooc(
-            //         keywordController.text);
             CustomLoadingDialog.pop(context);
             if (result != null) {
               print(result);
