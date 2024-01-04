@@ -253,9 +253,9 @@ class FileProcessing {
       {required String relativePath, required String fileName}) async {
     try {
       var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/textTranslation'),
+        Uri.parse('http://www.wooyoung-project.kro.kr:4752/textTranslation'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'file_url': relativePath, 'file_name': fileName}),
+        body: jsonEncode({'file_url': relativePath}),
       );
 
       if (response.statusCode == 200) {
@@ -263,10 +263,10 @@ class FileProcessing {
         print('텍스트 추출 성공: ${response.body}');
         return response.body;
       } else {
-        print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
+        print('텍스트 추출 연결 실패: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      print('키워드 추출 연결 오류: $e');
+      print('텍스트 추출 연결 오류: $e');
     }
     return null;
   }

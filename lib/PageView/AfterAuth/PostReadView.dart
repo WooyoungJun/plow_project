@@ -41,8 +41,12 @@ class _PostReadViewState extends State<PostReadView> {
   String? internalPath;
   Uint8List? fileBytes;
 
-  String? firstString;
-  String? secondString;
+  String? firstTranslate;
+  String? secondTranslate;
+  String? firstKeyword;
+  String? secondKeyword;
+  String? firstSummarize;
+  String? secondSummarize;
   String? courseResult;
 
   @override
@@ -89,7 +93,7 @@ class _PostReadViewState extends State<PostReadView> {
       _keywordController.clear();
       _summarizeController.clear();
       _courseController.clear();
-      firstString = null;
+      firstTranslate = null;
       setState(() {});
     }
   }
@@ -211,15 +215,15 @@ class _PostReadViewState extends State<PostReadView> {
                         isReadOnly: true,
                         maxLines: 1,
                       ),
-                      firstString != null
+                      firstTranslate != null
                           ? ElevatedButton(
                               onPressed: () => Navigator.pushNamed(
                                   context, '/ComparisonView',
                                   arguments: {
                                     'fileBytes': fileBytes,
-                                    'original': firstString,
-                                    'first': firstString,
-                                    'second': secondString ?? '',
+                                    'original': firstTranslate,
+                                    'first': firstTranslate,
+                                    'second': secondTranslate ?? '',
                                   }),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -238,12 +242,54 @@ class _PostReadViewState extends State<PostReadView> {
                         prefixIcon: Icon(Icons.key),
                         isReadOnly: true,
                       ),
+                      firstKeyword != null
+                          ? ElevatedButton(
+                        onPressed: () => Navigator.pushNamed(
+                            context, '/ComparisonView',
+                            arguments: {
+                              'fileBytes': fileBytes,
+                              'original': firstKeyword,
+                              'first': firstKeyword,
+                              'second': secondKeyword ?? '',
+                            }),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.difference),
+                            SizedBox(width: ConstSet.mediumGap),
+                            Text('변환 결과 확인하기',
+                                textAlign: TextAlign.center),
+                          ],
+                        ),
+                      )
+                          : Container(),
                       CustomTextField(
                         controller: _summarizeController,
                         showText: newPost.summarizeContent,
                         prefixIcon: Icon(Icons.summarize),
                         isReadOnly: true,
                       ),
+                      firstSummarize != null
+                          ? ElevatedButton(
+                        onPressed: () => Navigator.pushNamed(
+                            context, '/ComparisonView',
+                            arguments: {
+                              'fileBytes': fileBytes,
+                              'original': firstSummarize,
+                              'first': firstSummarize,
+                              'second': secondSummarize ?? '',
+                            }),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.difference),
+                            SizedBox(width: ConstSet.mediumGap),
+                            Text('변환 결과 확인하기',
+                                textAlign: TextAlign.center),
+                          ],
+                        ),
+                      )
+                          : Container(),
                       CustomTextField(
                         controller: _courseController,
                         showText: newPost.courseContent,
@@ -350,15 +396,15 @@ class _PostReadViewState extends State<PostReadView> {
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
-            // String? storageResult = await FileProcessing.storageFileToText(
-            //   relativePath: newPost.relativePath!,
-            //   fileName: newPost.fileName!,
-            // );
+            String? storageResult = await FileProcessing.storageFileToText(
+              relativePath: newPost.relativePath!,
+              fileName: newPost.fileName!,
+            );
             CustomLoadingDialog.pop(context);
             if (result != null) {
-              firstString = result.text;
-              // secondString = storageResult;
-              secondString = '';
+              firstTranslate = result.text;
+              secondTranslate = storageResult;
+              // secondTranslate = '';
               _translateController.text = result.text;
               setState(() {});
             }
@@ -373,11 +419,15 @@ class _PostReadViewState extends State<PostReadView> {
                 context: context, text: '키워드 텍스트를 추출하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '키워드 텍스트를 추출중입니다.');
-            String? result = await FileProcessing.keyExtraction(
-                extractedText: _translateController.text);
+            String? result1 = await FileProcessing.keyExtraction(
+                extractedText: firstTranslate ?? '');
+            String? result2 = await FileProcessing.keyExtraction(
+                extractedText: secondTranslate ?? '');
             CustomLoadingDialog.pop(context);
-            if (result != null) {
-              _keywordController.text = result;
+            if (result1 != null) {
+              _keywordController.text = result1;
+              firstKeyword = result1;
+              secondKeyword = result2;
               setState(() {});
             }
           },
@@ -391,14 +441,19 @@ class _PostReadViewState extends State<PostReadView> {
                 context: context, text: '텍스트를 요약하시겠습니까?');
             if (!isCheck) return;
             CustomLoadingDialog.showLoadingDialog(context, '텍스트를 요약중입니다.');
-            String? result = await FileProcessing.makeSummary(
-              text: firstString!,
-              keywords: _keywordController.text,
+            String? result1 = await FileProcessing.makeSummary(
+              text: firstTranslate ?? '',
+              keywords: firstKeyword ?? '',
+            );
+            String? result2 = await FileProcessing.makeSummary(
+              text: secondTranslate ?? '',
+              keywords: secondKeyword ?? '',
             );
             CustomLoadingDialog.pop(context);
-            if (result != null) {
-              _summarizeController.text = result;
-              print(result);
+            if (result1 != null) {
+              _summarizeController.text = result1;
+              firstSummarize = result1;
+              secondSummarize = result2;
               setState(() {});
             } else {
               print('실패');

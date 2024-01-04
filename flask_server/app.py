@@ -6,11 +6,50 @@ from itertools import combinations
 import requests
 import xml.etree.ElementTree as ET
 from transformers import PreTrainedTokenizerFast, BartForConditionalGeneration
+import firebase_admin
+from firebase_admin import credentials, storage
+import cv2, pytesseract
+import numpy as np
+from PIL import Image
+from Preprocess import preprocess
+import io
 
-# 모델과 토크나이저 불러오기 : 전역변수로 불러와 서버 실행 시 한번만 로드
-tokenizer = PreTrainedTokenizerFast.from_pretrained('digit82/kobart-summarization')
+
+# Firebase 초기화
+cred = credentials.Certificate('C:/Users/dndud/1. flutter_project/plow_project/flask_server/sweetmeproject-firebase-adminsdk-lvth3-13e930c781.json')
+firebase_admin.initialize_app(cred, {'storageBucket': 'sweetmeproject.appspot.com'})
+bucket = storage.bucket('sweetmeproject.appspot.com')
 
 app = Flask(__name__)
+
+@app.route('/textTranslation', methods=['POST'])
+def text_translation():
+    data = request.get_json()
+    file_url = data.get('file_url', '')
+    print(file_url)
+    try:
+        file_data = download_from_firebase(file_url)
+        return read_img(file_data)
+    except Exception as e:
+        print(f"Error processing file: {e}")
+        return ""
+
+def read_img(image_data):
+    try:
+        image = np.array(Image.open(io.BytesIO(image_data)))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        preprocess(image)  # 이미지 전처리
+        text = pytesseract.image_to_string(image, lang='kor+eng', config='--psm 6 --oem 3 -c preserve_interword_spaces=1')
+        return text
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        return ""
+
+def download_from_firebase(file_path):
+    blob = bucket.blob(file_path)
+    binary_data = blob.download_as_bytes()
+    return binary_data
+
 
 # Textrank 알고리즘 class로 구현
 class TextRank:
@@ -79,6 +118,7 @@ def extract_keywords():
         return str(e), 500
 
 model_summarize = BartForConditionalGeneration.from_pretrained('digit82/kobart-summarization')
+tokenizer = PreTrainedTokenizerFast.from_pretrained('digit82/kobart-summarization')
 @app.route('/generate-summary', methods=['POST'])
 def summary_route():
     data = request.get_json()
