@@ -275,7 +275,7 @@ class FileProcessing {
   static Future<String?> keyExtraction({required String extractedText}) async {
     try {
       var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/extract-keywords'),
+        Uri.parse('http://www.wooyoung-project.kro.kr:4752/extract-keywords'),
         headers: {'Content-Type': 'application/json; charset=utf-8'},
         body: jsonEncode({'text': extractedText}),
       );
@@ -283,8 +283,10 @@ class FileProcessing {
       if (response.statusCode == 200) {
         CustomToast.showToast('키워드 추출 연결 성공');
         String result = utf8.decode(response.bodyBytes);
-        print('키워드 추출 연결 성공 : $result');
-        return result;
+        List<dynamic> result2 = json.decode(result);
+        String finalResult = result2.take(3).map((item) => '${item[0]}').join(' ');
+        print('키워드 추출 연결 성공 : $finalResult');
+        return finalResult;
       } else {
         print('키워드 추출 연결 실패: ${response.statusCode}, ${response.body}');
       }
@@ -298,7 +300,7 @@ class FileProcessing {
   static Future<String?> searchCourse({required String keyword}) async {
     try {
       var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/search'),
+        Uri.parse('http://www.wooyoung-project.kro.kr:4752/search'),
         headers: {'Content-Type': 'application/json; charset=utf-8'},
         body: jsonEncode({'keyword': keyword}),
       );
@@ -307,8 +309,9 @@ class FileProcessing {
       if (response.statusCode == 200) {
         CustomToast.showToast('강의 검색 성공');
         String result = utf8.decode(response.bodyBytes);
-        print('강의 검색 성공: $result');
-        return result;
+        List<dynamic> result2 = json.decode(result);
+        print('강의 검색 성공: $result2');
+        return result2[0]['course_url'] as String;
       } else {
         print('강의 검색 실패: ${response.statusCode}, ${response.body}');
       }
@@ -323,7 +326,7 @@ class FileProcessing {
       {required String text, required String keywords}) async {
     try {
       var response = await http.post(
-        Uri.parse('http://www.wooyoung-project.kro.kr/generate-summary'),
+        Uri.parse('http://www.wooyoung-project.kro.kr:4752/generate-summary'),
         headers: {'Content-Type': 'application/json'},
         // flask에 현재 text만 받아 요약하도록 만들었습니다.
         // keyword는 가중치를 더해 요약문을 만드는 로직이 연결이 안되어 수정하고
@@ -334,8 +337,9 @@ class FileProcessing {
       if (response.statusCode == 200) {
         CustomToast.showToast('Summary 연결 성공');
         String result = utf8.decode(response.bodyBytes);
-        print('Summary 연결 성공: $result');
-        return result;
+        String result2 = json.decode(result);
+        print('Summary 연결 성공: $result2');
+        return result2;
       } else {
         print('Summary 연결 실패: ${response.statusCode}');
       }

@@ -237,14 +237,12 @@ class _PostReadViewState extends State<PostReadView> {
                         showText: newPost.keywordContent,
                         prefixIcon: Icon(Icons.key),
                         isReadOnly: true,
-                        maxLines: 1,
                       ),
                       CustomTextField(
                         controller: _summarizeController,
                         showText: newPost.summarizeContent,
                         prefixIcon: Icon(Icons.summarize),
                         isReadOnly: true,
-                        maxLines: 1,
                       ),
                       CustomTextField(
                         controller: _courseController,
@@ -352,14 +350,15 @@ class _PostReadViewState extends State<PostReadView> {
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
-            String? storageResult = await FileProcessing.storageFileToText(
-              relativePath: newPost.relativePath!,
-              fileName: newPost.fileName!,
-            );
+            // String? storageResult = await FileProcessing.storageFileToText(
+            //   relativePath: newPost.relativePath!,
+            //   fileName: newPost.fileName!,
+            // );
             CustomLoadingDialog.pop(context);
             if (result != null) {
               firstString = result.text;
-              secondString = storageResult;
+              // secondString = storageResult;
+              secondString = '';
               _translateController.text = result.text;
               setState(() {});
             }

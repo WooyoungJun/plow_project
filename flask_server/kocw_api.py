@@ -56,4 +56,4 @@ def get_kocw_courses():
     if keyword:
         courses = filter_courses(courses, keyword)
     
-    return jsonify(courses)
+    return courses
