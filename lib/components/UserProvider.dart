@@ -215,9 +215,6 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.signOut();
       _user = _auth.currentUser;
-      _friend = []; 
-      _userInfo = {};
-      _dailyQuestStatus = {};
       CustomToast.showToast('Sign Out 성공');
     } catch (err) {
       CustomToast.showToast('Sign Out 에러: $err');
