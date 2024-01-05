@@ -160,12 +160,11 @@ class UserProvider extends ChangeNotifier {
     try {
       await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
-      _friend.add(email);
       await _userInfoRef.doc(email).set({
         'userName': email,
         'count': 0,
         'credit': 0,
-        'friendEmail': _friend,
+        'friendEmail': [email],
         'dailyQuestStatus': {
           'addedFriend': false,
           'creditReceived': false,
@@ -175,6 +174,7 @@ class UserProvider extends ChangeNotifier {
         'lastQuestReset': FieldValue.serverTimestamp(),
       }); // credit 초기화
       _userName = email;
+      await getStatus();
       CustomToast.showToast('Login 성공');
       return '성공';
     } on FirebaseAuthException catch (err) {
