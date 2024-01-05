@@ -214,7 +214,10 @@ class UserProvider extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       await _auth.signOut();
-      _user = _auth.currentUser; // 변경된 객체 다시 적용
+      _user = _auth.currentUser;
+      _friend = []; 
+      _userInfo = {};
+      _dailyQuestStatus = {};
       CustomToast.showToast('Sign Out 성공');
     } catch (err) {
       CustomToast.showToast('Sign Out 에러: $err');

@@ -341,9 +341,11 @@ class FileProcessing {
         print('Summary 연결 성공: $result2');
         return result2;
       } else {
+        CustomToast.showToast('Summary 연결 실패 ${response.statusCode}');
         print('Summary 연결 실패: ${response.statusCode}');
       }
     } catch (e) {
+      CustomToast.showToast('Summary 연결 오류 $e');
       print('Summary 연결 오류: $e');
     }
     return null;

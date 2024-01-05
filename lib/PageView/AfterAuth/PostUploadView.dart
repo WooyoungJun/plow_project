@@ -174,7 +174,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         CustomTextField(
                           controller: _translateController,
                           prefixIcon: Icon(Icons.g_translate),
-                          isReadOnly: true,
+                          // isReadOnly: true,
                           maxLines: 1,
                         ),
                         firstTranslate != null
@@ -201,7 +201,7 @@ class _PostScreenViewState extends State<PostUploadView> {
                         CustomTextField(
                           controller: _keywordController,
                           prefixIcon: Icon(Icons.key),
-                          isReadOnly: true,
+                          // isReadOnly: true,
                         ),
                         firstKeyword != null
                             ? ElevatedButton(
@@ -225,9 +225,10 @@ class _PostScreenViewState extends State<PostUploadView> {
                               )
                             : Container(),
                         CustomTextField(
-                            controller: _summarizeController,
-                            prefixIcon: Icon(Icons.summarize),
-                            isReadOnly: true),
+                          controller: _summarizeController,
+                          prefixIcon: Icon(Icons.summarize),
+                          // isReadOnly: true,
+                        ),
                         firstSummarize != null
                             ? ElevatedButton(
                                 onPressed: () => Navigator.pushNamed(

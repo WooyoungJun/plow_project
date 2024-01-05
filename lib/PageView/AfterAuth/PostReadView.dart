@@ -212,7 +212,7 @@ class _PostReadViewState extends State<PostReadView> {
                         showText: newPost.translateContent,
                         prefixIcon: Icon(Icons.g_translate),
                         suffixIconData: Icons.difference,
-                        isReadOnly: true,
+                        // isReadOnly: true,
                         maxLines: 1,
                       ),
                       firstTranslate != null
@@ -240,7 +240,7 @@ class _PostReadViewState extends State<PostReadView> {
                         controller: _keywordController,
                         showText: newPost.keywordContent,
                         prefixIcon: Icon(Icons.key),
-                        isReadOnly: true,
+                        // isReadOnly: true,
                       ),
                       firstKeyword != null
                           ? ElevatedButton(
@@ -267,7 +267,7 @@ class _PostReadViewState extends State<PostReadView> {
                         controller: _summarizeController,
                         showText: newPost.summarizeContent,
                         prefixIcon: Icon(Icons.summarize),
-                        isReadOnly: true,
+                        // isReadOnly: true,
                       ),
                       firstSummarize != null
                           ? ElevatedButton(
