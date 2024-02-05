@@ -79,6 +79,7 @@ class _LoginViewState extends State<LoginView> {
               labelText: 'Password',
               prefixIcon: Icon(Icons.lock),
               maxLines: 1,
+              suffixIconData: Icons.visibility,
             ),
             SizedBox(height: ConstSet.largeGap),
             ElevatedButton(

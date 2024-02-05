@@ -11,10 +11,13 @@ class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
-  String? _userName;
-  List<String> _friend = []; // 친구 uid 저장
-  Map<String, dynamic> _userInfo = {};
-  Map<String, dynamic> _dailyQuestStatus = {};
+
+  int _count = 0; // 사용자 게시글 수
+  int _credit = 0; // 사용자 크레딧
+  Map<String, dynamic> _dailyQuestStatus = {}; // 일일 퀘스트 상태
+  List<String> _friend = []; // 친구들 uid
+  Timestamp _lastQuestReset = Timestamp(0, 0); // 지난 퀘스트 달성 시간
+  String _userName = '이름을 설정하세요'; // 사용자 설정 이름
 
   IconData? _icon;
 
@@ -24,48 +27,141 @@ class UserProvider extends ChangeNotifier {
 
   Status get status => _status;
 
-  String? get uid => _user?.email;
+  String get uid => _user?.email ?? '이메일 없음';
 
-  String get userEmail => _user?.email ?? '알수없음';
+  String get userName => _userName;
 
-  String get userName => _userName ?? '이름을 설정하세요';
+  int get count => _count;
+
+  int get credit => _credit;
+
+  Map<String, dynamic> get dailyQuestStatus => _dailyQuestStatus;
 
   List<String> get friend => _friend;
 
   IconData? get icon => _icon ?? Icons.account_circle;
 
-  Map<String, dynamic> get userInfo => _userInfo;
-
-  Map<String, dynamic> get dailyQuestStatus => _dailyQuestStatus;
-
   DocumentReference get _userDoc => _userInfoRef.doc(_user!.email);
 
   UserProvider()
       : _auth = FirebaseAuth.instance,
-        _user = FirebaseAuth.instance.currentUser,
-        _status = FirebaseAuth.instance.currentUser != null
-            ? Status.authenticated
-            : Status.unauthenticated {
+        _user = null,
+        _status = Status.unauthenticated {
     _auth.authStateChanges().listen(_onStateChanged);
   }
 
   Future<void> _onStateChanged(User? user) async {
-    _user = FirebaseAuth.instance.currentUser;
+    _user = user;
     _status = _user != null ? Status.authenticated : Status.unauthenticated;
-    if (_user != null) await getStatus();
   }
 
+  Future<String> signUp(
+      {required String email, required String password}) async {
+    try {
+      await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+      await _userInfoRef.doc(email).set({
+        'userName': email,
+        'count': 0,
+        'credit': 0,
+        'friendEmail': [email],
+        'dailyQuestStatus': {
+          'addedFriend': false,
+          'creditReceived': false,
+          'loggedIn': true,
+          'postCount': 0,
+        },
+        'lastQuestReset': FieldValue.serverTimestamp(),
+      });
+      await getStatus();
+      CustomToast.showToast('Login 성공');
+      return '성공';
+    } on FirebaseAuthException catch (err) {
+      return err.message!;
+    } catch (err) {
+      return err.toString();
+    }
+  }
+
+  Future<String> signIn(
+      {required String email, required String password}) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await getStatus();
+      // 이전 접속 날짜와 현재 날짜 비교
+      if ((_lastQuestReset).toDate().day != DateTime.now().day) {
+        // 일일 퀘스트 리셋
+        await resetDailyQuests();
+      }
+      await _store.runTransaction((transaction) async {
+        _dailyQuestStatus['loggedIn'] = true;
+        transaction.update(_userDoc, {
+          'dailyQuestStatus': _dailyQuestStatus,
+          'lastQuestReset': FieldValue.serverTimestamp(),
+        });
+      });
+      CustomToast.showToast('Login 성공');
+      return '성공';
+    } on FirebaseAuthException catch (err) {
+      return err.message!;
+    } catch (err) {
+      return err.toString();
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+      _resetStatus();
+      CustomToast.showToast('Sign Out 성공');
+    } catch (err) {
+      CustomToast.showToast('Sign Out 에러: $err');
+      print(err);
+    }
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    try {
+      // 이메일이 Firebase Authentication에 존재하는지 확인
+
+      List<String> result = await _auth.fetchSignInMethodsForEmail(email);
+      if (result.isEmpty) return CustomToast.showToast('계정이 없습니다');
+      await _auth.sendPasswordResetEmail(email: email);
+      CustomToast.showToast('비밀번호 재설정 이메일이 전송되었습니다.');
+    } catch (e) {
+      print("비밀번호 재설정 이메일 전송 실패: $e");
+    }
+  }
+
+  // user 상태값들 가져오기(로그인 시)
   Future<void> getStatus({bool? isSign}) async {
-    _userInfo = (await _userDoc.get()).data() as Map<String, dynamic>;
-    _friend = _userInfo['friendEmail'].cast<String>();
-    _dailyQuestStatus = _userInfo['dailyQuestStatus'] as Map<String, dynamic>;
-    _userName = _userInfo['userName'] as String;
+    final userInfo = (await _userDoc.get()).data() as Map<String, dynamic>;
+    _count = userInfo['count'] as int;
+    _credit = userInfo['credit'] as int;
+    _dailyQuestStatus = userInfo['dailyQuestStatus'] as Map<String, dynamic>;
+    _friend = userInfo['friendEmail'].cast<String>();
+    _lastQuestReset = userInfo['lastQuestReset'] as Timestamp;
+    _userName = userInfo['userName'] as String;
+  }
+
+  // user 상태값 초기화(로그아웃 시)
+  void _resetStatus() {
+    _count = 0;
+    _credit = 0;
+    _dailyQuestStatus = {};
+    _friend = [];
+    _lastQuestReset = Timestamp(0, 0);
+    _userName = '이름을 설정하세요';
+  }
+
+  bool canGetCredit() {
+    return _dailyQuestStatus['postCount'] >= 3 &&
+        _dailyQuestStatus['loggedIn'] &&
+        !_dailyQuestStatus['creditReceived'];
   }
 
   Future<void> getCredit() async {
     await _store.runTransaction((transaction) async {
-      var userDoc = await transaction.get(_userDoc);
-      _dailyQuestStatus = userDoc['dailyQuestStatus'] as Map<String, dynamic>;
       _dailyQuestStatus['creditReceived'] = true;
       transaction.update(_userDoc, {
         'credit': FieldValue.increment(1),
@@ -73,7 +169,6 @@ class UserProvider extends ChangeNotifier {
       });
     });
     await getStatus();
-    print(_userInfo['credit']);
   }
 
   Future<void> addFriend(String friendEmail) async {
@@ -145,7 +240,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> resetDailyQuests() async {
-    await _userInfoRef.doc(userEmail).update({
+    await _userInfoRef.doc(uid).update({
       'dailyQuestStatus': {
         'addedFriend': false,
         'creditReceived': false,
@@ -153,88 +248,5 @@ class UserProvider extends ChangeNotifier {
         'postCount': 0,
       }
     });
-  }
-
-  Future<String> signUp(
-      {required String email, required String password}) async {
-    try {
-      await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
-      _friend.add(email);
-      await _userInfoRef.doc(email).set({
-        'userName': email,
-        'count': 0,
-        'credit': 0,
-        'friendEmail': _friend,
-        'dailyQuestStatus': {
-          'addedFriend': false,
-          'creditReceived': false,
-          'loggedIn': true,
-          'postCount': 0,
-        },
-        'lastQuestReset': FieldValue.serverTimestamp(),
-      }); // credit 초기화
-      _userName = email;
-      CustomToast.showToast('Login 성공');
-      return '성공';
-    } on FirebaseAuthException catch (err) {
-      return err.message!;
-    } catch (err) {
-      return err.toString();
-    }
-  }
-
-  Future<String> signIn(
-      {required String email, required String password}) async {
-    try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      await getStatus();
-      // 이전 접속 날짜와 현재 날짜 비교
-      if ((_userInfo['lastQuestReset'] as Timestamp).toDate().day !=
-          DateTime.now().day) {
-        // 일일 퀘스트 리셋
-        await resetDailyQuests();
-      }
-      await _store.runTransaction((transaction) async {
-        _dailyQuestStatus['loggedIn'] = true;
-        transaction.update(_userDoc, {
-          'dailyQuestStatus': _dailyQuestStatus,
-          'lastQuestReset': FieldValue.serverTimestamp(),
-        });
-      });
-      CustomToast.showToast('Login 성공');
-      return '성공';
-    } on FirebaseAuthException catch (err) {
-      return err.message!;
-    } catch (err) {
-      return err.toString();
-    }
-  }
-
-  Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-      _user = _auth.currentUser;
-      _friend = []; 
-      _userInfo = {};
-      _dailyQuestStatus = {};
-      CustomToast.showToast('Sign Out 성공');
-    } catch (err) {
-      CustomToast.showToast('Sign Out 에러: $err');
-      print(err);
-    }
-  }
-
-  Future<void> resetPassword({required String email}) async {
-    try {
-      // 이메일이 Firebase Authentication에 존재하는지 확인
-
-      List<String> result = await _auth.fetchSignInMethodsForEmail(email);
-      if (result.isEmpty) return CustomToast.showToast('계정이 없습니다');
-      await _auth.sendPasswordResetEmail(email: email);
-      CustomToast.showToast('비밀번호 재설정 이메일이 전송되었습니다.');
-    } catch (e) {
-      print("비밀번호 재설정 이메일 전송 실패: $e");
-    }
   }
 }

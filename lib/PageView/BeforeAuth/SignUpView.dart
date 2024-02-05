@@ -91,6 +91,7 @@ class _SignUpViewState extends State<SignUpView> {
               labelText: 'Password',
               prefixIcon: Icon(Icons.lock),
               maxLines: 1,
+              suffixIconData: Icons.visibility,
             ),
             SizedBox(height: ConstSet.largeGap),
             ElevatedButton(

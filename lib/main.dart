@@ -38,7 +38,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initMain() async {
-    // ConstSet.openApiKey = await PostHandler.openApiKey;
+    // download directory 경로 설정
     await FileProcessing.getPublicDownloadFolderPath();
     setState(() => _isInitComplete = true);
   }
@@ -82,7 +82,7 @@ class AuthenticationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final UserProvider userProvider = Provider.of<UserProvider>(context);
-    if (userProvider.uid == null) {
+    if (userProvider.status == Status.unauthenticated) {
       return LoginView(); // 사용자가 로그인하지 않은 경우 로그인 화면으로 이동
     } else {
       return HomeView(); // 사용자가 로그인한 경우 홈으로 이동

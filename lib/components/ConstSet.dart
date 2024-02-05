@@ -1,5 +1,7 @@
 // VisibleCount
 
+enum Type { title, content, translate, keyword, summarize, course }
+
 class ConstSet {
   static const double smallGap = 5.0;
   static const double mediumGap = 10.0;

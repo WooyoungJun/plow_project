@@ -25,12 +25,22 @@ class _PostReadViewState extends State<PostReadView> {
   late Post post;
   late Post newPost;
   late String userName;
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _translateController = TextEditingController();
-  final TextEditingController _keywordController = TextEditingController();
-  final TextEditingController _summarizeController = TextEditingController();
-  final TextEditingController _courseController = TextEditingController();
+
+  final Map<Type, TextEditingController> _controller = {
+    Type.title: TextEditingController(),
+    Type.content: TextEditingController(),
+    Type.translate: TextEditingController(),
+    Type.keyword: TextEditingController(),
+    Type.summarize: TextEditingController(),
+    Type.course: TextEditingController(),
+  };
+  final Set<Type> targetKey = {
+    Type.translate,
+    Type.keyword,
+    Type.summarize,
+    Type.course
+  };
+
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.korean);
   bool _isInitComplete = false;
@@ -41,13 +51,12 @@ class _PostReadViewState extends State<PostReadView> {
   String? internalPath;
   Uint8List? fileBytes;
 
-  String? firstTranslate;
-  String? secondTranslate;
-  String? firstKeyword;
-  String? secondKeyword;
-  String? firstSummarize;
-  String? secondSummarize;
-  String? courseResult;
+  final Map<Type, List<String>> _resultAll = {
+    Type.translate: ['', ''],
+    Type.keyword: ['', ''],
+    Type.summarize: ['', ''],
+    Type.course: ['', ''],
+  };
 
   @override
   void initState() {
@@ -62,6 +71,7 @@ class _PostReadViewState extends State<PostReadView> {
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     post = argRef['post'] as Post;
     newPost = Post.copy(post);
+    _setController();
     userName = (await UserProvider.getUserName(newPost.uid))!;
     fileBytes = await FileProcessing.loadFileFromStorage(
         relativePath: newPost.relativePath);
@@ -71,40 +81,57 @@ class _PostReadViewState extends State<PostReadView> {
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    _translateController.dispose();
-    _keywordController.dispose();
-    _summarizeController.dispose();
-    _courseController.dispose();
+    for (var entry in _controller.entries) {
+      entry.value.dispose();
+    }
     _textRecognizer.close();
     super.dispose();
   }
 
   Future<void> _setResult(Map<String, dynamic>? result) async {
     if (result != null) {
-      await FileProcessing.deleteFile(relativePath: newPost.relativePath);
+      await FileProcessing.deleteFile(
+        relativePath: post.relativePath == newPost.relativePath
+            ? null
+            : newPost.relativePath,
+      );
       internalPath = result['internalPath'] as String;
       newPost.relativePath = result['relativePath'] as String;
       newPost.fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
       isPdf = newPost.checkPdf();
-      _translateController.clear();
-      _keywordController.clear();
-      _summarizeController.clear();
-      _courseController.clear();
-      firstTranslate = null;
+
+      for (var entry in _controller.entries) {
+        if (targetKey.contains(entry.key)) {
+          entry.value.clear();
+          _resultAll[entry.key] = ['', ''];
+        }
+      }
       setState(() {});
     }
   }
 
-  void setNewPost() {
-    newPost.title = _titleController.text;
-    newPost.content = _contentController.text;
-    newPost.translateContent = _translateController.text;
-    newPost.keywordContent = _keywordController.text;
-    newPost.summarizeContent = _summarizeController.text;
-    newPost.courseContent = _courseController.text;
+  void _setNewPost() {
+    newPost.title = _controller[Type.title]!.text;
+    newPost.content = _controller[Type.content]!.text;
+    newPost.translateContent = _controller[Type.translate]!.text;
+    newPost.keywordContent = _controller[Type.keyword]!.text;
+    newPost.summarizeContent = _controller[Type.summarize]!.text;
+    newPost.courseContent = _controller[Type.course]!.text;
+  }
+
+  void _setController() {
+    _controller[Type.title]!.text = newPost.title;
+    _controller[Type.content]!.text = newPost.content;
+    _controller[Type.translate]!.text = newPost.translateContent;
+    _controller[Type.keyword]!.text = newPost.keywordContent;
+    _controller[Type.summarize]!.text = newPost.summarizeContent;
+    _controller[Type.course]!.text = newPost.courseContent;
+
+    _resultAll[Type.translate]![0] = newPost.translateContent;
+    _resultAll[Type.keyword]![0] = newPost.keywordContent;
+    _resultAll[Type.summarize]![0] = newPost.summarizeContent;
+    _resultAll[Type.course]![0] = newPost.courseContent;
   }
 
   @override
@@ -138,7 +165,7 @@ class _PostReadViewState extends State<PostReadView> {
                     : Icon(Icons.edit, color: Colors.white),
                 onTap: () async {
                   if (isEditing) {
-                    setNewPost();
+                    _setNewPost();
                     await CustomAlertDialog.onSavePressed(
                       context: context,
                       post: post,
@@ -153,13 +180,13 @@ class _PostReadViewState extends State<PostReadView> {
             IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () async {
-                isEditing
-                    ? await CustomAlertDialog.onBackPressed(
-                        context: context,
-                        relativePath: post.relativePath == newPost.relativePath
-                            ? null
-                            : newPost.relativePath)
-                    : Navigator.pop(context);
+                if (!isEditing) return Navigator.pop(context);
+                await CustomAlertDialog.onBackPressed(
+                  context: context,
+                  relativePath: post.relativePath == newPost.relativePath
+                      ? null
+                      : newPost.relativePath,
+                );
               },
             )
           ],
@@ -186,13 +213,13 @@ class _PostReadViewState extends State<PostReadView> {
                         maxLines: 1,
                       ),
                       CustomTextField(
-                        controller: _titleController,
-                        showText: newPost.title,
+                        controller: _controller[Type.title],
+                        // showText: newPost.title,
                         prefixIcon: Icon(Icons.title),
                         isReadOnly: !isEditing,
                       ),
                       CustomTextField(
-                        controller: _contentController,
+                        controller: _controller[Type.content],
                         showText: newPost.content,
                         prefixIcon: Icon(Icons.description),
                         isReadOnly: !isEditing,
@@ -207,92 +234,20 @@ class _PostReadViewState extends State<PostReadView> {
                       fileBytes != null ? pdfOrImgView() : Text('이미지가 없습니다'),
                       SizedBox(height: ConstSet.mediumGap),
                       isEditing ? fileSelect() : Container(),
-                      CustomTextField(
-                        controller: _translateController,
-                        showText: newPost.translateContent,
+                      contentBlock(
+                        type: Type.translate,
                         prefixIcon: Icon(Icons.g_translate),
-                        suffixIconData: Icons.difference,
-                        // isReadOnly: true,
-                        maxLines: 1,
                       ),
-                      firstTranslate != null
-                          ? ElevatedButton(
-                              onPressed: () => Navigator.pushNamed(
-                                  context, '/ComparisonView',
-                                  arguments: {
-                                    'fileBytes': fileBytes,
-                                    'original': firstTranslate,
-                                    'first': firstTranslate,
-                                    'second': secondTranslate ?? '',
-                                  }),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.difference),
-                                  SizedBox(width: ConstSet.mediumGap),
-                                  Text('변환 결과 확인하기',
-                                      textAlign: TextAlign.center),
-                                ],
-                              ),
-                            )
-                          : Container(),
-                      CustomTextField(
-                        controller: _keywordController,
-                        showText: newPost.keywordContent,
+                      contentBlock(
+                        type: Type.keyword,
                         prefixIcon: Icon(Icons.key),
-                        // isReadOnly: true,
                       ),
-                      firstKeyword != null
-                          ? ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(
-                            context, '/ComparisonView',
-                            arguments: {
-                              'fileBytes': fileBytes,
-                              'original': firstKeyword,
-                              'first': firstKeyword,
-                              'second': secondKeyword ?? '',
-                            }),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.difference),
-                            SizedBox(width: ConstSet.mediumGap),
-                            Text('변환 결과 확인하기',
-                                textAlign: TextAlign.center),
-                          ],
-                        ),
-                      )
-                          : Container(),
-                      CustomTextField(
-                        controller: _summarizeController,
-                        showText: newPost.summarizeContent,
+                      contentBlock(
+                        type: Type.summarize,
                         prefixIcon: Icon(Icons.summarize),
-                        // isReadOnly: true,
                       ),
-                      firstSummarize != null
-                          ? ElevatedButton(
-                        onPressed: () => Navigator.pushNamed(
-                            context, '/ComparisonView',
-                            arguments: {
-                              'fileBytes': fileBytes,
-                              'original': firstSummarize,
-                              'first': firstSummarize,
-                              'second': secondSummarize ?? '',
-                            }),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.difference),
-                            SizedBox(width: ConstSet.mediumGap),
-                            Text('변환 결과 확인하기',
-                                textAlign: TextAlign.center),
-                          ],
-                        ),
-                      )
-                          : Container(),
                       CustomTextField(
-                        controller: _courseController,
-                        showText: newPost.courseContent,
+                        controller: _controller[Type.course]!,
                         prefixIcon: Icon(Icons.search),
                         isReadOnly: true,
                       ),
@@ -311,6 +266,41 @@ class _PostReadViewState extends State<PostReadView> {
               )
             : null,
       ),
+    );
+  }
+
+  Widget contentBlock({
+    required Icon prefixIcon,
+    required Type type,
+  }) {
+    return Column(
+      children: [
+        CustomTextField(
+          controller: _controller[type]!,
+          prefixIcon: prefixIcon,
+          isReadOnly: true,
+          maxLines: 1,
+        ),
+        _resultAll[type]![0] != '' && isEditing
+            ? ElevatedButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                  'fileBytes': fileBytes,
+                  'original': _resultAll[type]![0],
+                  'first': _resultAll[type]![0],
+                  'second': _resultAll[type]![1],
+                }),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.difference),
+                    SizedBox(width: ConstSet.mediumGap),
+                    Text('변환 결과 확인하기', textAlign: TextAlign.center),
+                  ],
+                ),
+              )
+            : Container(),
+      ],
     );
   }
 
@@ -382,117 +372,107 @@ class _PostReadViewState extends State<PostReadView> {
           icon: Icon(Icons.file_open),
           iconSize: 30.0,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            if (internalPath == null) {
-              return CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
-            }
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '이미지로부터 텍스트를 추출하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
-            RecognizedText? result = await FileProcessing.inputFileToText(
+        customIconButton(
+          icon: Icon(Icons.g_translate),
+          alertText: '이미지로부터 텍스트를 추출하시겠습니까?',
+          loadingText: '텍스트 변환중입니다',
+          doTask: () async {
+            RecognizedText? result1 = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
-            String? storageResult = await FileProcessing.storageFileToText(
+            String? result2 = await FileProcessing.storageFileToText(
               relativePath: newPost.relativePath!,
               fileName: newPost.fileName!,
             );
-            CustomLoadingDialog.pop(context);
-            if (result != null) {
-              firstTranslate = result.text;
-              secondTranslate = storageResult;
-              // secondTranslate = '';
-              _translateController.text = result.text;
-              setState(() {});
-            }
+            return {'first': result1?.text, 'second': result2};
           },
-          icon: Icon(Icons.g_translate),
-          iconSize: 30.0,
+          type: Type.translate,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '키워드 텍스트를 추출하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '키워드 텍스트를 추출중입니다.');
-            String? result1 = await FileProcessing.keyExtraction(
-                extractedText: firstTranslate ?? '');
-            String? result2 = await FileProcessing.keyExtraction(
-                extractedText: secondTranslate ?? '');
-            CustomLoadingDialog.pop(context);
-            if (result1 != null) {
-              _keywordController.text = result1;
-              firstKeyword = result1;
-              secondKeyword = result2;
-              setState(() {});
-            }
-          },
+        customIconButton(
           icon: Icon(Icons.key),
-          iconSize: 30.0,
+          alertText: '키워드 텍스트를 추출하시겠습니까?',
+          loadingText: '키워드 텍스트를 추출중입니다.',
+          doTask: () async {
+            String? result1 = await FileProcessing.keyExtraction(
+                extractedText: _resultAll[Type.translate]![0]);
+            String? result2 = await FileProcessing.keyExtraction(
+                extractedText: _resultAll[Type.translate]![1]);
+            return {'first': result1, 'second': result2};
+          },
+          type: Type.keyword,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '텍스트를 요약하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '텍스트를 요약중입니다.');
+        customIconButton(
+          icon: Icon(Icons.summarize),
+          alertText: '텍스트를 요약하시겠습니까?',
+          loadingText: '텍스트를 요약중입니다.',
+          doTask: () async {
             String? result1 = await FileProcessing.makeSummary(
-              text: firstTranslate ?? '',
-              keywords: firstKeyword ?? '',
+              text: _resultAll[Type.translate]![0],
+              keywords: _resultAll[Type.keyword]![0],
             );
             String? result2 = await FileProcessing.makeSummary(
-              text: secondTranslate ?? '',
-              keywords: secondKeyword ?? '',
+              text: _resultAll[Type.translate]![1],
+              keywords: _resultAll[Type.keyword]![1],
             );
-            CustomLoadingDialog.pop(context);
-            if (result1 != null) {
-              _summarizeController.text = result1;
-              firstSummarize = result1;
-              secondSummarize = result2;
-              setState(() {});
-            } else {
-              print('실패');
-            }
+            return {'first': result1, 'second': result2};
           },
-          icon: Icon(Icons.summarize),
-          iconSize: 30.0,
+          type: Type.summarize,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '강의를 검색하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
-            String? result = await FileProcessing.searchCourse(
-              keyword: _keywordController.text,
-            );
-            CustomLoadingDialog.pop(context);
-            if (result != null) {
-              _courseController.text = result;
-              print(result);
-              setState(() {});
-            } else {
-              print('실패');
-            }
-          },
+        customIconButton(
           icon: Icon(Icons.search),
-          iconSize: 30.0,
+          alertText: '강의를 검색하시겠습니까?',
+          loadingText: '강의를 검색중입니다.',
+          doTask: () async {
+            String? result = await FileProcessing.searchCourse(
+              keyword: _resultAll[Type.translate]![0],
+            );
+            return {'first': result};
+          },
+          type: Type.course,
         ),
       ],
     );
   }
 
+  Widget customIconButton({
+    required Icon icon,
+    required String alertText,
+    required String loadingText,
+    required Function doTask,
+    required Type type,
+  }) {
+    return IconButton(
+      onPressed: () async {
+        if (validateCheck()) return;
+        bool isCheck =
+            await CustomAlertDialog.show(context: context, text: alertText);
+        if (!isCheck) return;
+        CustomLoadingDialog.showLoadingDialog(context, loadingText);
+        Map<String, dynamic> result = await doTask();
+        CustomLoadingDialog.pop(context);
+        if (result['first'] != null) {
+          _controller[type]!.text = result['first'];
+          _resultAll[type] = [result['first'], result['second'] ?? ''];
+          setState(() {});
+        }
+      },
+      icon: icon,
+      iconSize: 30.0,
+    );
+  }
+
   bool validateCheck() {
-    if (fileBytes != null && !isPdf) return false;
-    if (fileBytes == null) CustomToast.showToast('파일을 선택하세요');
-    if (isPdf) CustomToast.showToast('이미지로 변환해주세요');
-    // if (internalPath == null) CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
+    if (fileBytes != null && !isPdf && internalPath != null) {
+      return false;
+    } else if (fileBytes == null) {
+      CustomToast.showToast('파일을 선택하세요');
+    } else if (internalPath == null) {
+      // 내부 스토리지 경로 있어야 변환 가능
+      CustomToast.showToast('파일을 새롭게 업로드 한 뒤 시도해주세요');
+    } else if (isPdf) {
+      CustomToast.showToast('이미지로 변환해주세요');
+    }
     return true;
   }
 }

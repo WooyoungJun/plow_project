@@ -23,12 +23,22 @@ class PostUploadView extends StatefulWidget {
 class _PostScreenViewState extends State<PostUploadView> {
   late UserProvider userProvider;
   late Post newPost;
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
-  final TextEditingController _translateController = TextEditingController();
-  final TextEditingController _keywordController = TextEditingController();
-  final TextEditingController _summarizeController = TextEditingController();
-  final TextEditingController _courseController = TextEditingController();
+
+  final Map<Type, TextEditingController> _controller = {
+    Type.title: TextEditingController(),
+    Type.content: TextEditingController(),
+    Type.translate: TextEditingController(),
+    Type.keyword: TextEditingController(),
+    Type.summarize: TextEditingController(),
+    Type.course: TextEditingController(),
+  };
+  final Set<Type> targetKey = {
+    Type.translate,
+    Type.keyword,
+    Type.summarize,
+    Type.course
+  };
+
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.korean);
   bool isInitComplete = false;
@@ -39,13 +49,12 @@ class _PostScreenViewState extends State<PostUploadView> {
   Uint8List? fileBytes;
   Uint8List? imageBytes;
 
-  String? firstTranslate;
-  String? secondTranslate;
-  String? firstKeyword;
-  String? secondKeyword;
-  String? firstSummarize;
-  String? secondSummarize;
-  String? courseResult;
+  final Map<Type, List<String>> _resultAll = {
+    Type.translate: ['', ''],
+    Type.keyword: ['', ''],
+    Type.summarize: ['', ''],
+    Type.course: ['', ''],
+  };
 
   @override
   void initState() {
@@ -56,18 +65,15 @@ class _PostScreenViewState extends State<PostUploadView> {
 
   Future<void> _initPostUploadView() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    newPost = Post(uid: userProvider.uid!); // 새로운 post 작성
+    newPost = Post(uid: userProvider.uid); // 새로운 post 작성
     setState(() => isInitComplete = true);
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    _translateController.dispose();
-    _keywordController.dispose();
-    _summarizeController.dispose();
-    _courseController.dispose();
+    for (var entry in _controller.entries) {
+      entry.value.dispose();
+    }
     _textRecognizer.close();
     super.dispose();
   }
@@ -80,22 +86,24 @@ class _PostScreenViewState extends State<PostUploadView> {
       newPost.fileName = result['fileName'] as String;
       fileBytes = result['fileBytes'] as Uint8List;
       isPdf = newPost.checkPdf();
-      _translateController.clear();
-      _keywordController.clear();
-      _summarizeController.clear();
-      _courseController.clear();
-      firstTranslate = null;
+
+      for (var entry in _controller.entries) {
+        if (targetKey.contains(entry.key)) {
+          entry.value.clear();
+          _resultAll[entry.key] = ['', ''];
+        }
+      }
       setState(() {});
     }
   }
 
-  void setNewPost() {
-    newPost.title = _titleController.text;
-    newPost.content = _contentController.text;
-    newPost.translateContent = _translateController.text;
-    newPost.keywordContent = _keywordController.text;
-    newPost.summarizeContent = _summarizeController.text;
-    newPost.courseContent = _courseController.text;
+  void _setNewPost() {
+    newPost.title = _controller[Type.title]!.text;
+    newPost.content = _controller[Type.content]!.text;
+    newPost.translateContent = _controller[Type.translate]!.text;
+    newPost.keywordContent = _controller[Type.keyword]!.text;
+    newPost.summarizeContent = _controller[Type.summarize]!.text;
+    newPost.courseContent = _controller[Type.course]!.text;
   }
 
   @override
@@ -118,7 +126,7 @@ class _PostScreenViewState extends State<PostUploadView> {
             GestureDetector(
               child: Icon(Icons.save, color: Colors.white),
               onTap: () async {
-                setNewPost();
+                _setNewPost();
                 await CustomAlertDialog.onSavePressed(
                   context: context,
                   post: null,
@@ -157,12 +165,12 @@ class _PostScreenViewState extends State<PostUploadView> {
                           maxLines: 1,
                         ),
                         CustomTextField(
-                          controller: _titleController,
+                          controller: _controller[Type.title],
                           prefixIcon: Icon(Icons.title),
                           isReadOnly: false,
                         ),
                         CustomTextField(
-                          controller: _contentController,
+                          controller: _controller[Type.content],
                           prefixIcon: Icon(Icons.description),
                           isReadOnly: false,
                         ),
@@ -171,87 +179,20 @@ class _PostScreenViewState extends State<PostUploadView> {
                         SizedBox(height: ConstSet.mediumGap),
                         fileSelect(),
                         SizedBox(height: ConstSet.largeGap),
-                        CustomTextField(
-                          controller: _translateController,
+                        contentBlock(
+                          type: Type.translate,
                           prefixIcon: Icon(Icons.g_translate),
-                          // isReadOnly: true,
-                          maxLines: 1,
                         ),
-                        firstTranslate != null
-                            ? ElevatedButton(
-                                onPressed: () => Navigator.pushNamed(
-                                    context, '/ComparisonView',
-                                    arguments: {
-                                      'fileBytes': fileBytes,
-                                      'original': firstTranslate,
-                                      'first': firstTranslate,
-                                      'second': secondTranslate ?? '',
-                                    }),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.difference),
-                                    SizedBox(width: ConstSet.mediumGap),
-                                    Text('변환 결과 확인하기',
-                                        textAlign: TextAlign.center),
-                                  ],
-                                ),
-                              )
-                            : Container(),
-                        CustomTextField(
-                          controller: _keywordController,
+                        contentBlock(
+                          type: Type.keyword,
                           prefixIcon: Icon(Icons.key),
-                          // isReadOnly: true,
                         ),
-                        firstKeyword != null
-                            ? ElevatedButton(
-                                onPressed: () => Navigator.pushNamed(
-                                    context, '/ComparisonView',
-                                    arguments: {
-                                      'fileBytes': fileBytes,
-                                      'original': firstKeyword,
-                                      'first': firstKeyword,
-                                      'second': secondKeyword ?? '',
-                                    }),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.difference),
-                                    SizedBox(width: ConstSet.mediumGap),
-                                    Text('변환 결과 확인하기',
-                                        textAlign: TextAlign.center),
-                                  ],
-                                ),
-                              )
-                            : Container(),
-                        CustomTextField(
-                          controller: _summarizeController,
+                        contentBlock(
+                          type: Type.summarize,
                           prefixIcon: Icon(Icons.summarize),
-                          // isReadOnly: true,
                         ),
-                        firstSummarize != null
-                            ? ElevatedButton(
-                                onPressed: () => Navigator.pushNamed(
-                                    context, '/ComparisonView',
-                                    arguments: {
-                                      'fileBytes': fileBytes,
-                                      'original': firstSummarize,
-                                      'first': firstSummarize,
-                                      'second': secondSummarize ?? '',
-                                    }),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.difference),
-                                    SizedBox(width: ConstSet.mediumGap),
-                                    Text('변환 결과 확인하기',
-                                        textAlign: TextAlign.center),
-                                  ],
-                                ),
-                              )
-                            : Container(),
                         CustomTextField(
-                          controller: _courseController,
+                          controller: _controller[Type.course]!,
                           prefixIcon: Icon(Icons.search),
                           isReadOnly: true,
                         ),
@@ -264,6 +205,41 @@ class _PostScreenViewState extends State<PostUploadView> {
           },
         ),
       ),
+    );
+  }
+
+  Widget contentBlock({
+    required Icon prefixIcon,
+    required Type type,
+  }) {
+    return Column(
+      children: [
+        CustomTextField(
+          controller: _controller[type]!,
+          prefixIcon: prefixIcon,
+          isReadOnly: true,
+          maxLines: 1,
+        ),
+        _resultAll[type]![0] != ''
+            ? ElevatedButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/ComparisonView', arguments: {
+                  'fileBytes': fileBytes,
+                  'original': _resultAll[type]![0],
+                  'first': _resultAll[type]![0],
+                  'second': _resultAll[type]![1],
+                }),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.difference),
+                    SizedBox(width: ConstSet.mediumGap),
+                    Text('변환 결과 확인하기', textAlign: TextAlign.center),
+                  ],
+                ),
+              )
+            : Container(),
+      ],
     );
   }
 
@@ -335,104 +311,93 @@ class _PostScreenViewState extends State<PostUploadView> {
           icon: Icon(Icons.file_open),
           iconSize: 30.0,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '이미지로부터 텍스트를 추출하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '텍스트 변환중입니다');
-            RecognizedText? result = await FileProcessing.inputFileToText(
+        customIconButton(
+          icon: Icon(Icons.g_translate),
+          alertText: '이미지로부터 텍스트를 추출하시겠습니까?',
+          loadingText: '텍스트 변환중입니다',
+          doTask: () async {
+            RecognizedText? result1 = await FileProcessing.inputFileToText(
               textRecognizer: _textRecognizer,
               internalPath: internalPath,
             );
-            String? storageResult = await FileProcessing.storageFileToText(
+            String? result2 = await FileProcessing.storageFileToText(
               relativePath: newPost.relativePath!,
               fileName: newPost.fileName!,
             );
-            CustomLoadingDialog.pop(context);
-            if (result != null) {
-              firstTranslate = result.text;
-              secondTranslate = storageResult;
-              // secondString = '';
-              _translateController.text = result.text;
-              setState(() {});
-            }
+            return {'first': result1?.text, 'second': result2};
           },
-          icon: Icon(Icons.g_translate),
-          iconSize: 30.0,
+          type: Type.translate,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '키워드 텍스트를 추출하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '키워드 텍스트를 추출중입니다.');
-            String? result1 = await FileProcessing.keyExtraction(
-                extractedText: firstTranslate ?? '');
-            String? result2 = await FileProcessing.keyExtraction(
-                extractedText: secondTranslate ?? '');
-            CustomLoadingDialog.pop(context);
-            if (result1 != null) {
-              _keywordController.text = result1;
-              firstKeyword = result1;
-              secondKeyword = result2;
-              setState(() {});
-            }
-          },
+        customIconButton(
           icon: Icon(Icons.key),
-          iconSize: 30.0,
+          alertText: '키워드 텍스트를 추출하시겠습니까?',
+          loadingText: '키워드 텍스트를 추출중입니다.',
+          doTask: () async {
+            String? result1 = await FileProcessing.keyExtraction(
+                extractedText: _resultAll[Type.translate]![0]);
+            String? result2 = await FileProcessing.keyExtraction(
+                extractedText: _resultAll[Type.translate]![1]);
+            return {'first': result1, 'second': result2};
+          },
+          type: Type.keyword,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '텍스트를 요약하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '텍스트를 요약중입니다.');
+        customIconButton(
+          icon: Icon(Icons.summarize),
+          alertText: '텍스트를 요약하시겠습니까?',
+          loadingText: '텍스트를 요약중입니다.',
+          doTask: () async {
             String? result1 = await FileProcessing.makeSummary(
-              text: firstTranslate ?? '',
-              keywords: firstKeyword ?? '',
+              text: _resultAll[Type.translate]![0],
+              keywords: _resultAll[Type.keyword]![0],
             );
             String? result2 = await FileProcessing.makeSummary(
-              text: secondTranslate ?? '',
-              keywords: secondKeyword ?? '',
+              text: _resultAll[Type.translate]![1],
+              keywords: _resultAll[Type.keyword]![1],
             );
-            CustomLoadingDialog.pop(context);
-            if (result1 != null) {
-              _summarizeController.text = result1;
-              firstSummarize = result1;
-              secondSummarize = result2;
-              setState(() {});
-            } else {
-              print('실패');
-            }
+            return {'first': result1, 'second': result2};
           },
-          icon: Icon(Icons.summarize),
-          iconSize: 30.0,
+          type: Type.summarize,
         ),
-        IconButton(
-          onPressed: () async {
-            if (validateCheck()) return;
-            bool isCheck = await CustomAlertDialog.show(
-                context: context, text: '강의를 검색하시겠습니까?');
-            if (!isCheck) return;
-            CustomLoadingDialog.showLoadingDialog(context, '강의를 검색중입니다.');
-            String? result = await FileProcessing.searchCourse(
-              keyword: _keywordController.text,
-            );
-            CustomLoadingDialog.pop(context);
-            if (result != null) {
-              _courseController.text = result;
-              print(result);
-              setState(() {});
-            }
-          },
+        customIconButton(
           icon: Icon(Icons.search),
-          iconSize: 30.0,
+          alertText: '강의를 검색하시겠습니까?',
+          loadingText: '강의를 검색중입니다.',
+          doTask: () async {
+            String? result = await FileProcessing.searchCourse(
+              keyword: _resultAll[Type.translate]![0],
+            );
+            return {'first': result};
+          },
+          type: Type.course,
         ),
       ],
+    );
+  }
+
+  Widget customIconButton({
+    required Icon icon,
+    required String alertText,
+    required String loadingText,
+    required Function doTask,
+    required Type type,
+  }) {
+    return IconButton(
+      onPressed: () async {
+        if (validateCheck()) return;
+        bool isCheck =
+            await CustomAlertDialog.show(context: context, text: alertText);
+        if (!isCheck) return;
+        CustomLoadingDialog.showLoadingDialog(context, loadingText);
+        Map<String, dynamic> result = await doTask();
+        CustomLoadingDialog.pop(context);
+        if (result['first'] != null) {
+          _controller[type]!.text = result['first'];
+          _resultAll[type] = [result['first'], result['second'] ?? ''];
+          setState(() {});
+        }
+      },
+      icon: icon,
+      iconSize: 30.0,
     );
   }
 

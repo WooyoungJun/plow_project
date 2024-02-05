@@ -34,6 +34,7 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField> {
   late TextEditingController _controller;
   late TextStyle textStyle;
+  late bool isObscured;
   IconData? suffixIconData;
   final double height = 25.0;
 
@@ -44,9 +45,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
   void initState() {
     super.initState();
     _controller = widget.controller ?? TextEditingController();
-    _controller.text = widget.showText ?? '';
+    _controller.text = widget.showText ?? _controller.text;
     suffixIconData = widget.suffixIconData ?? Icons.cancel;
     if (_controller.text.isEmpty) suffixIconData = null;
+    isObscured = widget.labelText == "Password" ? true : false;
     textStyle = widget.textStyle ??
         TextStyle(
           fontWeight: FontWeight.bold,
@@ -66,7 +68,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             widget.maxLines == 1 ? NeverScrollableScrollPhysics() : null,
         readOnly: widget.isReadOnly,
         controller: _controller,
-        obscureText: widget.labelText == "Password" ? true : false,
+        obscureText: isObscured,
         style: widget.isReadOnly
             ? widget.textStyle
             : TextStyle(fontSize: widget.fontSize),
@@ -87,7 +89,13 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     color: Colors.blueAccent,
                     size: 20,
                   ),
-                  onTap: () => _controller.clear(),
+                  onTap: () {
+                    if (suffixIconData == Icons.cancel) {
+                      _controller.clear();
+                    } else {
+                      setState(() => isObscured = !isObscured);
+                    }
+                  },
                 ),
           prefixIcon: widget.prefixIcon,
           contentPadding: EdgeInsets.symmetric(horizontal: 8.0),

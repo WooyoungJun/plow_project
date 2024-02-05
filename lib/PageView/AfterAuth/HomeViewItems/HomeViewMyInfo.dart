@@ -32,6 +32,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
 
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    _nameController.text = userProvider.userName;
     await userProvider.getStatus();
     setState(() => _isInitComplete = true);
   }
@@ -135,23 +136,22 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
       children: [
         CustomTextField(
           controller: _nameController,
-          showText: userProvider.userName,
           prefixIcon: Icon(Icons.verified_user),
           isReadOnly: !isEditing,
         ),
         CustomTextField(
-          showText: userProvider.userEmail,
+          showText: userProvider.uid,
           prefixIcon: Icon(Icons.email),
           isReadOnly: true,
         ),
         CustomTextField(
-          showText: userProvider.userInfo["count"].toString(),
+          showText: userProvider.count.toString(),
           prefixIcon: Icon(Icons.numbers),
           isReadOnly: true,
         ),
         CustomTextField(
           controller: _creditController,
-          showText: userProvider.userInfo["credit"].toString(),
+          showText: userProvider.credit.toString(),
           prefixIcon: Icon(Icons.money),
           isReadOnly: true,
         ),
@@ -166,8 +166,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
 
   Widget quest() {
     Map<String, dynamic> userQuestStatus = userProvider.dailyQuestStatus;
-    bool getCredit =
-        userQuestStatus['postCount'] >= 3 && userQuestStatus['loggedIn'];
+    bool getCredit = userProvider.canGetCredit();
     return ListView(
       scrollDirection: Axis.vertical,
       children: [
@@ -187,11 +186,10 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
         Padding(
           padding: EdgeInsets.all(16.0),
           child: ElevatedButton(
-            onPressed: getCredit && !userQuestStatus['creditReceived']
+            onPressed: getCredit
                 ? () async {
                     await userProvider.getCredit();
-                    _creditController.text =
-                        userProvider.userInfo['credit'].toString();
+                    _creditController.text = userProvider.credit.toString();
                     setState(() {});
                   }
                 : null,
