@@ -33,6 +33,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     _nameController.text = userProvider.userName;
+    _creditController.text = userProvider.credit.toString();
     await userProvider.getStatus();
     setState(() => _isInitComplete = true);
   }
@@ -151,7 +152,6 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
         ),
         CustomTextField(
           controller: _creditController,
-          showText: userProvider.credit.toString(),
           prefixIcon: Icon(Icons.money),
           isReadOnly: true,
         ),
@@ -178,10 +178,15 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           value: userQuestStatus['postCount'] >= 3,
           onChanged: (bool? value) {},
         ),
-        CheckboxListTile(
-          title: Text('로그인하기', textAlign: TextAlign.center),
-          value: userQuestStatus['loggedIn'],
-          onChanged: (bool? value) {},
+        Padding(
+          padding: EdgeInsets.all(16.0),
+          child: ElevatedButton(
+            onPressed: () async {
+              await userProvider.resetDailyQuests();
+              setState(() {});
+            },
+            child: Text('퀘스트 초기화'),
+          ),
         ),
         Padding(
           padding: EdgeInsets.all(16.0),
