@@ -50,7 +50,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> _onStateChanged(User? user) async {
-    print("실행");
     _user = user;
     _status = _user != null ? Status.authenticated : Status.unauthenticated;
   }
