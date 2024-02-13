@@ -68,7 +68,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: widget.height,
+      height: widget.height ?? height,
       child: TextField(
         minLines: 1,
         maxLines: widget.maxLines ?? 10,
