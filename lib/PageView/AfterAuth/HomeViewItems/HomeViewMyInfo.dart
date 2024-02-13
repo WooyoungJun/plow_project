@@ -18,7 +18,6 @@ class HomeViewMyInfo extends StatefulWidget {
 
 class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _creditController = TextEditingController();
   late UserProvider userProvider;
   bool _isInitComplete = false;
   bool isEditing = false;
@@ -33,7 +32,6 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
   Future<void> initHomeViewMyInfo() async {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     _nameController.text = userProvider.userName;
-    _creditController.text = userProvider.credit.toString();
     await userProvider.getStatus();
     setState(() => _isInitComplete = true);
   }
@@ -149,7 +147,7 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
           isReadOnly: true,
         ),
         CustomTextField(
-          controller: _creditController,
+          showText: userProvider.credit.toString(),
           prefixIcon: Icon(Icons.money),
           isReadOnly: true,
         ),
@@ -192,7 +190,6 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
             onPressed: getCredit
                 ? () async {
                     await userProvider.getCredit();
-                    _creditController.text = userProvider.credit.toString();
                     setState(() {});
                   }
                 : null,

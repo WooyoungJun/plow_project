@@ -217,16 +217,7 @@ class UserProvider extends ChangeNotifier {
       CustomToast.showToast('Sign Out 성공');
     } catch (err) {
       CustomToast.showToast('Sign Out 에러: $err');
-      print(err);
     }
-  }
-
-  void resetStatus() {
-    _count = 0;
-    _credit = 0;
-    _dailyQuestStatus = {};
-    _friend = [];
-    _userName = '';
   }
 
   Future<void> resetPassword({required String email}) async {
@@ -239,5 +230,13 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       print("비밀번호 재설정 이메일 전송 실패: $e");
     }
+  }
+
+  void resetStatus() {
+    _count = 0;
+    _credit = 0;
+    _dailyQuestStatus = {};
+    _friend = [];
+    _userName = '';
   }
 }

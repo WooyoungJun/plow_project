@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
-  final String? labelText;
-  final String? hintText;
-  final String? showText;
+  final String? labelText; // textField 상단 표시
+  final String? hintText; // textField 미리 보기 표시
+  final String? showText; // textField 초기값
   final bool isReadOnly;
   final int? maxLines;
   final double fontSize;
@@ -32,7 +32,7 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
-  late TextEditingController _controller;
+  TextEditingController _controller = TextEditingController();
   late TextStyle textStyle;
   late bool isObscured;
   IconData? suffixIconData;
@@ -42,9 +42,17 @@ class _CustomTextFieldState extends State<CustomTextField> {
       OutlineInputBorder(borderRadius: BorderRadius.circular(12));
 
   @override
+  void didUpdateWidget(covariant CustomTextField oldWidget) {
+    if (oldWidget.showText != widget.showText) {
+      setState(() => _controller.text = widget.showText!);
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController();
+    _controller = widget.controller ?? _controller;
     _controller.text = widget.showText ?? _controller.text;
     suffixIconData = widget.suffixIconData ?? Icons.cancel;
     if (_controller.text.isEmpty) suffixIconData = null;
