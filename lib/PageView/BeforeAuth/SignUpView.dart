@@ -69,7 +69,7 @@ class _SignUpViewState extends State<SignUpView> {
             CustomTextField(
               controller: _emailController,
               labelText: 'Email',
-              prefixIcon: Icon(Icons.email, size: 15.0),
+              prefixIcon: Icon(Icons.email),
               maxLines: 1,
             ),
             SizedBox(height: ConstSet.largeGap),

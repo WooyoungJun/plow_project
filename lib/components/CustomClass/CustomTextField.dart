@@ -36,7 +36,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
   late TextStyle textStyle;
   late bool isObscured;
   IconData? suffixIconData;
-  final double height = 25.0;
 
   final defaultDesign =
       OutlineInputBorder(borderRadius: BorderRadius.circular(12));
@@ -68,7 +67,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: widget.height ?? height,
+      height: widget.height,
       child: TextField(
         minLines: 1,
         maxLines: widget.maxLines ?? 10,
