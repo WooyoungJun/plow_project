@@ -1,9 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:plow_project/PageView/AfterAuth/ComparisonView.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:plow_project/firebase_options.dart';
-import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 import 'package:plow_project/components/FileProcessing.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/PageView/AfterAuth/HomeView.dart';
@@ -17,43 +17,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform); // firebase 초기화 기본 코드
-  runApp(MyApp());
+  await FileProcessing.getPublicDownloadFolderPath();
+  runApp(MainApp());
 }
 
 // 초기 화면 구성
-class MyApp extends StatefulWidget {
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final UserProvider userProvider = UserProvider();
-  bool _isInitComplete = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) async => await _initMain());
-  }
-
-  Future<void> _initMain() async {
-    // download directory 경로 설정
-    await FileProcessing.getPublicDownloadFolderPath();
-    setState(() => _isInitComplete = true);
-  }
-
-  @override
-  void dispose() {
-    userProvider.dispose();
-    super.dispose();
-  }
-
+class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    if (!_isInitComplete) return CustomProgressIndicator();
     return ChangeNotifierProvider(
-      create: (context) => userProvider,
+      create: (context) => UserProvider(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -62,7 +35,7 @@ class _MyAppState extends State<MyApp> {
         ),
         initialRoute: '/',
         routes: {
-          "/": (context) => SafeArea(child: AuthenticationWrapper()),
+          "/": (context) => SafeArea(child: AuthWrapper()),
           "/LoginView": (context) => SafeArea(child: LoginView()),
           "/HomeView": (context) => SafeArea(child: HomeView()),
           "/SignUpView": (context) => SafeArea(child: SignUpView()),
@@ -77,15 +50,19 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-// user 상태에 따라 라우팅 다르게 함
-class AuthenticationWrapper extends StatelessWidget {
+class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final UserProvider userProvider = Provider.of<UserProvider>(context);
-    if (userProvider.status == Status.unauthenticated) {
-      return LoginView(); // 사용자가 로그인하지 않은 경우 로그인 화면으로 이동
-    } else {
-      return HomeView(); // 사용자가 로그인한 경우 홈으로 이동
-    }
+    final userProvider = Provider.of<UserProvider>(context);
+    return StreamBuilder(
+      stream: userProvider.auth.authStateChanges(),
+      builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+        if (snapshot.data == null) {
+          return LoginView();
+        } else {
+          return HomeView();
+        }
+      },
+    );
   }
 }

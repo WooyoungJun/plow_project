@@ -18,8 +18,7 @@ class SignUpView extends StatefulWidget {
 class _SignUpViewState extends State<SignUpView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  late UserProvider userProvider;
-  late String msg;
+  String msg = '';
   bool _isInitComplete = false;
 
   @override
@@ -30,20 +29,7 @@ class _SignUpViewState extends State<SignUpView> {
   }
 
   Future<void> initSignUpView() async {
-    msg = '';
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() => _isInitComplete = true);
-  }
-
-  // context 접근 가능
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) super.setState(fn);
   }
 
   @override
@@ -56,6 +42,7 @@ class _SignUpViewState extends State<SignUpView> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
+    final userProvider = Provider.of<UserProvider>(context);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(

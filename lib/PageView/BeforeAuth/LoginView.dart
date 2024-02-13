@@ -6,7 +6,6 @@ import 'package:plow_project/components/ConstSet.dart';
 import 'package:plow_project/components/Logo.dart';
 import 'package:plow_project/components/UserProvider.dart';
 import 'package:plow_project/components/CustomClass/CustomTextField.dart';
-import 'package:plow_project/components/CustomClass/CustomLoadingDialog.dart';
 import 'package:plow_project/components/CustomClass/CustomProgressIndicator.dart';
 
 class LoginView extends StatefulWidget {
@@ -17,8 +16,7 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  late UserProvider userProvider;
-  late String msg;
+  String msg = '';
   bool _isInitComplete = false;
 
   @override
@@ -29,8 +27,6 @@ class _LoginViewState extends State<LoginView> {
   }
 
   Future<void> initLoginView() async {
-    msg = '';
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() => _isInitComplete = true);
   }
 
@@ -44,6 +40,7 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
+    final userProvider = Provider.of<UserProvider>(context);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
@@ -86,17 +83,11 @@ class _LoginViewState extends State<LoginView> {
               child: Text('Login'),
               onPressed: () async {
                 FocusScope.of(context).unfocus();
-                CustomLoadingDialog.showLoadingDialog(
-                    context, '로그인 중입니다. \n잠시만 기다리세요');
                 String result = await userProvider.signIn(
                   email: _emailController.text,
                   password: _passwordController.text,
                 );
-                CustomLoadingDialog.pop(context);
-                if (result == '성공') {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/HomeView', (route) => false);
-                } else {
+                if (result != '성공') {
                   setState(() => msg = result);
                 }
               },
@@ -120,7 +111,8 @@ class _LoginViewState extends State<LoginView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Don\'t have an account?', style: CustomTextStyle.style(16)),
+                Text('Don\'t have an account?',
+                    style: CustomTextStyle.style(16)),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(context, '/SignUpView'),
                   child: Text('Sign Up', style: CustomTextStyle.style(18)),

@@ -119,8 +119,6 @@ class _HomeViewMyInfoState extends State<HomeViewMyInfo> {
                       context: context, text: '정말 로그아웃 하시겠습니까?');
                   if (isSignOut) {
                     await userProvider.signOut();
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/LoginView', (route) => false);
                   }
                 },
               ),

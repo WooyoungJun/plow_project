@@ -8,7 +8,7 @@ enum Status { uninitialized, authenticated, authenticating, unauthenticated }
 class UserProvider extends ChangeNotifier {
   static final FirebaseFirestore _store = FirebaseFirestore.instance;
   static final CollectionReference _userInfoRef = _store.collection('UserInfo');
-  final FirebaseAuth _auth; // 파이어베이스 Auth 객체 인스턴스
+  final FirebaseAuth _auth = FirebaseAuth.instance; // 파이어베이스 Auth 객체 인스턴스
 
   Status _status; // 현재 사용자 상태
   User? _user; // 사용자의 정보 담고 있는 객체
@@ -25,6 +25,8 @@ class UserProvider extends ChangeNotifier {
   }
 
   DocumentReference get _userDoc => _userInfoRef.doc(_user!.email);
+
+  FirebaseAuth get auth => _auth;
 
   Status get status => _status;
 
@@ -43,8 +45,7 @@ class UserProvider extends ChangeNotifier {
   IconData? get icon => _icon ?? Icons.account_circle;
 
   UserProvider()
-      : _auth = FirebaseAuth.instance,
-        _user = null,
+      : _user = null,
         _status = Status.unauthenticated {
     _auth.authStateChanges().listen(_onStateChanged);
   }

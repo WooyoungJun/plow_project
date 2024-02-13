@@ -16,8 +16,7 @@ class PasswordResetView extends StatefulWidget {
 
 class _PasswordResetViewState extends State<PasswordResetView> {
   final TextEditingController _emailController = TextEditingController();
-  late UserProvider userProvider;
-  late String msg;
+  String msg = '';
   bool _isInitComplete = false;
 
   @override
@@ -28,8 +27,6 @@ class _PasswordResetViewState extends State<PasswordResetView> {
   }
 
   Future<void> initPasswordResetView() async {
-    msg = '';
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() => _isInitComplete = true);
   }
 
@@ -42,6 +39,7 @@ class _PasswordResetViewState extends State<PasswordResetView> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitComplete) return CustomProgressIndicator();
+    final userProvider = Provider.of<UserProvider>(context);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       appBar: AppBar(
